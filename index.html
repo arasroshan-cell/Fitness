@@ -305,42 +305,48 @@ const FOODS=[
   {name:'Mutton curry',cat:'Protein',per100:{k:195,p:20,c:3,f:12},typ:150,rr:0.68},
   {name:'Fish curry (white fish)',cat:'Protein',per100:{k:120,p:20,c:3,f:4},typ:150,rr:0.80},
   {name:'Salmon fry',cat:'Protein',per100:{k:220,p:25,c:1,f:13},typ:120,rr:0.85},
-  {name:'Pomfret fry',cat:'Protein',per100:{k:165,p:22,c:2,f:8},typ:70,lbl:'per piece (~70g)'},
+  {name:'Pomfret fry',cat:'Protein',per100:{k:165,p:22,c:2,f:8},typ:70,unit:'piece',lbl:'per piece (~70g)'},
   {name:'Prawn curry',cat:'Protein',per100:{k:100,p:18,c:2,f:3},typ:150,rr:0.80},
   {name:'Thai red curry (chicken)',cat:'Protein',per100:{k:140,p:12,c:5,f:9},typ:200},
   {name:'Tofu masala / fry',cat:'Protein',per100:{k:110,p:8,c:5,f:6},typ:150},
-  {name:'Egg (boiled, small)',cat:'Eggs',per100:{k:155,p:13,c:1,f:11},typ:45,lbl:'per small egg'},
-  {name:'Egg (boiled, medium)',cat:'Eggs',per100:{k:155,p:13,c:1,f:11},typ:58,lbl:'per egg'},
-  {name:'Egg omelette (3 small)',cat:'Eggs',per100:{k:170,p:12,c:1,f:13},typ:195,lbl:'3-egg omelette'},
-  {name:'Egg omelette (4 small)',cat:'Eggs',per100:{k:170,p:12,c:1,f:13},typ:260,lbl:'4-egg omelette'},
-  {name:'Egg dosa (home, small)',cat:'Eggs',per100:{k:168,p:8,c:14,f:8},typ:95,lbl:'per small egg dosa'},
+  {name:'Chicken drumstick (oven, masala, skin on)',cat:'Protein',per100:{k:215,p:24,c:1.5,f:11},typ:90,unit:'piece',lbl:'per piece (~90g cooked, estimate)'},
+  {name:'Egg (boiled, small)',cat:'Eggs',per100:{k:155,p:13,c:1,f:11},typ:45,unit:'piece',lbl:'per small egg'},
+  {name:'Egg (boiled, medium)',cat:'Eggs',per100:{k:155,p:13,c:1,f:11},typ:58,unit:'piece',lbl:'per egg'},
+  {name:'Egg omelette (3 small)',cat:'Eggs',per100:{k:170,p:12,c:1,f:13},typ:195,unit:'piece',lbl:'3-egg omelette'},
+  {name:'Egg omelette (4 small)',cat:'Eggs',per100:{k:170,p:12,c:1,f:13},typ:260,unit:'piece',lbl:'4-egg omelette'},
+  {name:'Egg dosa (home, small)',cat:'Eggs',per100:{k:168,p:8,c:14,f:8},typ:95,unit:'piece',lbl:'per small egg dosa'},
   {name:'Sona Masoori rice (cooked)',cat:'Carbs',per100:{k:115,p:2.3,c:25,f:0.3},typ:150},
   {name:'Ponni rice (cooked)',cat:'Carbs',per100:{k:120,p:2.5,c:26,f:0.3},typ:150},
   {name:'White rice generic (cooked)',cat:'Carbs',per100:{k:130,p:2.7,c:28,f:0.3},typ:150},
   {name:'Fried rice (home, 2 eggs)',cat:'Carbs',per100:{k:175,p:5,c:28,f:6},typ:150},
-  {name:'Idli',cat:'Carbs',per100:{k:130,p:4,c:26,f:0.5},typ:30,lbl:'per idli'},
-  {name:'Dosa (plain)',cat:'Carbs',per100:{k:170,p:4,c:30,f:4},typ:75,lbl:'per dosa'},
+  {name:'Idli',cat:'Carbs',per100:{k:130,p:4,c:26,f:0.5},typ:30,unit:'piece',lbl:'per idli'},
+  {name:'Dosa (plain)',cat:'Carbs',per100:{k:170,p:4,c:30,f:4},typ:75,unit:'piece',lbl:'per dosa'},
   {name:'Pongal',cat:'Carbs',per100:{k:140,p:4,c:25,f:3},typ:150},
-  {name:'Sandwich (oven patty + egg)',cat:'Carbs',per100:{k:220,p:14,c:20,f:8},typ:200,lbl:'per sandwich'},
+  {name:'Sandwich (oven patty + egg)',cat:'Carbs',per100:{k:220,p:14,c:20,f:8},typ:200,unit:'piece',lbl:'per sandwich'},
+  {name:'Chicken biryani (Hyderabadi, boneless)',cat:'Mains',per100:{k:190,p:9,c:24,f:7.5},typ:400,lbl:'estimate, ~400g plate'},
+  {name:'Chicken biryani (Hyderabadi, bone-in)',cat:'Mains',per100:{k:175,p:7,c:25,f:7},typ:400,lbl:'estimate, ~400g plate'},
+  {name:'Mutton biryani (Hyderabadi, bone-in)',cat:'Mains',per100:{k:210,p:9,c:22,f:11},typ:400,lbl:'estimate, ~400g plate'},
+  {name:'Nasi lemak (basic, egg & sambal)',cat:'Mains',per100:{k:192,p:5.5,c:24,f:8.5},typ:300,lbl:'estimate, ~300g plate'},
   {name:'Paruppu / dal (plain)',cat:'Sides',per100:{k:95,p:6,c:14,f:1.5},typ:150},
   {name:'Spinach paruppu',cat:'Sides',per100:{k:85,p:5.5,c:11,f:2},typ:150},
   {name:'Sambar (loaded veg)',cat:'Sides',per100:{k:45,p:2.5,c:6,f:1},typ:200},
-  {name:'Rasam',cat:'Sides',per100:{k:20,p:0.8,c:3,f:0.5},typ:200},
+  {name:'Rasam',cat:'Sides',per100:{k:20,p:0.8,c:3,f:0.5},typ:200,unit:'ml'},
   {name:'Beans fry (kothavarai)',cat:'Sides',per100:{k:16,p:1.5,c:3.6,f:0.1},typ:100},
   {name:'Potato fry',cat:'Sides',per100:{k:120,p:2,c:18,f:5},typ:100},
   {name:'Curd / plain yogurt',cat:'Sides',per100:{k:61,p:3.5,c:5,f:3.3},typ:150},
-  {name:'Greek yogurt (plain)',cat:'Sides',per100:{k:97,p:9,c:4,f:5},typ:150},
-  {name:'Neer moru (spiced buttermilk)',cat:'Cooling',per100:{k:40,p:3,c:4,f:1.5},typ:200,lbl:'per glass (200ml)'},
-  {name:'Coconut water',cat:'Cooling',per100:{k:21,p:0.7,c:5,f:0.2},typ:330,lbl:'per glass (330ml)'},
+  {name:'Greek yogurt (Tesco Finest, full-fat)',cat:'Sides',per100:{k:132,p:6.5,c:3.3,f:10.3},typ:150},
+  {name:'Neer moru (spiced buttermilk)',cat:'Cooling',per100:{k:40,p:3,c:4,f:1.5},typ:200,unit:'ml',lbl:'per glass (200ml)'},
+  {name:'Coconut water',cat:'Cooling',per100:{k:21,p:0.7,c:5,f:0.2},typ:330,unit:'ml',lbl:'per glass (330ml)'},
   {name:'Cucumber (raw)',cat:'Cooling',per100:{k:15,p:0.7,c:3,f:0.1},typ:100},
   {name:'Watermelon',cat:'Cooling',per100:{k:30,p:0.6,c:7,f:0.2},typ:200},
+  {name:'Mixed berries',cat:'Cooling',per100:{k:50,p:1,c:11,f:0.4},typ:100},
   {name:'Drumstick leaves (murungai)',cat:'Greens',per100:{k:64,p:9.4,c:8,f:1.4},typ:50,lbl:'per 50g handful'},
   {name:'Methi leaves (fenugreek)',cat:'Greens',per100:{k:49,p:4.4,c:6,f:0.9},typ:50},
   {name:'Spinach (fresh)',cat:'Greens',per100:{k:23,p:2.9,c:3.6,f:0.4},typ:100},
-  {name:'Cooking oil (1 tsp)',cat:'Extras',per100:{k:884,p:0,c:0,f:100},typ:5,lbl:'per tsp (5ml)'},
-  {name:'Coconut milk (100ml)',cat:'Extras',per100:{k:197,p:2,c:3,f:21},typ:100},
-  {name:'Ghee (1 tsp)',cat:'Extras',per100:{k:900,p:0,c:0,f:100},typ:5,lbl:'per tsp'},
-  {name:'Boost drink (25g)',cat:'Extras',per100:{k:370,p:15,c:72,f:2.8},typ:25,lbl:'per 25g scoop'}
+  {name:'Cooking oil (1 tsp)',cat:'Extras',per100:{k:884,p:0,c:0,f:100},typ:5,unit:'tsp',lbl:'per tsp (5ml)'},
+  {name:'Ghee (1 tsp)',cat:'Extras',per100:{k:900,p:0,c:0,f:100},typ:5,unit:'tsp',lbl:'per tsp'},
+  {name:'Serious Gainz protein powder',cat:'Extras',per100:{k:375,p:22,c:65.1,f:2.85},typ:41.7,unit:'scoop',lbl:'per scoop (~41.7g) \u2014 you usually take 1.5'},
+  {name:'Boost (1 cup, with whole milk)',cat:'Extras',per100:{k:88.1,p:4.84,c:9.38,f:3.54},typ:271,unit:'piece',lbl:'1 cup whole milk + 3 tsp powder, estimate'}
 ];
 const DNAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const MEAL_TYPES=['Breakfast','Lunch','Dinner','Snack'];
@@ -441,8 +447,8 @@ function applyCSub(dl,ei,id){
 /* ===== OVERLOAD ===== */
 function getSuggestion(orig,best){
   if(!best||!best.w)return orig.noweight?'Log to get targets':'No data yet \u2014 log this session';
-  if(orig.inputType==='seconds')return 'Add 5 seconds (was '+best.r+'s)';
-  if(orig.inputType==='reps_each')return 'Add 1 rep per side (was '+best.r+')';
+  if(orig.inputType==='seconds')return 'Add 5 seconds (was '+best.w+'s)';
+  if(orig.inputType==='reps_each')return 'Add 1 rep per side (was '+best.w+' each side)';
   if(orig.noweight&&orig.r==='Max reps')return 'Beat '+best.r+' reps \u2014 add 1 per week';
   const w=parseFloat(best.w),r=parseInt(best.r),inc=orig.compound!==false?2.5:1.0;
   if(orig.r.includes('\u2013')){
@@ -473,14 +479,21 @@ function saveSession(dl,seqIdx){
   const duration=s.startAt?Math.round((Date.now()-s.startAt)/60000):null;
   const exercises=s.ex.map((ex,ei)=>{
     const orig=gd.ex[ei]||gd.ex[0];
+    const isChoiceEx=orig.inputType==='choice';
+    const chosenOpt=isChoiceEx&&ex.chosenType?orig.choiceOptions?.find(o=>o.name===ex.chosenType):null;
+    const effOrig=chosenOpt?{...orig,...chosenOpt,noweight:true}:orig;
+    const effName=chosenOpt?ex.chosenType:ex.name;
+    const effOrigName=chosenOpt?ex.chosenType:ex.origName;
+    const singleField=effOrig.inputType==='seconds'||effOrig.inputType==='reps_each';
     const workingSets=ex.sets.filter(st=>!st.isDrop);
     const best=workingSets.reduce((b,st)=>{
-      if(st.w&&st.r&&parseFloat(st.w)>0&&(!b||parseFloat(st.w)>parseFloat(b.w)))return{w:st.w,r:st.r};
+      const valid=singleField?(st.w&&parseFloat(st.w)>0):(st.w&&st.r&&parseFloat(st.w)>0);
+      if(valid&&(!b||parseFloat(st.w)>parseFloat(b.w)))return{w:st.w,r:st.r};
       return b;
     },null);
-    const isPR=checkPR(ex.origName,best);
-    if(isPR)newPRs.push(ex.name);
-    return{name:ex.name,origName:ex.origName,best,sets:ex.sets,chosenType:ex.chosenType,suggestion:getSuggestion(orig,best),isPR};
+    const isPR=checkPR(effOrigName,best);
+    if(isPR)newPRs.push(effName);
+    return{name:effName,origName:effOrigName,best,sets:ex.sets,chosenType:ex.chosenType,suggestion:getSuggestion(effOrig,best),isPR};
   });
   const session={date:todayKey(),dl,seqIdx,exercises,note:s.note,skipped:false,duration,newPRs};
   lsS('sess:'+todayKey(),session);
@@ -734,25 +747,27 @@ async function renderToday(){
     // Render exercises grouped by must/optional
     function renderEx(ex,ei){
       const orig=gd.ex[ei];
-      const lx=last?.exercises?.find(l=>l.origName===ex.origName);
-      const lstr=lx?.best?'Last: '+lx.best.w+'kg &times; '+lx.best.r:'First time';
+      const isChoice=orig.inputType==='choice';
+      const chosenOpt=isChoice&&ex.chosenType?orig.choiceOptions?.find(o=>o.name===ex.chosenType):null;
+      const lookupName=chosenOpt?ex.chosenType:ex.origName;
+      const lx=last?.exercises?.find(l=>l.origName===lookupName);
+      const effType=chosenOpt?chosenOpt.inputType:(orig.inputType||'weight');
+      const effR=chosenOpt?chosenOpt.r:orig.r;
+      const fmtBest=(b)=>!b?'':(effType==='seconds'?b.w+'s':effType==='reps_each'?b.w+' each side':b.w+'kg \u00d7 '+b.r);
+      const lstr=lx?.best?'Last: '+fmtBest(lx.best):'First time';
       const sugg=lx?.suggestion||'';
       const allDone=ex.sets.filter(s=>!s.isDrop).every(s=>s.done);
       const isSubbed=ex.name!==ex.origName;
       const subOpen=ws.subOpen===ei;
       const subs=SUBS[ex.origName]||[];
       const cid='ci'+ei;
-      const isChoice=orig.inputType==='choice';
-      const chosenOpt=isChoice&&ex.chosenType?orig.choiceOptions?.find(o=>o.name===ex.chosenType):null;
-      const effType=chosenOpt?chosenOpt.inputType:(orig.inputType||'weight');
-      const effR=chosenOpt?chosenOpt.r:orig.r;
-      const prData=lsG('pr:'+ex.origName);
+      const prData=lsG('pr:'+lookupName);
       let h=`<div class="exb">
         <div class="exhd">
           <div>
             <div class="exn${allDone?' done':''}">${ex.name}${allDone?' &#x2713;':''}</div>
             ${isSubbed?`<div class="subbed">SUB for ${ex.origName}</div>`:''}
-            ${prData?`<div style="font-size:11px;color:var(--cyan);margin-top:2px">&#x2605; PR: ${prData.w}kg &times; ${prData.r}</div>`:''}
+            ${prData?`<div style="font-size:11px;color:var(--cyan);margin-top:2px">&#x2605; PR: ${fmtBest(prData)}</div>`:''}
             <div class="ext">${orig.s} sets &times; ${effR||orig.r}</div>
             ${orig.wlabel?`<div class="wlbl">${orig.wlabel}</div>`:''}
           </div>
@@ -771,7 +786,7 @@ async function renderToday(){
               <input class="nin" type="number" inputmode="decimal" placeholder="${effType==='seconds'?'sec':effType==='reps_each'?'reps':'kg'}" min="0" step="${effType==='weight'?0.5:1}" value="${set.w}" oninput="updSet('${gd.label}',${ei},${si},'w',this.value)">
               <div class="nin-lbl">${effType==='seconds'?'sec':effType==='reps_each'?'/side':'kg'}</div>
             </div>
-            ${effType!=='seconds'?`<span class="tx">&times;</span><div style="text-align:center"><input class="nin" type="number" inputmode="numeric" placeholder="reps" min="0" step="1" value="${set.r}" oninput="updSet('${gd.label}',${ei},${si},'r',this.value)"><div class="nin-lbl">reps</div></div>`:''}
+            ${(effType!=='seconds'&&effType!=='reps_each')?`<span class="tx">&times;</span><div style="text-align:center"><input class="nin" type="number" inputmode="numeric" placeholder="reps" min="0" step="1" value="${set.r}" oninput="updSet('${gd.label}',${ei},${si},'r',this.value)"><div class="nin-lbl">reps</div></div>`:''}
             <button class="dbtn${set.done?' dk':''}" onclick="togDone('${gd.label}',${ei},${si})">${set.done?'&#x2713;':'&#x25CB;'}</button>
           </div>`;
         });
@@ -979,6 +994,20 @@ function foodOptsHtml(){
   const cats={};allFoods().forEach(f=>{if(!cats[f.cat])cats[f.cat]=[];cats[f.cat].push(f);});
   return Object.entries(cats).map(([cat,items])=>`<optgroup label="${cat}">${items.map(f=>`<option value="${f.name}">${f.name}${f.lbl?' ('+f.lbl+')':''}</option>`).join('')}</optgroup>`).join('');
 }
+/* Unit-aware amount handling. 'g' and 'ml' foods are entered as a direct amount
+   (prefilled to the food's typical serving, editable). 'piece'/'tsp'/'scoop' foods
+   are entered as a count (prefilled to 1, editable), and typ on that food record
+   stores grams-per-unit so the count can be converted into real macros. */
+const COUNT_UNITS={piece:'pieces',tsp:'tsp',scoop:'scoops'};
+function isCountUnit(u){return!!COUNT_UNITS[u];}
+function unitWord(u){return COUNT_UNITS[u]||u||'g';}
+function defaultAmt(food){return isCountUnit(food.unit)?1:(food.typ||100);}
+function amtFieldLabel(food){return isCountUnit(food.unit)?'Quantity ('+unitWord(food.unit)+')':'Amount ('+(food.unit||'g')+')';}
+function foodMacros(food,amt){
+  if(!food||!amt)return{k:0,p:0,c:0,f:0};
+  const grams=isCountUnit(food.unit)?amt*(food.typ||100):amt;
+  return{k:food.per100.k*grams/100,p:food.per100.p*grams/100,c:food.per100.c*grams/100,f:food.per100.f*grams/100};
+}
 
 function renderFood(){
   const log=lsG('food:'+todayKey())||[];
@@ -1029,34 +1058,34 @@ function renderFood(){
       </div>
       <div class="plate-comp"><div class="plate-comp-lbl">Base (rice)</div>
         <div class="plate-row">
-          <select class="foodsel" id="pc-base" style="flex:1;margin-bottom:0">${foodOptsHtml().match(/Carbs[\s\S]*?<\/optgroup>/)?.[0]||opts}</select>
-          <input class="sinput" id="pc-base-amt" type="number" inputmode="decimal" value="150" placeholder="150" style="width:70px;text-align:center">
-          <div style="font-size:12px;color:var(--mut);font-weight:600">g</div>
+          <select class="foodsel" id="pc-base" style="flex:1;margin-bottom:0" onchange="pcPrefill('base')">${foodOptsHtml().match(/Carbs[\s\S]*?<\/optgroup>/)?.[0]||opts}</select>
+          <input class="sinput" id="pc-base-amt" type="number" inputmode="decimal" value="150" placeholder="150" step="0.5" style="width:70px;text-align:center" oninput="buildPlate()">
+          <div style="font-size:12px;color:var(--mut);font-weight:600" id="pc-base-u">g</div>
         </div>
       </div>
       <div class="plate-comp"><div class="plate-comp-lbl">Liquid (rasam / sambar / curry)</div>
         <div class="plate-row">
-          <select class="foodsel" id="pc-liq" style="flex:1;margin-bottom:0">${opts}</select>
-          <input class="sinput" id="pc-liq-amt" type="number" inputmode="decimal" value="200" placeholder="200" style="width:70px;text-align:center">
-          <div style="font-size:12px;color:var(--mut);font-weight:600">ml</div>
+          <select class="foodsel" id="pc-liq" style="flex:1;margin-bottom:0" onchange="pcPrefill('liq')">${opts}</select>
+          <input class="sinput" id="pc-liq-amt" type="number" inputmode="decimal" value="200" placeholder="200" step="0.5" style="width:70px;text-align:center" oninput="buildPlate()">
+          <div style="font-size:12px;color:var(--mut);font-weight:600" id="pc-liq-u">ml</div>
         </div>
       </div>
       <div class="plate-comp"><div class="plate-comp-lbl">Protein (fish / chicken / egg)</div>
         <div class="plate-row">
-          <select class="foodsel" id="pc-pro" style="flex:1;margin-bottom:0"><option value="">None</option>${opts}</select>
-          <input class="sinput" id="pc-pro-amt" type="number" inputmode="decimal" value="150" placeholder="150" style="width:70px;text-align:center">
-          <div style="font-size:12px;color:var(--mut);font-weight:600">g</div>
+          <select class="foodsel" id="pc-pro" style="flex:1;margin-bottom:0" onchange="pcPrefill('pro')"><option value="">None</option>${opts}</select>
+          <input class="sinput" id="pc-pro-amt" type="number" inputmode="decimal" value="150" placeholder="150" step="0.5" style="width:70px;text-align:center" oninput="buildPlate()">
+          <div style="font-size:12px;color:var(--mut);font-weight:600" id="pc-pro-u">g</div>
         </div>
       </div>
       <div class="plate-comp"><div class="plate-comp-lbl">Side (beans fry / potato fry)</div>
         <div class="plate-row">
-          <select class="foodsel" id="pc-side" style="flex:1;margin-bottom:0"><option value="">None</option>${opts}</select>
-          <input class="sinput" id="pc-side-amt" type="number" inputmode="decimal" value="100" placeholder="100" style="width:70px;text-align:center">
-          <div style="font-size:12px;color:var(--mut);font-weight:600">g</div>
+          <select class="foodsel" id="pc-side" style="flex:1;margin-bottom:0" onchange="pcPrefill('side')"><option value="">None</option>${opts}</select>
+          <input class="sinput" id="pc-side-amt" type="number" inputmode="decimal" value="100" placeholder="100" step="0.5" style="width:70px;text-align:center" oninput="buildPlate()">
+          <div style="font-size:12px;color:var(--mut);font-weight:600" id="pc-side-u">g</div>
         </div>
       </div>
       <div id="plate-result"></div>
-      <button class="btn btn-amb" onclick="buildPlate()">Add plate to Ate</button>
+      <button class="btn btn-amb" onclick="addPlateToLog()">Add plate to Ate</button>
     </div>
   </div>
 
@@ -1079,11 +1108,12 @@ function renderFood(){
       <div style="display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap">
         ${MEAL_TYPES.map(m=>`<button id="ql-mt-${m}" onclick="selQuickMeal('${m}')" style="padding:8px 12px;border:1px solid var(--c3);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:var(--c2);color:var(--mut);font-family:inherit;min-height:36px;transition:all .2s">${m}</button>`).join('')}
       </div>
-      <select class="foodsel" id="ml-food">${opts}</select>
-      <div class="statrow" style="margin-bottom:8px">
-        <div style="font-size:13px;color:var(--mut);font-weight:500">Amount (g)</div>
-        <input class="sinput" type="number" inputmode="decimal" id="ml-amt" placeholder="150" style="width:80px;text-align:center">
+      <select class="foodsel" id="ml-food" onchange="prefillAmt()">${opts}</select>
+      <div class="statrow" style="margin-bottom:4px">
+        <div style="font-size:13px;color:var(--mut);font-weight:500" id="ml-amt-lbl">Amount (g)</div>
+        <input class="sinput" type="number" inputmode="decimal" id="ml-amt" placeholder="150" step="0.5" style="width:80px;text-align:center" oninput="updMealPreview()">
       </div>
+      <div id="ml-preview" style="font-size:12px;color:var(--cyan);margin-bottom:8px;min-height:16px"></div>
       <button class="btn btn-amb btn-sm" style="width:100%;margin-bottom:16px" onclick="logMeal()">+ Add</button>
       <!-- Meal groups -->
       ${renderMealGroups(log)}
@@ -1094,7 +1124,18 @@ function renderFood(){
   <div id="fs-f" style="display:none">
     <div class="card"><div class="cl">Manage food list</div><div class="ct" style="margin-bottom:4px">Add foods you eat regularly</div>
       <div class="cs" style="margin-bottom:12px">Appears in all tabs permanently</div>
-      ${[['Food name','cf-n','text','Kothu roti'],['Calories per 100g','cf-k','decimal','200'],['Protein per 100g','cf-p','decimal','15'],['Carbs per 100g','cf-c','decimal','20'],['Fat per 100g','cf-f','decimal','5'],['Typical serving (g)','cf-t','decimal','150']].map(([l,id,mode,ph])=>`<div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">${l}</div><input class="sinput" id="${id}" ${id==='cf-n'?'type="text"':`type="number" inputmode="${mode}"`} placeholder="${ph}" style="width:110px"></div>`).join('')}
+      <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Food name</div><input class="sinput" id="cf-n" type="text" placeholder="Kothu roti" style="width:110px"></div>
+      <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Logged as</div>
+        <select class="sinput" id="cf-unit" style="width:110px" onchange="cfUnitChanged()">
+          <option value="g">Grams</option>
+          <option value="ml">Millilitres</option>
+          <option value="piece">Pieces / count</option>
+          <option value="tsp">Teaspoons</option>
+          <option value="scoop">Scoops</option>
+        </select>
+      </div>
+      ${[['Calories per 100g','cf-k','decimal','200'],['Protein per 100g','cf-p','decimal','15'],['Carbs per 100g','cf-c','decimal','20'],['Fat per 100g','cf-f','decimal','5']].map(([l,id,mode,ph])=>`<div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">${l}</div><input class="sinput" id="${id}" type="number" inputmode="${mode}" placeholder="${ph}" style="width:110px"></div>`).join('')}
+      <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500" id="cf-t-lbl">Typical serving (g)</div><input class="sinput" id="cf-t" type="number" inputmode="decimal" placeholder="150" style="width:110px"></div>
       <button class="btn btn-amb" onclick="addCustomFood()">Save to my foods</button>
       <div id="cf-conf" class="confbox">Food added &#x2713;</div>
     </div>
@@ -1105,6 +1146,8 @@ function renderFood(){
   selQuickMeal('Lunch');
   selMeal('Lunch');
   renderCustomFoodList();
+  prefillAmt();
+  buildPlate();
 }
 
 function renderMealGroups(log){
@@ -1130,7 +1173,7 @@ function renderMealGroups(log){
       ${items.map(item=>`<div class="meal-item">
         <div style="flex:1">
           <div class="meal-item-name">${item.name}</div>
-          <div class="meal-item-meta">${item.amt?item.amt+'g &middot; ':''} ${Math.round(item.k||0)} kcal &middot; ${Math.round(item.p||0)}g${item.time?' &middot; '+item.time:''}</div>
+          <div class="meal-item-meta">${item.amt?item.amt+' '+(item.unit||'g')+' &middot; ':''} ${Math.round(item.k||0)} kcal &middot; ${Math.round(item.p||0)}g${item.time?' &middot; '+item.time:''}</div>
         </div>
         <button onclick="removeMeal(${item.i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:22px;padding:6px;min-width:44px;min-height:44px">&times;</button>
       </div>`).join('')}
@@ -1156,7 +1199,7 @@ function showFS(s){
   });
 }
 
-function buildPlate(){
+function computePlate(){
   const foods=allFoods();
   const components=[{id:'base',amtId:'pc-base-amt'},{id:'liq',amtId:'pc-liq-amt'},{id:'pro',amtId:'pc-pro-amt'},{id:'side',amtId:'pc-side-amt'}];
   let totalK=0,totalP=0,names=[];const breakdown=[];
@@ -1164,34 +1207,77 @@ function buildPlate(){
     const sel=document.getElementById('pc-'+c.id);const amt=parseFloat(document.getElementById(c.amtId)?.value)||0;
     if(!sel||!sel.value||!amt)return;
     const food=foods.find(f=>f.name===sel.value);if(!food)return;
-    const k=food.per100.k*amt/100,p=food.per100.p*amt/100;
-    totalK+=k;totalP+=p;names.push(food.name);
-    breakdown.push(`<div class="macrow"><span style="color:var(--mut)">${food.name} ${amt}g</span><span class="macval">${Math.round(k)} kcal &middot; ${p.toFixed(1)}g</span></div>`);
+    const m=foodMacros(food,amt);
+    totalK+=m.k;totalP+=m.p;names.push(food.name);
+    const unitTxt=isCountUnit(food.unit)?(amt+' '+unitWord(food.unit)):(amt+(food.unit||'g'));
+    breakdown.push(`<div class="macrow"><span style="color:var(--mut)">${food.name} ${unitTxt}</span><span class="macval">${Math.round(m.k)} kcal &middot; ${m.p.toFixed(1)}g</span></div>`);
   });
-  if(!names.length)return;
-  document.getElementById('plate-result').innerHTML=`<div class="plate-total" style="margin-bottom:10px">
+  return{totalK,totalP,names,breakdown};
+}
+function buildPlate(){
+  const r=computePlate();
+  const resultEl=document.getElementById('plate-result');if(!resultEl)return;
+  if(!r.names.length){resultEl.innerHTML='';return;}
+  resultEl.innerHTML=`<div class="plate-total" style="margin-bottom:10px">
     <div style="font-size:11px;color:var(--cyan);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">${curPlateMeal}</div>
-    <div style="font-size:28px;font-family:'Barlow',sans-serif;font-weight:900;color:var(--cyan)">${Math.round(totalK)} kcal</div>
-    <div style="font-size:16px;font-weight:700;color:var(--grn);margin-top:4px">${totalP.toFixed(1)}g protein</div>
-  </div><div style="background:var(--c2);border-radius:12px;padding:12px">${breakdown.join('')}</div>`;
+    <div style="font-size:28px;font-family:'Barlow',sans-serif;font-weight:900;color:var(--cyan)">${Math.round(r.totalK)} kcal</div>
+    <div style="font-size:16px;font-weight:700;color:var(--grn);margin-top:4px">${r.totalP.toFixed(1)}g protein</div>
+  </div><div style="background:var(--c2);border-radius:12px;padding:12px">${r.breakdown.join('')}</div>`;
+}
+function pcPrefill(comp){
+  const sel=document.getElementById('pc-'+comp);if(!sel)return;
+  const amtEl=document.getElementById('pc-'+comp+'-amt');
+  const uEl=document.getElementById('pc-'+comp+'-u');
+  if(!sel.value){if(uEl)uEl.textContent='g';buildPlate();return;}
+  const food=allFoods().find(f=>f.name===sel.value);if(!food)return;
+  if(amtEl)amtEl.value=defaultAmt(food);
+  if(uEl)uEl.textContent=isCountUnit(food.unit)?unitWord(food.unit):(food.unit||'g');
+  buildPlate();
+}
+function addPlateToLog(){
+  const r=computePlate();
+  if(!r.names.length)return;
+  buildPlate();
   const now=new Date();const time=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
   const log=lsG('food:'+todayKey())||[];
-  log.push({name:names.join(' + '),mealType:curPlateMeal,k:totalK,p:totalP,time,isPlate:true});
+  log.push({name:r.names.join(' + '),mealType:curPlateMeal,k:r.totalK,p:r.totalP,time,isPlate:true});
   lsS('food:'+todayKey(),log);updateHeader();
 }
 
 function logMeal(){
   const fname=document.getElementById('ml-food').value;
   const amt=parseFloat(document.getElementById('ml-amt').value);
-  if(!fname||!amt)return;
+  if(!fname||!amt){
+    const prev=document.getElementById('ml-preview');
+    if(prev)prev.innerHTML='<span style="color:var(--red)">Enter an amount before adding</span>';
+    return;
+  }
   const food=allFoods().find(f=>f.name===fname);if(!food)return;
   const now=new Date();const time=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-  const k=food.per100.k*amt/100,p=food.per100.p*amt/100;
+  const m=foodMacros(food,amt);
   const log=lsG('food:'+todayKey())||[];
-  log.push({name:food.name,amt,unit:'g',k,p,mealType:curQuickMeal,time});
+  log.push({name:food.name,amt,unit:unitWord(food.unit),k:m.k,p:m.p,mealType:curQuickMeal,time});
   lsS('food:'+todayKey(),log);updateHeader();
   document.getElementById('ml-amt').value='';
   renderFood();showFS('l');
+}
+function prefillAmt(){
+  const sel=document.getElementById('ml-food');if(!sel)return;
+  const food=allFoods().find(f=>f.name===sel.value);if(!food)return;
+  const amtEl=document.getElementById('ml-amt');
+  const lblEl=document.getElementById('ml-amt-lbl');
+  if(amtEl)amtEl.value=defaultAmt(food);
+  if(lblEl)lblEl.textContent=amtFieldLabel(food);
+  updMealPreview();
+}
+function updMealPreview(){
+  const sel=document.getElementById('ml-food');const amtEl=document.getElementById('ml-amt');const prev=document.getElementById('ml-preview');
+  if(!sel||!amtEl||!prev)return;
+  const food=allFoods().find(f=>f.name===sel.value);
+  const amt=parseFloat(amtEl.value);
+  if(!food||!amt){prev.textContent='';return;}
+  const m=foodMacros(food,amt);
+  prev.textContent=Math.round(m.k)+' kcal \u00b7 '+m.p.toFixed(1)+'g protein';
 }
 function removeMeal(i){
   const log=lsG('food:'+todayKey())||[];log.splice(i,1);lsS('food:'+todayKey(),log);
@@ -1200,8 +1286,10 @@ function removeMeal(i){
 function quickLog(fname,amt){
   const food=allFoods().find(f=>f.name===fname);if(!food)return;
   const now=new Date();const time=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const logAmt=isCountUnit(food.unit)?+(amt/(food.typ||100)).toFixed(2):amt;
+  const m=foodMacros(food,logAmt);
   const log=lsG('food:'+todayKey())||[];
-  log.push({name:food.name,amt,unit:'g',k:food.per100.k*amt/100,p:food.per100.p*amt/100,mealType:curQuickMeal,time});
+  log.push({name:food.name,amt:logAmt,unit:unitWord(food.unit),k:m.k,p:m.p,mealType:curQuickMeal,time});
   lsS('food:'+todayKey(),log);updateHeader();
   document.getElementById('pg-result').innerHTML+=`<div class="nt ng">Logged to Ate &#x2713;</div>`;
 }
@@ -1228,17 +1316,25 @@ function calcPortions(){
   </div>
   <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="quickLog('${food.name}',${myG})">+ Log my portion to Ate</button>`;
 }
+function cfUnitChanged(){
+  const u=document.getElementById('cf-unit')?.value||'g';
+  const lbl=document.getElementById('cf-t-lbl');if(!lbl)return;
+  lbl.textContent=isCountUnit(u)?'Grams per '+u:'Typical serving ('+u+')';
+}
 function addCustomFood(){
   const name=document.getElementById('cf-n').value.trim();
+  const unit=document.getElementById('cf-unit')?.value||'g';
   const k=parseFloat(document.getElementById('cf-k').value);
   const p=parseFloat(document.getElementById('cf-p').value);
   const c=parseFloat(document.getElementById('cf-c').value)||0;
   const f=parseFloat(document.getElementById('cf-f').value)||0;
-  const typ=parseFloat(document.getElementById('cf-t').value)||100;
+  const typ=parseFloat(document.getElementById('cf-t').value)||(isCountUnit(unit)?100:150);
   if(!name||!k||!p)return;
   const customs=lsG('custom_foods')||[];
   if(customs.find(x=>x.name.toLowerCase()===name.toLowerCase())){alert('Food already exists.');return;}
-  customs.push({name,cat:'My foods',per100:{k,p,c,f},typ});lsS('custom_foods',customs);
+  const food={name,cat:'My foods',per100:{k,p,c,f},typ};
+  if(unit!=='g')food.unit=unit;
+  customs.push(food);lsS('custom_foods',customs);
   const conf=document.getElementById('cf-conf');
   if(conf){conf.style.display='block';setTimeout(()=>{conf.style.display='none';renderFood();showFS('f');},2000);}
 }
