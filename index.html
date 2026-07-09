@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v2.2</title>
+<title>Roshan Fitness v2.2a</title>
 <style>
 :root{
   --bg:#080C14;--c1:#0D1425;--c2:#141E33;--c3:#1E2D4A;
@@ -203,7 +203,7 @@ textarea.genin{resize:none}
 <body>
 <div id="warn-banner" class="warn-banner">Private mode detected &#x2014; data will NOT be saved</div>
 <div class="hdr">
-  <div class="ey">Roshan Fitness v2.2 &middot; build 2026-07-02</div>
+  <div class="ey">Roshan Fitness v2.2a &middot; build 2026-07-09</div>
   <div class="ht">Fitness Tracker</div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -309,33 +309,33 @@ const FOODS=[
   {name:'Prawn curry',cat:'Protein',per100:{k:100,p:18,c:2,f:3},typ:150},
   {name:'Thai red curry (chicken)',cat:'Protein',per100:{k:140,p:12,c:5,f:9},typ:200},
   {name:'Tofu masala / fry',cat:'Protein',per100:{k:110,p:8,c:5,f:6},typ:150},
-  {name:'Chicken drumstick (oven, masala, skin on)',cat:'Protein',per100:{k:215,p:24,c:1.5,f:11},typ:90,unit:'piece',lbl:'per piece (~90g cooked)'},
-  {name:'Chicken thigh (bone-in, oven, masala)',cat:'Protein',per100:{k:210,p:20,c:1,f:14},typ:95,unit:'piece',lbl:'per thigh (~95g cooked)'},
+  {name:'Chicken drumstick (oven, masala, skin on)',cat:'Protein',per100:{k:215,p:24,c:1.5,f:11},typ:90,unit:'piece',lbl:'per piece (~90g cooked)',oilInclusive:true},
+  {name:'Chicken thigh (bone-in, oven, masala)',cat:'Protein',per100:{k:210,p:20,c:1,f:14},typ:95,unit:'piece',lbl:'per thigh (~95g cooked)',oilInclusive:true},
   {name:'Egg (boiled, small)',cat:'Eggs',per100:{k:155,p:13,c:1,f:11},typ:45,unit:'piece',lbl:'per small egg'},
   {name:'Egg (boiled, medium)',cat:'Eggs',per100:{k:155,p:13,c:1,f:11},typ:58,unit:'piece',lbl:'per egg'},
-  {name:'Egg omelette (3 small)',cat:'Eggs',per100:{k:193,p:12,c:1,f:15.6},typ:195,unit:'piece',lbl:'3-egg omelette (oil-inclusive)'},
-  {name:'Egg omelette (4 small)',cat:'Eggs',per100:{k:187,p:12,c:1,f:14.9},typ:260,unit:'piece',lbl:'4-egg omelette (oil-inclusive)'},
-  {name:'Egg dosa (home, small)',cat:'Eggs',per100:{k:227,p:8,c:14,f:14.7},typ:95,unit:'piece',lbl:'per egg dosa (oil-inclusive)'},
+  {name:'Egg omelette (3 small)',cat:'Eggs',per100:{k:193,p:12,c:1,f:15.6},typ:195,unit:'piece',lbl:'3-egg omelette (oil-inclusive)',oilInclusive:true},
+  {name:'Egg omelette (4 small)',cat:'Eggs',per100:{k:187,p:12,c:1,f:14.9},typ:260,unit:'piece',lbl:'4-egg omelette (oil-inclusive)',oilInclusive:true},
+  {name:'Egg dosa (home, small)',cat:'Eggs',per100:{k:227,p:8,c:14,f:14.7},typ:95,unit:'piece',lbl:'per egg dosa (oil-inclusive)',oilInclusive:true},
   {name:'Sona Masoori rice (cooked)',cat:'Carbs',per100:{k:115,p:2.3,c:25,f:0.3},typ:150},
   {name:'Ponni rice (cooked)',cat:'Carbs',per100:{k:120,p:2.5,c:26,f:0.3},typ:150},
   {name:'White rice generic (cooked)',cat:'Carbs',per100:{k:130,p:2.7,c:28,f:0.3},typ:150},
   {name:'Fried rice (home, 2 eggs)',cat:'Carbs',per100:{k:175,p:5,c:28,f:6},typ:150},
   {name:'Idli',cat:'Carbs',per100:{k:130,p:4,c:26,f:0.5},typ:30,unit:'piece',lbl:'per idli'},
-  {name:'Dosa (plain)',cat:'Carbs',per100:{k:229,p:4,c:30,f:10.7},typ:75,unit:'piece',lbl:'per dosa (oil-inclusive)'},
+  {name:'Dosa (plain)',cat:'Carbs',per100:{k:229,p:4,c:30,f:10.7},typ:75,unit:'piece',lbl:'per dosa (oil-inclusive)',oilInclusive:true},
   {name:'Pongal',cat:'Carbs',per100:{k:140,p:4,c:25,f:3},typ:150},
   {name:'Sandwich (oven patty + egg)',cat:'Carbs',per100:{k:220,p:14,c:20,f:8},typ:200,unit:'piece',lbl:'per sandwich'},
   {name:'Chicken biryani (Hyderabadi, boneless)',cat:'Mains',per100:{k:190,p:9,c:24,f:7.5},typ:400,lbl:'estimate ~400g plate'},
   {name:'Chicken biryani (Hyderabadi, bone-in)',cat:'Mains',per100:{k:175,p:7,c:25,f:7},typ:400,lbl:'estimate ~400g plate'},
   {name:'Mutton biryani (Hyderabadi, bone-in)',cat:'Mains',per100:{k:210,p:9,c:22,f:11},typ:400,lbl:'estimate ~400g plate'},
   {name:'Nasi lemak (basic, egg & sambal)',cat:'Mains',per100:{k:192,p:5.5,c:24,f:8.5},typ:300,lbl:'estimate ~300g plate'},
-  {name:'Nasi goreng (home, chicken+egg+anchovy)',cat:'Mains',per100:{k:169,p:9.5,c:14,f:7},typ:450,lbl:'3 tbsp oil, bigger share of 2-person batch'},
-  {name:'Mee goreng (home, chicken+egg+anchovy)',cat:'Mains',per100:{k:167,p:10,c:12,f:7.5},typ:450,lbl:'3 tbsp oil, bigger share of 2-person batch'},
+  {name:'Nasi goreng (home, chicken+egg+anchovy)',cat:'Mains',per100:{k:169,p:9.5,c:14,f:7},typ:450,lbl:'3 tbsp oil, bigger share of 2-person batch',oilInclusive:true},
+  {name:'Mee goreng (home, chicken+egg+anchovy)',cat:'Mains',per100:{k:167,p:10,c:12,f:7.5},typ:450,lbl:'3 tbsp oil, bigger share of 2-person batch',oilInclusive:true},
   {name:'Paruppu / dal (plain)',cat:'Sides',per100:{k:95,p:6,c:14,f:1.5},typ:150},
   {name:'Spinach paruppu',cat:'Sides',per100:{k:85,p:5.5,c:11,f:2},typ:150},
   {name:'Sambar (loaded veg)',cat:'Sides',per100:{k:45,p:2.5,c:6,f:1},typ:200},
   {name:'Rasam',cat:'Sides',per100:{k:20,p:0.8,c:3,f:0.5},typ:200,unit:'ml'},
-  {name:'Beans fry (kothavarai)',cat:'Sides',per100:{k:71,p:1.5,c:3.6,f:6.3},typ:100,lbl:'oil-inclusive'},
-  {name:'Potato fry',cat:'Sides',per100:{k:175,p:2,c:18,f:11.2},typ:100,lbl:'oil-inclusive'},
+  {name:'Beans fry (kothavarai)',cat:'Sides',per100:{k:71,p:1.5,c:3.6,f:6.3},typ:100,lbl:'oil-inclusive',oilInclusive:true},
+  {name:'Potato fry',cat:'Sides',per100:{k:175,p:2,c:18,f:11.2},typ:100,lbl:'oil-inclusive',oilInclusive:true},
   {name:'Curd / plain yogurt',cat:'Sides',per100:{k:61,p:3.5,c:5,f:3.3},typ:150},
   {name:'Greek yogurt (Tesco Finest, full-fat)',cat:'Sides',per100:{k:132,p:6.5,c:3.3,f:10.3},typ:150},
   {name:'Neer moru (spiced buttermilk)',cat:'Cooling',per100:{k:40,p:3,c:4,f:1.5},typ:200,unit:'ml',lbl:'per glass (200ml)'},
@@ -346,10 +346,28 @@ const FOODS=[
   {name:'Drumstick leaves (murungai)',cat:'Greens',per100:{k:64,p:9.4,c:8,f:1.4},typ:50,lbl:'per 50g handful'},
   {name:'Methi leaves (fenugreek)',cat:'Greens',per100:{k:49,p:4.4,c:6,f:0.9},typ:50},
   {name:'Spinach (fresh)',cat:'Greens',per100:{k:23,p:2.9,c:3.6,f:0.4},typ:100},
-  {name:'Cooking oil',cat:'Extras',per100:{k:884,p:0,c:0,f:100},typ:5,unit:'tsp',lbl:'per tsp (5ml) \u2014 only if NOT in dish'},
-  {name:'Ghee',cat:'Extras',per100:{k:900,p:0,c:0,f:100},typ:5,unit:'tsp',lbl:'per tsp \u2014 only if NOT in dish'},
+  {name:'Cooking oil',cat:'Extras',per100:{k:884,p:0,c:0,f:100},typ:5,unit:'tsp',lbl:'per tsp (5ml) \u2014 only if NOT already in dish'},
+  {name:'Ghee',cat:'Extras',per100:{k:900,p:0,c:0,f:100},typ:5,unit:'tsp',lbl:'per tsp \u2014 only if NOT already in dish'},
   {name:'Serious Gainz protein powder',cat:'Extras',per100:{k:375,p:22,c:65.1,f:2.85},typ:41.7,unit:'scoop',lbl:'per scoop (~41.7g) \u2014 you usually take 1.5'},
-  {name:'Boost (1 cup, with whole milk)',cat:'Extras',per100:{k:91.4,p:3.93,c:10.47,f:3.83},typ:271,unit:'piece',lbl:'250ml whole milk + 3 tsp powder'}
+  {name:'Boost (1 cup, with whole milk)',cat:'Extras',per100:{k:91.4,p:3.93,c:10.47,f:3.83},typ:271,unit:'piece',lbl:'250ml whole milk + 3 tsp powder'},
+  /* ---- NEW in v2.2a ---- */
+  {name:'Mutton fry / varuval (boneless)',cat:'Protein',per100:{k:250,p:27,c:3,f:14},typ:150,lbl:'460g raw \u2192 300g cooked, 2 meals, oil inclusive',oilInclusive:true},
+  {name:'Chettinad chicken (bone-in)',cat:'Protein',per100:{k:186,p:15.5,c:6,f:12},typ:200,lbl:'desiccated coconut + coconut oil',oilInclusive:true},
+  {name:'Chettinad chicken (boneless)',cat:'Protein',per100:{k:204,p:21,c:6,f:11},typ:175,lbl:'desiccated coconut + coconut oil',oilInclusive:true},
+  {name:'Chicken tikka (dry grilled)',cat:'Protein',per100:{k:165,p:28,c:2,f:5},typ:150,lbl:'high protein, low carb'},
+  {name:'Chapati / roti (homemade)',cat:'Carbs',per100:{k:255,p:7.5,c:45,f:5.5},typ:40,unit:'piece',lbl:'per chapati (~40g)'},
+  {name:'Uttapam (plain, homemade)',cat:'Carbs',per100:{k:185,p:5,c:30,f:5.5},typ:100,unit:'piece',lbl:'per piece (~100g)'},
+  {name:'Bagel (plain, supermarket)',cat:'Carbs',per100:{k:260,p:9,c:51,f:1.5},typ:100,unit:'piece',lbl:'per bagel (Tesco / Aldi ~100g)'},
+  {name:'Chicken burger (supermarket patty + bun)',cat:'Mains',per100:{k:230,p:16,c:20,f:9},typ:200,unit:'piece',lbl:'per burger (~200g)'},
+  {name:'Chicken pasta (tomato sauce)',cat:'Mains',per100:{k:125,p:11,c:14,f:3},typ:400,lbl:'your 60% of 2-person batch (~400g)'},
+  {name:'Chicken pasta (cream / white sauce)',cat:'Mains',per100:{k:175,p:10,c:13,f:8},typ:400,lbl:'your 60% of 2-person batch (~400g)'},
+  {name:'Chicken shawarma wrap (takeaway)',cat:'Mains',per100:{k:215,p:14,c:22,f:8},typ:350,lbl:'ESTIMATE \u2014 varies by shop'},
+  {name:'Soya chunks masala fry',cat:'Sides',per100:{k:200,p:17,c:22,f:6.5},typ:150,lbl:'50g dry \u2192 150g cooked, 1.5 tsp oil inclusive',oilInclusive:true},
+  {name:'Chickpeas masala (tinned)',cat:'Sides',per100:{k:175,p:7,c:22,f:6.5},typ:150,lbl:'1 tin drained, 2 tsp oil inclusive. Pair with protein',oilInclusive:true},
+  {name:'Rajma masala (tinned, thick gravy)',cat:'Sides',per100:{k:120,p:6,c:17,f:3.5},typ:200,lbl:'carb-dominant \u2014 pair with protein source'},
+  {name:'Poriyal (generic dry veg fry)',cat:'Sides',per100:{k:85,p:2,c:12,f:3.5},typ:100,lbl:'cabbage / carrot / raw banana / beans. Oil inclusive',oilInclusive:true},
+  {name:'Coconut rice (thengai sadam)',cat:'Sides',per100:{k:150,p:2.7,c:22,f:4.7},typ:200,lbl:'rice + desiccated coconut + coconut oil tempering',oilInclusive:true},
+  {name:'Curd rice (thayir sadam)',cat:'Sides',per100:{k:120,p:4,c:22,f:2.5},typ:200,lbl:'Crohn\u2019s rest-day staple. Rice + curd + small tempering'}
 ];
 const DNAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const MEAL_TYPES=['Breakfast','Lunch','Dinner','Snack'];
@@ -402,6 +420,7 @@ function clearDraft(){lsDel('ws_draft:'+todayKey());}
 let WS={};
 let adHocDay=null;
 let adHocSeqIdx=null;
+let _forcePickerOnce=false;
 
 function initWS(dl,def){
   if(!WS[dl]){
@@ -758,6 +777,20 @@ function renderToday(){
 
   /* -- Completed session -- */
   if(existing&&!existing.skipped&&existing.exercises){
+    function getExInputType(origName){
+      for(const d of DAYS){for(const e of d.ex){
+        if(e.n===origName)return e.inputType||'weight';
+        if(e.inputType==='choice'&&e.choiceOptions){const o=e.choiceOptions.find(o=>o.name===origName);if(o)return o.inputType;}
+      }}return 'weight';
+    }
+    function fmtCompletedBest(e){
+      if(!e.best||!e.best.w)return '';
+      const it=getExInputType(e.origName||e.name);
+      if(it==='bodyweight')return e.best.r+' reps';
+      if(it==='seconds')return e.best.w+'s';
+      if(it==='reps_each')return e.best.w+' each side';
+      return e.best.w+'kg \u00d7 '+(e.best.r||'');
+    }
     html+=`<div class="card success">
       <div class="cl">${existing.date}${existing.duration?' &middot; '+existing.duration+' min':''}</div>
       <div class="ct" style="color:var(--grn);margin-bottom:4px">&#x2713; ${existing.dl} complete</div>
@@ -766,7 +799,7 @@ function renderToday(){
       ${existing.exercises.map(e=>`<div style="padding:9px 0;border-bottom:1px solid var(--c3)">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif">${e.name}${e.isPR?' <span style="font-size:11px;color:var(--cyan)">PR&#x2191;</span>':''}</div>
-          ${e.best?`<div style="font-size:12px;color:var(--dim)">${e.best.w}kg &times; ${e.best.r}</div>`:''}
+          ${e.best?`<div style="font-size:12px;color:var(--dim)">${fmtCompletedBest(e)}</div>`:''}
         </div>
         <div style="font-size:12px;color:var(--cyan);margin-top:3px;font-weight:600">${e.suggestion||''}</div>
       </div>`).join('')}
@@ -784,7 +817,8 @@ function renderToday(){
     showStickyBtn(false);
   }
   /* -- Session picker (first time or rest day with no choice made) -- */
-  else if(!gd){
+  else if(!gd||_forcePickerOnce){
+    _forcePickerOnce=false;
     const isFirstTime=nextIdx===null;
     html+=`<div class="card cyan">
       <div class="cl">${isFirstTime?'First session \u2014 choose where to start':'Choose your session today'}</div>
@@ -952,7 +986,8 @@ function renderToday(){
 }
 
 function startSession(dayIndex){
-  if(dayIndex===-1){adHocDay=null;adHocSeqIdx=null;renderToday();return;}
+  if(dayIndex===-1){_forcePickerOnce=true;adHocDay=null;adHocSeqIdx=null;renderToday();return;}
+  _forcePickerOnce=false;
   adHocDay=DAYS[dayIndex];adHocSeqIdx=dayIndex;
   initWS(adHocDay.label,adHocDay);
   renderToday();
@@ -1253,9 +1288,11 @@ function renderFood(){
     <div id="cf-list"></div>
   </div>`;
 
-  // Set default meal type for quick add
-  selQuickMeal('Lunch');
-  selMeal('Lunch');
+  // Restore meal type selection (preserve user's choice, apply time-based default only on first tab open)
+  const _mt=curQuickMeal||defaultMealType();
+  const _pt=curPlateMeal||defaultMealType();
+  selQuickMeal(_mt);
+  selMeal(_pt);
   renderCustomFoodList();
   prefillAmt();
   buildPlate();
@@ -1293,7 +1330,8 @@ function renderMealGroups(log){
   return html;
 }
 
-let curQuickMeal='Lunch';let curPlateMeal='Lunch';
+function defaultMealType(){const h=new Date().getHours();return h<11?'Breakfast':h<15?'Lunch':h<20?'Dinner':'Snack';}
+let curQuickMeal=defaultMealType();let curPlateMeal=defaultMealType();
 let _foodDay='today';
 function foodKey(){return _foodDay==='yesterday'?yesterdayKey():todayKey();}
 function selFoodDay(d){_foodDay=d;renderFood();showFS('l');}
@@ -1790,7 +1828,7 @@ else if(_draft.date===todayKey()&&_draft.dl){
   const _idx=SEQ.indexOf(_draft.dl);
   if(_idx>=0){adHocDay=DAYS[_idx];adHocSeqIdx=_idx;WS[_draft.dl]=_draft.state;}
 }
-document.getElementById('hsub').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 v2.2 \u00b7 Target 80\u201385kg at 14\u201316% BF';
+document.getElementById('hsub').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 v2.2a \u00b7 Target 80\u201385kg at 14\u201316% BF';
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
 updateHeader();
 renderToday();
