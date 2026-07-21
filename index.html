@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v2.2b</title>
+<title>Roshan Fitness v2.2c</title>
 <style>
 :root{
   --bg:#080C14;--c1:#0D1425;--c2:#141E33;--c3:#1E2D4A;
@@ -203,12 +203,12 @@ textarea.genin{resize:none}
 <body>
 <div id="warn-banner" class="warn-banner">Private mode detected &#x2014; data will NOT be saved</div>
 <div class="hdr">
-  <div class="ey">Roshan Fitness v2.2b &middot; build 2026-07-13</div>
+  <div class="ey">Roshan Fitness v2.2c &middot; build 2026-07-20</div>
   <div class="ht">Fitness Tracker</div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
-    <div class="met"><div class="mv" id="hdr-p">0g</div><div class="ml">/ 150g protein</div></div>
-    <div class="met"><div class="mv" id="hdr-k">0</div><div class="ml">/ 2100 kcal</div></div>
+    <div class="met"><div class="mv" id="hdr-p">0g</div><div class="ml" id="hdr-p-lbl">/ 150g protein</div></div>
+    <div class="met"><div class="mv" id="hdr-k">0</div><div class="ml" id="hdr-k-lbl">/ 2100 kcal</div></div>
     <div class="met"><div class="mv" id="hdr-wt">&#x2014;</div><div class="ml">last weight</div></div>
   </div>
 </div>
@@ -264,8 +264,9 @@ const DAYS=[
     {n:'Bench press',s:3,r:'8\u201310',nt:'Higher rep range than Monday \u00b7 exhale on press \u2014 never hold breath',priority:'must',compound:true,inputType:'weight',wlabel:'Total kg incl. 20kg bar'},
     {n:'Arnold press',s:3,r:'12',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)'},
     {n:'Cable row',s:3,r:'12',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Stack weight'},
-    {n:'Bicep curl (BB or DB)',s:3,r:'12',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell or total with bar'},
-    {n:'Tricep superset',s:3,r:'10 each',nt:'Pushdown then overhead extension',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight'},
+    {n:'Dumbbell curl (alternating)',s:3,r:'12',nt:'Standard supinated curl \u2014 Pull day already covers barbell + hammer',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)'},
+    {n:'Cable tricep pushdown',s:3,r:'10',nt:'Superset with overhead extension below \u2014 no rest between the two',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight'},
+    {n:'Overhead tricep extension',s:3,r:'10',nt:'Second half of the superset \u2014 straight into this after pushdown',priority:'optional',compound:false,inputType:'weight',wlabel:'DB weight (one hand)'},
     {n:'Plank or dead bug',s:3,r:'\u2014',nt:'Core finisher \u2014 pick one below',priority:'must',noweight:true,inputType:'choice',
      choiceOptions:[{name:'Plank',r:'30\u201360s',inputType:'seconds'},{name:'Dead bug',r:'10 each side',inputType:'reps_each'}]}
   ]}
@@ -294,21 +295,39 @@ const SUBS={
   'Cable woodchop':['Pallof press','Band woodchop'],
   'Arnold press':['DB shoulder press','Machine shoulder press'],
   'Cable row':['DB row','Machine row','T-bar row'],
-  'Bicep curl (BB or DB)':['EZ bar curl','Cable curl','Machine curl'],
-  'Tricep superset':['Machine tricep extension','DB kickbacks'],
+  'Dumbbell curl (alternating)':['EZ bar curl','Cable curl','Machine curl','Barbell curl'],
   'Plank or dead bug':['Bear hold','Pallof press']
 };
+/* S2: substitutes whose natural measurement type differs from the exercise they replace.
+   Applied whenever the active exercise name matches a key here, regardless of which
+   original slot it is substituting for. */
+const SUB_TYPE_OVERRIDE={
+  'Lat pulldown':{inputType:'weight',wlabel:'Stack weight'},
+  'Assisted pull-ups (machine)':{inputType:'weight',wlabel:'Assist stack weight (lighter assist = harder)'},
+  'Pull-ups':{inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',noweight:true},
+  'Step-ups (bodyweight)':{inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',noweight:true},
+  'Wall sit (hold 60s)':{inputType:'seconds',wlabel:'Seconds held',noweight:true},
+  'Pallof press':{inputType:'weight',wlabel:'Stack weight'}
+};
+function inferSubWlabel(name){
+  const n=name.toLowerCase();
+  if(/cable|machine|stack|pulldown|pec deck|dip/.test(n))return 'Stack weight';
+  if(/single arm|one arm|one hand/.test(n))return 'Dumbbell weight (one hand)';
+  if(/db |dumbbell/.test(n))return 'Per dumbbell (each hand)';
+  if(/barbell|ez bar|\bbb\b/.test(n))return 'Total kg incl. bar';
+  return null;
+}
 const FOODS=[
   {name:'Chicken curry (boneless)',cat:'Protein',per100:{k:165,p:25,c:4,f:6},typ:150},
   {name:'Chicken curry (bone-in)',cat:'Protein',per100:{k:135,p:18,c:3,f:6},typ:200},
   {name:'Marinated chicken (oven)',cat:'Protein',per100:{k:165,p:31,c:2,f:4},typ:150},
   {name:'Mutton curry',cat:'Protein',per100:{k:195,p:20,c:3,f:12},typ:150},
   {name:'Fish curry (white fish)',cat:'Protein',per100:{k:120,p:20,c:3,f:4},typ:150},
-  {name:'Salmon fry',cat:'Protein',per100:{k:220,p:25,c:1,f:13},typ:120},
-  {name:'Pomfret fry',cat:'Protein',per100:{k:165,p:22,c:2,f:8},typ:70,unit:'piece',lbl:'per piece (~70g)'},
+  {name:'Salmon fry',cat:'Protein',per100:{k:220,p:25,c:1,f:13},typ:105,unit:'piece',lbl:'per fillet (~105g cooked, Tesco/Aldi 4-pack)',oilInclusive:true},
+  {name:'Pomfret fry',cat:'Protein',per100:{k:165,p:22,c:2,f:8},typ:70,unit:'piece',lbl:'per piece (~70g)',oilInclusive:true},
   {name:'Prawn curry',cat:'Protein',per100:{k:100,p:18,c:2,f:3},typ:150},
   {name:'Thai red curry (chicken)',cat:'Protein',per100:{k:140,p:12,c:5,f:9},typ:200},
-  {name:'Tofu masala / fry',cat:'Protein',per100:{k:110,p:8,c:5,f:6},typ:150},
+  {name:'Tofu masala / fry',cat:'Protein',per100:{k:110,p:8,c:5,f:6},typ:150,oilInclusive:true},
   {name:'Chicken drumstick (oven, masala, skin on)',cat:'Protein',per100:{k:215,p:24,c:1.5,f:11},typ:90,unit:'piece',lbl:'per piece (~90g cooked)',oilInclusive:true},
   {name:'Chicken thigh (bone-in, oven, masala)',cat:'Protein',per100:{k:210,p:20,c:1,f:14},typ:95,unit:'piece',lbl:'per thigh (~95g cooked)',oilInclusive:true},
   {name:'Egg (boiled, small)',cat:'Eggs',per100:{k:155,p:13,c:1,f:11},typ:45,unit:'piece',lbl:'per small egg'},
@@ -379,6 +398,20 @@ const MEAL_TYPES=['Breakfast','Lunch','Dinner','Snack'];
 /* ===== STORAGE ===== */
 function lsG(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}}
 function lsS(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+function getProfile(){
+  return lsG('user_profile')||{targets:{protein:150,kcal:2100,carbs:230,fat:65},weight:85,goalWeight:82,goalBF:15,trainingDaysPerWeek:4,crohnsPhase:'pre-biologic',biologicStartDate:null};
+}
+function saveProfile(p){lsS('user_profile',p);}
+function saveTargets(){
+  const prof=getProfile();
+  const gv=id=>parseFloat(document.getElementById(id)?.value);
+  const protein=gv('prof-protein'),kcal=gv('prof-kcal'),carbs=gv('prof-carbs'),fat=gv('prof-fat');
+  if(!protein||!kcal||!carbs||!fat){alert('All four targets must be positive numbers.');return;}
+  prof.targets={protein,kcal,carbs,fat};
+  saveProfile(prof);
+  updateHeader();renderFood();renderProgress();
+  alert('Targets saved.');
+}
 function lsDel(k){try{localStorage.removeItem(k);}catch{}}
 function todayKey(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function yesterdayKey(){const d=new Date();d.setDate(d.getDate()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -390,13 +423,17 @@ function checkStorage(){try{localStorage.setItem('__t__','1');localStorage.remov
 /* ===== HEADER ===== */
 function updateHeader(){
   const log=lsG('food:'+todayKey())||[];
+  const t=getProfile().targets;
   const p=Math.round(log.reduce((s,i)=>s+(i.p||0),0));
   const k=Math.round(log.reduce((s,i)=>s+(i.k||0),0));
   const stats=lsG('bstats')||[];
   const wt=stats.length?stats[stats.length-1].wt+'kg':'\u2014';
   const ep=document.getElementById('hdr-p'),ek=document.getElementById('hdr-k'),ew=document.getElementById('hdr-wt');
-  if(ep){ep.textContent=p+'g';ep.className='mv'+(p<80?' warn':'');}
-  if(ek){ek.textContent=k;ek.className='mv'+(k>2300?' warn':'');}
+  const epl=document.getElementById('hdr-p-lbl'),ekl=document.getElementById('hdr-k-lbl');
+  if(ep){ep.textContent=p+'g';ep.className='mv'+(p<t.protein*0.53?' warn':'');}
+  if(epl)epl.textContent='/ '+t.protein+'g protein';
+  if(ek){ek.textContent=k;ek.className='mv'+(k>t.kcal*1.1?' warn':'');}
+  if(ekl)ekl.textContent='/ '+t.kcal+' kcal';
   if(ew)ew.textContent=wt;
 }
 
@@ -460,7 +497,7 @@ function addSet(dl,ei){
 function addDropSet(dl,ei){
   if(!WS[dl])return;
   const last=WS[dl].ex[ei].sets[WS[dl].ex[ei].sets.length-1];
-  const dw=last.w?String(Math.round(parseFloat(last.w)*0.8*2)/2):'';
+  const dw=last.w?String(Math.round(parseFloat(last.w)*0.8/5)*5):'';
   WS[dl].ex[ei].sets.push({w:dw,r:'',done:false,isDrop:true,dropHint:'20% drop &#x2014; aim 10&#x2013;12 reps'});
   saveDraft(dl);renderToday();
 }
@@ -492,6 +529,52 @@ function applyCSub(dl,ei,id){
 }
 
 /* ===== OVERLOAD ===== */
+/* ===== COACH NAMESPACE ===== */
+/* Pure logic, zero DOM access. v2.3's coaching cards call into this; nothing here renders anything. */
+const Coach={
+  getDailyStatus(dateKey){
+    dateKey=dateKey||todayKey();
+    const t=getProfile().targets;
+    const log=lsG('food:'+dateKey)||[];
+    const p=log.reduce((s,i)=>s+(i.p||0),0),k=log.reduce((s,i)=>s+(i.k||0),0),
+          c=log.reduce((s,i)=>s+(i.c||0),0),f=log.reduce((s,i)=>s+(i.f||0),0);
+    return{
+      proteinGap:Math.max(0,t.protein-p),kcalGap:Math.max(0,t.kcal-k),
+      carbsGap:Math.max(0,t.carbs-c),fatGap:Math.max(0,t.fat-f),
+      onTrack:p>=t.protein&&k<=t.kcal*1.1
+    };
+  },
+  getWeeklyStatus(){
+    const cutoff=(()=>{const d=new Date();d.setDate(d.getDate()-7);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
+    const entries=Object.entries(mergedMlog()).filter(([k])=>k>=cutoff).map(e=>e[1]);
+    const done=entries.filter(e=>e.type==='done').length;
+    let pSum=0,kSum=0,days=0;
+    for(let i=0;i<7;i++){
+      const d=new Date();d.setDate(d.getDate()-i);
+      const dk=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      const log=lsG('food:'+dk);if(!log||!log.length)continue;
+      pSum+=log.reduce((s,i)=>s+(i.p||0),0);kSum+=log.reduce((s,i)=>s+(i.k||0),0);days++;
+    }
+    return{sessionsDone:done,avgProtein:days?Math.round(pSum/days):0,avgKcal:days?Math.round(kSum/days):0,daysLogged:days};
+  },
+  get3SessionTrend(exerciseName){
+    const hist=getExHistory(exerciseName).slice(-3);
+    if(!hist.length)return{available:false};
+    const best=hist.reduce((b,h)=>{
+      if(!h.best)return b;
+      const w=parseFloat(h.best.w)||0;
+      return(!b||w>parseFloat(b.w||0))?h.best:b;
+    },null);
+    return{available:true,sessionsUsed:hist.length,bestOfLast3:best,mostRecent:hist[hist.length-1].best,improving:hist.length>=2&&parseFloat(hist[hist.length-1].best?.w||0)>=parseFloat(hist[0].best?.w||0)};
+  },
+  getSessionFeedback(session){
+    if(!session||!session.totalVolume)return{available:false};
+    const prevSess=lsG('last:'+session.dl);
+    const prevVol=prevSess?.exercises?.reduce((v,e)=>v+(e.exVolume||0),0)||0;
+    return{available:true,volume:session.totalVolume,prevVolume:prevVol,trend:prevVol?(session.totalVolume>=prevVol?'up':'down'):'first'};
+  }
+};
+
 function getSuggestion(orig,best,prKey){
   if(!best||!best.w)return orig.noweight?'Log to get targets':'No data yet \u2014 log this session';
   if(orig.inputType==='seconds'){
@@ -560,16 +643,24 @@ function saveSession(dl,seqIdx){
     const orig=gd.ex[ei]||gd.ex[0];
     const isChoiceEx=orig.inputType==='choice';
     const chosenOpt=isChoiceEx&&ex.chosenType?orig.choiceOptions?.find(o=>o.name===ex.chosenType):null;
-    const effOrig=chosenOpt?{...orig,...chosenOpt,noweight:true}:orig;
+    const subOverride=(!chosenOpt&&ex.name!==ex.origName)?SUB_TYPE_OVERRIDE[ex.name]:null;
+    const effOrig=chosenOpt?{...orig,...chosenOpt,noweight:true}:(subOverride?{...orig,...subOverride}:orig);
     const effName=chosenOpt?ex.chosenType:ex.name;
     const effOrigName=chosenOpt?ex.chosenType:ex.origName;
     const workingSets=ex.sets.filter(st=>!st.isDrop);
     const best=bestSetOf(workingSets,effOrig.inputType);
-    const isPR=checkPR(effOrigName,best,effOrig.inputType);
+    const isPR=checkPR(effName,best,effOrig.inputType);
     if(isPR)newPRs.push(effName);
-    return{name:effName,origName:effOrigName,best,sets:ex.sets,chosenType:ex.chosenType,suggestion:getSuggestion(effOrig,best,effOrigName),isPR};
+    const exVolume=workingSets.reduce((v,st)=>{
+      if(effOrig.inputType==='bodyweight')return v+(parseInt(st.r)||0);
+      if(effOrig.inputType==='seconds')return v+(parseFloat(st.w)||0);
+      if(effOrig.inputType==='reps_each')return v+(parseInt(st.r)||0)*2;
+      return v+(parseFloat(st.w)||0)*(parseInt(st.r)||0);
+    },0);
+    return{name:effName,origName:effOrigName,best,sets:ex.sets,chosenType:ex.chosenType,suggestion:getSuggestion(effOrig,best,effName),isPR,inputType:effOrig.inputType,exVolume};
   });
-  const session={date:todayKey(),dl,seqIdx,exercises,note:s.note,skipped:false,duration,newPRs};
+  const totalVolume=exercises.reduce((v,e)=>v+(e.exVolume||0),0);
+  const session={date:todayKey(),dl,seqIdx,exercises,note:s.note,painNote:s.painNote||'',skipped:false,duration,newPRs,totalVolume};
   lsS('sess:'+todayKey(),session);
   lsS('last:'+dl,{date:todayKey(),exercises});
   lsS('last_seq_idx',seqIdx);
@@ -666,7 +757,72 @@ function shareBackup(){
     navigator.share({files:[file],title:'Fitness backup '+todayKey()}).then(()=>{lsS('last_export',todayKey());renderProgress();}).catch(()=>{});
   }else{exportData();}
 }
-const APP_VERSION='v2.2b';
+function showTextModal(title,text){
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML='<div style="background:var(--c1);border-radius:14px;padding:16px;max-width:480px;width:100%;max-height:85vh;display:flex;flex-direction:column;gap:10px">'
+    +'<div style="font-weight:700;font-size:15px">'+title+'</div>'
+    +'<textarea readonly style="flex:1;min-height:280px;font-family:monospace;font-size:12px;background:var(--c2);color:inherit;border:1px solid var(--c3);border-radius:8px;padding:10px" onclick="this.select()">'+text+'</textarea>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button class="btn btn-grn btn-sm" style="flex:1" id="tm-copy">Copy</button>'
+    +'<button class="btn btn-ghost btn-sm" style="flex:1" id="tm-close">Close</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+  ov.querySelector('#tm-close').onclick=()=>ov.remove();
+  ov.querySelector('#tm-copy').onclick=()=>{
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>alert('Copied.')).catch(()=>alert('Copy failed \u2014 select the text manually.'));}
+    else{alert('Select the text manually to copy.');}
+  };
+}
+function gastroExport(){
+  const stats=(lsG('bstats')||[]).filter(s=>s.wt||s.bf);
+  const first=stats[0],latest=stats[stats.length-1];
+  const cutoff28=(()=>{const d=new Date();d.setDate(d.getDate()-28);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
+  const recentStats=stats.filter(s=>s.date>=cutoff28);
+  let rateLine='Not enough data yet';
+  if(recentStats.length>=2){
+    const a=recentStats[0],b=recentStats[recentStats.length-1];
+    const days=(new Date(b.date)-new Date(a.date))/86400000;
+    if(days>0&&a.wt&&b.wt){
+      const pctPerWeek=(((a.wt-b.wt)/a.wt)*100)/(days/7);
+      rateLine=pctPerWeek.toFixed(2)+'% per week'+(Math.abs(pctPerWeek)>0.75?' \u2014 ABOVE 0.75% threshold, flag to gastro':'');
+    }
+  }
+  const entries=Object.entries(mergedMlog()).filter(([k])=>k>=cutoff28).map(e=>e[1]);
+  const done=entries.filter(e=>e.type==='done').length;
+  const flareSkips=entries.filter(e=>e.type==='skip'&&e.reason==='flare').length;
+  const planned=entries.length;
+  let energySum=0,energyN=0,bowelNormal=0,bowelOff=0,setonConcern=0,symN=0;
+  for(let i=0;i<28;i++){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const s=lsG('sym:'+k);if(!s)continue;symN++;
+    if(s.energy){energySum+=parseInt(s.energy);energyN++;}
+    if(s.bowel==='normal')bowelNormal++;else if(s.bowel)bowelOff++;
+    if(s.seton==='concerning')setonConcern++;
+  }
+  const avgEnergy=energyN?(energySum/energyN).toFixed(1):'\u2014';
+  const text='ROSHAN ARASU \u2014 GASTRO SUMMARY ('+todayKey()+')\n\n'
+    +'WEIGHT & BODY COMPOSITION\n'
+    +'  Start on record: '+(first?first.wt+'kg / '+(first.bf||'\u2014')+'% BF ('+first.date+')':'No data')+'\n'
+    +'  Current: '+(latest?latest.wt+'kg / '+(latest.bf||'\u2014')+'% BF ('+latest.date+')':'No data')+'\n'
+    +'  Rate, last 4 weeks: '+rateLine+'\n\n'
+    +'TRAINING (last 4 weeks)\n'
+    +'  Sessions completed: '+done+' of '+planned+' logged days\n'
+    +'  Symptom-triggered rest days: '+flareSkips+'\n\n'
+    +'SYMPTOMS (last 4 weeks, '+symN+' days logged)\n'
+    +'  Average energy: '+avgEnergy+'/5\n'
+    +'  Bowel: '+bowelNormal+' days normal, '+bowelOff+' days off\n'
+    +'  Seton \u2014 concerning drainage logged on '+setonConcern+' day(s)\n\n'
+    +'QUESTIONS FOR THIS APPOINTMENT\n'
+    +'  - B12: currently oral \u2014 is sublingual or IM better absorbed for terminal ileum disease?\n'
+    +'  - Vitamin D: Sheffield latitude + malabsorption risk \u2014 worth testing?\n'
+    +'  - Infliximab: timing and next steps?\n';
+  if(navigator.canShare&&navigator.canShare({text})){
+    navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
+  }else{showTextModal('Gastro summary',text);}
+}
+const APP_VERSION='v2.2c';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -758,6 +914,10 @@ function renderToday(){
   const symDone=sym.energy&&sym.seton&&sym.bowel;
   let html='';
 
+  html+=`<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+    <button class="btn btn-ghost btn-sm" onclick="gastroExport()">&#x1F4CB; Gastro summary</button>
+  </div>`;
+
   /* -- Symptom check-in -- */
   if(symDone){
     const eCol=sym.energy>=4?'var(--grn)':sym.energy>=3?'var(--amb)':'var(--red)';
@@ -814,7 +974,7 @@ function renderToday(){
     }
     function fmtCompletedBest(e){
       if(!e.best||!e.best.w)return '';
-      const it=getExInputType(e.origName||e.name);
+      const it=getExInputType(e.name||e.origName);
       if(it==='bodyweight')return e.best.r+' reps';
       if(it==='seconds')return e.best.w+'s';
       if(it==='reps_each')return e.best.w+' each side';
@@ -904,12 +1064,14 @@ function renderToday(){
       const orig=gd.ex[ei];
       const isChoice=orig.inputType==='choice';
       const chosenOpt=isChoice&&ex.chosenType?orig.choiceOptions?.find(o=>o.name===ex.chosenType):null;
-      const lookupName=chosenOpt?ex.chosenType:ex.origName;
-      const lx=last?.exercises?.find(l=>l.origName===lookupName);
-      const effType=chosenOpt?chosenOpt.inputType:(orig.inputType||'weight');
+      const trackName=chosenOpt?ex.chosenType:ex.name;
+      const lx=last?.exercises?.find(l=>l.name===trackName);
+      const subOverride=(!chosenOpt&&ex.name!==ex.origName)?SUB_TYPE_OVERRIDE[ex.name]:null;
+      const subWlabel=subOverride?.wlabel||((!chosenOpt&&ex.name!==ex.origName)?inferSubWlabel(ex.name):null);
+      const effType=chosenOpt?chosenOpt.inputType:(subOverride?subOverride.inputType:(orig.inputType||'weight'));
       const effR=chosenOpt?chosenOpt.r:orig.r;
       const fmtBest=(b)=>!b?'':(effType==='seconds'?b.w+'s':effType==='reps_each'?b.w+' each side':b.w+'kg \u00d7 '+b.r);
-      const histFall=(!lx?.best)?(getExHistory(lookupName).slice(-1)[0]||null):null;
+      const histFall=(!lx?.best)?(getExHistory(trackName).slice(-1)[0]||null):null;
       const lstr=lx?.best?'Last: '+fmtBest(lx.best):histFall?'Last ('+histFall.date.slice(5)+'): '+fmtBest(histFall.best):'First time';
       const sugg=lx?.suggestion||histFall?.suggestion||'';
       const allDone=ex.sets.filter(s=>!s.isDrop).every(s=>s.done);
@@ -917,7 +1079,7 @@ function renderToday(){
       const subOpen=ws.subOpen===ei;
       const subs=SUBS[ex.origName]||[];
       const cid='ci'+ei;
-      const prData=lsG('pr:'+lookupName);
+      const prData=lsG('pr:'+trackName);
       let h=`<div class="exb">
         <div class="exhd">
           <div>
@@ -925,7 +1087,7 @@ function renderToday(){
             ${isSubbed?`<div class="subbed">SUB for ${ex.origName}</div>`:''}
             ${prData?`<div style="font-size:11px;color:var(--cyan);margin-top:2px">&#x2605; PR: ${fmtBest(prData)}</div>`:''}
             <div class="ext">${orig.s} sets &times; ${effR||orig.r}</div>
-            ${orig.wlabel?`<div class="wlbl">${orig.wlabel}</div>`:''}
+            ${(subWlabel||orig.wlabel)?`<div class="wlbl">${subWlabel||orig.wlabel}</div>`:''}
           </div>
           <div style="text-align:right;flex-shrink:0"><div class="exlast">${lstr}</div>${sugg?`<div class="exsugg">${sugg}</div>`:''}</div>
         </div>`;
@@ -979,7 +1141,9 @@ function renderToday(){
     const pct=Math.round(dc/ws.ex.length*100);
     html+=`<div class="sep"></div>
       <div style="font-size:11px;color:var(--mut);margin-bottom:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Session notes</div>
-      <textarea class="genin" rows="2" placeholder="e.g. felt strong, shoulder tight..." oninput="if(WS['${gd.label}']){WS['${gd.label}'].note=this.value;saveDraft('${gd.label}')}">${ws.note}</textarea>
+      <textarea class="genin" rows="2" placeholder="e.g. felt strong, good energy..." oninput="if(WS['${gd.label}']){WS['${gd.label}'].note=this.value;saveDraft('${gd.label}')}">${ws.note}</textarea>
+      <div style="font-size:11px;color:var(--mut);margin:10px 0 6px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Pain / joint (optional)</div>
+      <textarea class="genin" rows="1" placeholder="e.g. shoulder twinge on bench, left knee..." oninput="if(WS['${gd.label}']){WS['${gd.label}'].painNote=this.value;saveDraft('${gd.label}')}">${ws.painNote||''}</textarea>
       <div style="display:flex;justify-content:space-between;margin:12px 0 5px">
         <div style="font-size:13px;color:var(--mut);font-weight:600">${dc}/${ws.ex.length} done</div>
         <div style="font-size:16px;font-weight:900;font-family:'Barlow',sans-serif;color:var(--cyan)">${pct}%</div>
@@ -1106,6 +1270,15 @@ function renderProgress(){
     </div>`;
   }
 
+  const prof=getProfile();
+  html+=`<div class="card"><div class="cl">Settings</div><div class="ct" style="margin-bottom:10px">Daily targets</div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut)">Protein (g)</div><input class="sinput" type="number" id="prof-protein" value="${prof.targets.protein}" style="width:80px"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut)">Kcal</div><input class="sinput" type="number" id="prof-kcal" value="${prof.targets.kcal}" style="width:80px"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut)">Carbs (g)</div><input class="sinput" type="number" id="prof-carbs" value="${prof.targets.carbs}" style="width:80px"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut)">Fat (g)</div><input class="sinput" type="number" id="prof-fat" value="${prof.targets.fat}" style="width:80px"></div>
+    <button class="btn btn-grn btn-sm" style="width:100%;margin-top:10px" onclick="saveTargets()">Save targets</button>
+  </div>`;
+
   const expDays=lastExport?Math.floor((new Date()-new Date(lastExport))/86400000):null;
   const expCol=expDays===null?'var(--red)':expDays<=7?'var(--grn)':expDays<=14?'var(--amb)':'var(--red)';
   const expTxt=expDays===null?'&#x26A0; Never exported &mdash; data at risk':expDays===0?'&#x2713; Exported today':expDays<=7?'&#x2713; Last export: '+expDays+'d ago':'&#x26A0; Last export: '+expDays+'d ago &mdash; export now';
@@ -1162,12 +1335,13 @@ function foodMacros(food,amt){
 
 function renderFood(){
   const log=lsG('food:'+foodKey())||[];
+  const t=getProfile().targets;
   const totalK=Math.round(log.reduce((s,i)=>s+(i.k||0),0));
   const totalP=Math.round(log.reduce((s,i)=>s+(i.p||0),0));
   const totalC=Math.round(log.reduce((s,i)=>s+(i.c||0),0));
   const totalF=Math.round(log.reduce((s,i)=>s+(i.f||0),0));
-  const remP=Math.max(0,150-totalP);
-  const remK=Math.max(0,2100-totalK);
+  const remP=Math.max(0,t.protein-totalP);
+  const remK=Math.max(0,t.kcal-totalK);
   const isYesterday=_foodDay==='yesterday';
   const opts=foodOptsHtml();
 
@@ -1276,17 +1450,21 @@ function renderFood(){
       <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:6px">
         <div>
           <div style="font-size:13px;font-weight:700;color:var(--mut);letter-spacing:.5px;text-transform:uppercase;margin-bottom:2px">Protein</div>
-          <div style="font-size:26px;font-weight:900;font-family:'Barlow',sans-serif;color:${totalP>=150?'var(--grn)':totalP>=100?'var(--cyan)':'var(--red)'}">${totalP}<span style="font-size:13px;font-weight:400;color:var(--mut)">g / 150g</span></div>
+          <div style="font-size:26px;font-weight:900;font-family:'Barlow',sans-serif;color:${totalP>=t.protein?'var(--grn)':totalP>=t.protein*0.67?'var(--cyan)':'var(--red)'}">${totalP}<span style="font-size:13px;font-weight:400;color:var(--mut)">g / ${t.protein}g</span></div>
         </div>
         <div style="text-align:right">
           <div style="font-size:13px;font-weight:700;color:var(--mut);letter-spacing:.5px;text-transform:uppercase;margin-bottom:2px">Kcal</div>
           <div style="font-size:20px;font-weight:800;font-family:'Barlow',sans-serif;color:var(--cyan)">${totalK}<span style="font-size:11px;font-weight:400;color:var(--mut)"> / 2100</span></div>
         </div>
       </div>
-      <div class="prog-bar" style="margin-bottom:4px"><div class="prog-fill" style="width:${Math.min(totalP/150*100,100)}%;background:${totalP>=150?'var(--grn)':totalP>=100?'var(--cyan)':'var(--red)'}"></div></div>
-      <div class="prog-bar" style="margin-bottom:${remP>0&&!isYesterday?8:12}px"><div class="prog-fill" style="width:${Math.min(totalK/2100*100,100)}%;background:var(--amb)"></div></div>
+      <div class="prog-bar" style="margin-bottom:4px"><div class="prog-fill" style="width:${Math.min(totalP/t.protein*100,100)}%;background:${totalP>=t.protein?'var(--grn)':totalP>=t.protein*0.67?'var(--cyan)':'var(--red)'}"></div></div>
+      <div class="prog-bar" style="margin-bottom:8px"><div class="prog-fill" style="width:${Math.min(totalK/t.kcal*100,100)}%;background:var(--amb)"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:2px"><span>Carbs</span><span>${totalC}g / ${t.carbs}g</span></div>
+      <div class="prog-bar" style="margin-bottom:6px"><div class="prog-fill" style="width:${Math.min(totalC/t.carbs*100,100)}%;background:var(--cyan)"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:2px"><span>Fat</span><span>${totalF}g / ${t.fat}g</span></div>
+      <div class="prog-bar" style="margin-bottom:${remP>0&&!isYesterday?8:12}px"><div class="prog-fill" style="width:${Math.min(totalF/t.fat*100,100)}%;background:var(--purple,#9b7bd4)"></div></div>
       ${remP>0&&!isYesterday?`<div style="font-size:12px;color:var(--mut);margin-bottom:12px">&#x25BA; Need <strong style="color:var(--cyan)">${remP}g protein</strong> and <strong>${remK} kcal</strong> more today${totalC>0?` &middot; ${totalC}g carbs &middot; ${totalF}g fat so far`:''}</div>`:''}
-      ${totalP>=150&&!isYesterday?`<div style="font-size:12px;color:var(--grn);margin-bottom:12px;font-weight:700">&#x2713; Protein target hit &middot; ${totalC}g carbs &middot; ${totalF}g fat</div>`:''}
+      ${totalP>=t.protein&&!isYesterday?`<div style="font-size:12px;color:var(--grn);margin-bottom:12px;font-weight:700">&#x2713; Protein target hit &middot; ${totalC}g carbs &middot; ${totalF}g fat</div>`:''}
       <div class="sep"></div>
       <!-- Quick add -->
       <div style="font-size:12px;color:var(--mut);margin-bottom:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Quick add</div>
@@ -1549,7 +1727,7 @@ function addCustomFood(){
   const typ=parseFloat(document.getElementById('cf-t').value)||(isCountUnit(unit)?100:150);
   if(!name||!k||!p)return;
   const customs=lsG('custom_foods')||[];
-  if(customs.find(x=>x.name.toLowerCase()===name.toLowerCase())){alert('Food already exists.');return;}
+  if(allFoods().find(x=>x.name.toLowerCase()===name.toLowerCase())){alert('A food with this name already exists \u2014 it would never be reachable. Pick a different name.');return;}
   const food={name,cat:'My foods',per100:{k,p,c,f},typ};
   if(unit!=='g')food.unit=unit;
   customs.push(food);lsS('custom_foods',customs);
@@ -1605,11 +1783,9 @@ function getExHistory(name){
     if(!k||!k.startsWith('sess:'))continue;
     const sess=lsG(k);
     if(!sess||sess.skipped||!sess.exercises)continue;
-    const ex=sess.exercises.find(e=>e.origName===name||e.name===name);
+    const ex=sess.exercises.find(e=>e.name===name);
     if(!ex||!ex.best||!ex.best.w)continue;
-    const prData=lsG('pr:'+ex.origName);
-    const isPR=prData&&prData.date===sess.date;
-    results.push({date:sess.date,dl:sess.dl,best:ex.best,isPR,suggestion:ex.suggestion||''});
+    results.push({date:sess.date,dl:sess.dl,best:ex.best,isPR:ex.isPR||false,suggestion:ex.suggestion||''});
   }
   return results.sort((a,b)=>a.date.localeCompare(b.date));
 }
@@ -1660,7 +1836,7 @@ function renderHistory(){
     if(!k||!k.startsWith('sess:'))continue;
     const sess=lsG(k);
     if(!sess||sess.skipped||!sess.exercises)continue;
-    sess.exercises.forEach(e=>{if(e.origName)allExNames.add(e.origName);});
+    sess.exercises.forEach(e=>{if(e.name)allExNames.add(e.name);if(e.origName)allExNames.add(e.origName);});
   }
 
   let html='';
@@ -1686,7 +1862,7 @@ function renderHistory(){
         <div style="font-size:10px;color:var(--mut);font-weight:600;margin-top:2px">REST DAYS</div>
       </div>
     </div>
-    ${avgP>0&&avgP<130?`<div style="font-size:12px;color:var(--amb);margin-top:10px">&#x25B2; Avg protein ${150-avgP}g/day below target &mdash; prioritise protein at every meal</div>`:''}
+    ${avgP>0&&avgP<getProfile().targets.protein*0.87?`<div style="font-size:12px;color:var(--amb);margin-top:10px">&#x25B2; Avg protein ${getProfile().targets.protein-avgP}g/day below target &mdash; prioritise protein at every meal</div>`:''}
     ${weekSessions===0?`<div style="font-size:12px;color:var(--red);margin-top:10px">No sessions logged this week yet</div>`:''}
   </div>`;
 
@@ -1794,7 +1970,7 @@ function searchExHistory(query){
     if(!k||!k.startsWith('sess:'))continue;
     const sess=lsG(k);
     if(!sess||!sess.exercises)continue;
-    sess.exercises.forEach(e=>{if(e.origName&&e.origName.toLowerCase().includes(q))allNames.add(e.origName);});
+    sess.exercises.forEach(e=>{if(e.name&&e.name.toLowerCase().includes(q))allNames.add(e.name);if(e.origName&&e.origName.toLowerCase().includes(q))allNames.add(e.origName);});
   }
   if(!allNames.size){el.innerHTML=`<div style="font-size:13px;color:var(--dim);padding:8px">No exercise found matching "${query}"</div>`;return;}
   // Detect inputType from exercise definition
@@ -1870,6 +2046,17 @@ document.querySelectorAll('.tab').forEach(btn=>{
   });
 });
 
+function runMigration(){
+  const sv=lsG('schema_version')||1;
+  if(sv<2){
+    for(let i=localStorage.length-1;i>=0;i--){
+      const k=localStorage.key(i);
+      if(k&&k.startsWith('pr:'))localStorage.removeItem(k);
+    }
+    lsS('schema_version',2);
+  }
+}
+runMigration();
 checkStorage();
 checkUpdate();
 const _draft=lsG('ws_draft:'+todayKey());
@@ -1878,7 +2065,7 @@ else if(_draft.date===todayKey()&&_draft.dl){
   const _idx=SEQ.indexOf(_draft.dl);
   if(_idx>=0){adHocDay=DAYS[_idx];adHocSeqIdx=_idx;WS[_draft.dl]=_draft.state;}
 }
-document.getElementById('hsub').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 v2.2b \u00b7 Target 80\u201385kg at 14\u201316% BF';
+document.getElementById('hsub').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 v2.2c \u00b7 Target 80\u201385kg at 14\u201316% BF';
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
 updateHeader();
 renderToday();
