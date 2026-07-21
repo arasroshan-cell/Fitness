@@ -335,9 +335,9 @@ const FOODS=[
   {name:'Egg omelette (3 small)',cat:'Eggs',per100:{k:193,p:12,c:1,f:15.6},typ:195,unit:'piece',lbl:'3-egg omelette (oil-inclusive)',oilInclusive:true},
   {name:'Egg omelette (4 small)',cat:'Eggs',per100:{k:187,p:12,c:1,f:14.9},typ:260,unit:'piece',lbl:'4-egg omelette (oil-inclusive)',oilInclusive:true},
   {name:'Egg dosa (home, small)',cat:'Eggs',per100:{k:227,p:8,c:14,f:14.7},typ:95,unit:'piece',lbl:'per egg dosa (oil-inclusive)',oilInclusive:true},
-  {name:'Sona Masoori rice (cooked)',cat:'Carbs',per100:{k:115,p:2.3,c:25,f:0.3},typ:150},
-  {name:'Ponni rice (cooked)',cat:'Carbs',per100:{k:120,p:2.5,c:26,f:0.3},typ:150},
-  {name:'White rice generic (cooked)',cat:'Carbs',per100:{k:130,p:2.7,c:28,f:0.3},typ:150},
+  {name:'Sona Masoori rice (cooked)',cat:'Carbs',per100:{k:115,p:2.3,c:25,f:0.3},typ:150,lbl:'cooked weight \u2014 ~55g dry rice makes ~150g cooked'},
+  {name:'Ponni rice (cooked)',cat:'Carbs',per100:{k:120,p:2.5,c:26,f:0.3},typ:150,lbl:'cooked weight \u2014 ~55g dry rice makes ~150g cooked'},
+  {name:'White rice generic (cooked)',cat:'Carbs',per100:{k:130,p:2.7,c:28,f:0.3},typ:150,lbl:'cooked weight \u2014 ~55g dry rice makes ~150g cooked'},
   {name:'Fried rice (home, 2 eggs)',cat:'Carbs',per100:{k:175,p:5,c:28,f:6},typ:150},
   {name:'Idli',cat:'Carbs',per100:{k:130,p:4,c:26,f:0.5},typ:30,unit:'piece',lbl:'per idli'},
   {name:'Dosa (plain)',cat:'Carbs',per100:{k:229,p:4,c:30,f:10.7},typ:75,unit:'piece',lbl:'per dosa (oil-inclusive)',oilInclusive:true},
@@ -380,7 +380,7 @@ const FOODS=[
   {name:'Chicken burger (supermarket patty + bun)',cat:'Mains',per100:{k:230,p:16,c:20,f:9},typ:200,unit:'piece',lbl:'per burger (~200g)'},
   {name:'Chicken pasta (tomato sauce)',cat:'Mains',per100:{k:125,p:11,c:14,f:3},typ:400,lbl:'your 60% of 2-person batch (~400g)'},
   {name:'Chicken pasta (cream / white sauce)',cat:'Mains',per100:{k:175,p:10,c:13,f:8},typ:400,lbl:'your 60% of 2-person batch (~400g)'},
-  {name:'Chicken shawarma wrap (takeaway)',cat:'Mains',per100:{k:215,p:14,c:22,f:8},typ:350,lbl:'ESTIMATE \u2014 varies by shop'},
+  {name:'Chicken shawarma wrap (takeaway)',cat:'Mains',per100:{k:215,p:14,c:22,f:8},typ:350,unit:'piece',lbl:'per wrap (ESTIMATE \u2014 varies by shop)'},
   {name:'Soya chunks masala fry',cat:'Sides',per100:{k:200,p:17,c:22,f:6.5},typ:150,lbl:'50g dry \u2192 150g cooked, 1.5 tsp oil inclusive',oilInclusive:true,fibreRisk:true},
   {name:'Chickpeas masala (tinned)',cat:'Sides',per100:{k:175,p:7,c:22,f:6.5},typ:150,lbl:'1 tin drained, 2 tsp oil inclusive. Pair with protein',oilInclusive:true,fibreRisk:true},
   {name:'Rajma masala (tinned, thick gravy)',cat:'Sides',per100:{k:120,p:6,c:17,f:3.5},typ:200,lbl:'carb-dominant \u2014 pair with protein source',fibreRisk:true},
@@ -390,8 +390,8 @@ const FOODS=[
   {name:'Gongura chicken curry (boneless)',cat:'Protein',per100:{k:170,p:24,c:4,f:7},typ:150,lbl:'sorrel leaf masala, coconut oil inclusive',oilInclusive:true},
   {name:'Gongura chicken curry (bone-in)',cat:'Protein',per100:{k:140,p:18,c:3,f:7},typ:200,lbl:'sorrel leaf masala, bone-in weight, oil inclusive',oilInclusive:true},
   {name:'Puli kuzhambu (veg)',cat:'Sides',per100:{k:80,p:1.5,c:9,f:4.5},typ:150,lbl:'tamarind gravy with brinjal/drumstick, gingelly oil inclusive',oilInclusive:true},
-  {name:'Egg sandwich (3 eggs)',cat:'Protein',per100:{k:210,p:11.5,c:13,f:12.5},typ:250,lbl:'3 eggs, 2 slices, mayo + cheese \u2248 530 kcal / 29g P whole'},
-  {name:'Cowbelle protein milkshake (Aldi)',cat:'Extras',per100:{k:110,p:7.6,c:12,f:2.5},typ:330,unit:'ml',lbl:'1 carton = 330ml = 25g protein'}
+  {name:'Egg sandwich (3 eggs)',cat:'Protein',per100:{k:210,p:11.5,c:13,f:12.5},typ:250,unit:'piece',lbl:'per sandwich (3 eggs, 2 slices, mayo+cheese, ~250g, ~530 kcal / 29g P)'},
+  {name:'Cowbelle protein milkshake (Aldi)',cat:'Extras',per100:{k:110,p:7.6,c:12,f:2.5},typ:330,unit:'piece',lbl:'per carton (330ml = 25g protein)'}
 ];
 const DNAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const MEAL_TYPES=['Breakfast','Lunch','Dinner','Snack'];
