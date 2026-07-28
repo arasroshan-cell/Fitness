@@ -12,7 +12,7 @@ function T(name, cond) {
 }
 
 /* ---------- Static checks (grep-level) ---------- */
-T('version stamp v2.2c in header', /Roshan Fitness v2\.2c/.test(src));
+T('version stamp v2.2d in header', /Roshan Fitness v2\.2d/.test(src));
 T('N1: no slice(-52) remains', !src.includes('slice(-52)'));
 T('N1: two slice(-260) caps present', (src.match(/slice\(-260\)/g) || []).length === 2);
 T('N2: three fibreRisk flags', (src.match(/fibreRisk:true/g) || []).length === 3);
@@ -40,6 +40,18 @@ T('Coach namespace exists with 4 methods', src.includes('const Coach={') && ['ge
 T('Volume load: per-type semantics in saveSession', src.includes('exVolume') && src.includes('totalVolume'));
 T('Pain/joint field: separate from general note', src.includes('painNote'));
 T('Gastro export exists and is wired to a button', src.includes('function gastroExport') && src.includes('onclick="gastroExport()"'));
+T('Palette: no leftover hardcoded old navy/neon colors', !src.includes('#080C14') && !src.includes('#00C2D4') && !src.includes('#00E676') && !src.includes('#FF3D5F'));
+T('Palette: no stray hardcoded gold/purple bypassing CSS variables', !src.includes('#FFD700') && !src.includes('#9b7bd4'));
+T('Must-tier promotions: tricep on Push, row on Pull, hamstring on Legs', (() => {
+  const pushTricep = src.indexOf("n:'Cable tricep pushdown',s:4");
+  const pullRow = src.indexOf("n:'Seated cable row'");
+  const legsHam = src.indexOf("n:'Seated leg curl'");
+  return pushTricep >= 0 && src.slice(pushTricep, pushTricep + 150).includes("priority:'must'")
+    && pullRow >= 0 && src.slice(pullRow, pullRow + 150).includes("priority:'must'")
+    && legsHam >= 0 && src.slice(legsHam, legsHam + 150).includes("priority:'must'");
+})());
+T('UI: per-card MUST/OPTIONAL badge exists', src.includes("orig.priority==='must'?'MUST':'OPTIONAL'"));
+T('UI: split must/optional progress tracking replaces blended percentage', src.includes('mustDone') && src.includes('optDone') && !src.includes('ws.ex.length} done'));
 
 /* ---------- Surrogate scan ---------- */
 let surrogates = 0;

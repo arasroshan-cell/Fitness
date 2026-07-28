@@ -5,19 +5,20 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#F5A623">
+<meta name="theme-color" content="#E0A339">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v2.2c</title>
+<title>Roshan Fitness v2.2d</title>
 <style>
 :root{
-  --bg:#080C14;--c1:#0D1425;--c2:#141E33;--c3:#1E2D4A;
-  --cyan:#00C2D4;--cbg:rgba(0,194,212,.12);--cbr:rgba(0,194,212,.28);
-  --amb:#F5A623;--abg:rgba(245,166,35,.13);--abr:rgba(245,166,35,.3);
-  --txt:#E8F0FF;--mut:#7A90B8;--dim:#4A5A7A;
-  --grn:#00E676;--gbg:rgba(0,230,118,.12);--gbr:rgba(0,230,118,.3);
-  --red:#FF3D5F;--rbg:rgba(255,61,95,.12);--rbr:rgba(255,61,95,.3)
+  --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
+  --cyan:#E0A339;--cbg:rgba(224,163,57,.14);--cbr:rgba(224,163,57,.32);
+  --amb:#C9722E;--abg:rgba(201,114,46,.15);--abr:rgba(201,114,46,.32);
+  --txt:#F3E9D8;--mut:#A6906F;--dim:#6E5D45;
+  --grn:#8FAE63;--gbg:rgba(143,174,99,.14);--gbr:rgba(143,174,99,.32);
+  --red:#C2404A;--rbg:rgba(194,64,74,.14);--rbr:rgba(194,64,74,.32);
+  --gold:#D4AF37;--purple:#8B6F9E
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--txt);font-family:"Inter",-apple-system,sans-serif;font-size:15px;max-width:480px;margin:0 auto;padding-bottom:90px}
@@ -52,8 +53,8 @@ body{background:var(--bg);color:var(--txt);font-family:"Inter",-apple-system,san
 .sep{height:1px;background:var(--c3);margin:12px 0}
 /* BADGES + NOTICES */
 .pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;display:inline-block}
-.pg{background:var(--gbg);color:var(--grn)}.pa{background:var(--abg);color:var(--amb)}.pr{background:var(--rbg);color:var(--red)}.pi{background:var(--cbg);color:var(--cyan)}
-.pill-pr{background:linear-gradient(90deg,rgba(255,215,0,.15),var(--cbg));color:#FFD700;border:1px solid rgba(255,215,0,.3);font-size:12px;padding:4px 12px;font-family:"Barlow",sans-serif;font-weight:800}
+.pg{background:var(--gbg);color:var(--grn)}.pa{background:var(--abg);color:var(--amb)}.pr{background:var(--rbg);color:var(--red)}.pi{background:var(--cbg);color:var(--cyan)}.pd{background:var(--c2);color:var(--mut)}
+.pill-pr{background:linear-gradient(90deg,rgba(212,175,55,.15),var(--cbg));color:var(--gold);border:1px solid rgba(212,175,55,.35);font-size:12px;padding:4px 12px;font-family:"Barlow",sans-serif;font-weight:800}
 .nt{border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;margin-top:10px;line-height:1.5}
 .ng{background:var(--gbg);color:var(--grn)}.na{background:var(--abg);color:var(--amb)}.nr{background:var(--rbg);color:var(--red)}.ni{background:var(--cbg);color:var(--cyan)}
 .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-block}
@@ -119,7 +120,7 @@ textarea.genin{resize:none}
 .btn:active{opacity:.85;transform:scale(.98)}
 /* STICKY SAVE */
 .sticky-wrap{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);width:calc(min(480px,100vw) - 28px);z-index:100;display:none}
-.sticky-save{background:linear-gradient(135deg,#F5A623,#e8940f);color:#000;border:none;border-radius:16px;font-size:17px;font-weight:900;font-family:"Barlow",sans-serif;cursor:pointer;width:100%;padding:18px;box-shadow:0 4px 28px rgba(245,166,35,.45)}
+.sticky-save{background:linear-gradient(135deg,var(--cyan),var(--amb));color:#000;border:none;border-radius:16px;font-size:17px;font-weight:900;font-family:"Barlow",sans-serif;cursor:pointer;width:100%;padding:18px;box-shadow:0 4px 28px rgba(224,163,57,.4)}
 .sticky-save:active{transform:scale(.97)}
 /* CONFBOX + SKIP */
 .confbox{background:var(--gbg);color:var(--grn);border:1px solid var(--gbr);border-radius:14px;padding:14px;font-size:15px;font-weight:700;text-align:center;display:none;margin-top:10px}
@@ -186,7 +187,7 @@ textarea.genin{resize:none}
 .hist-ex-row:last-child{border-bottom:none}
 .hist-date{font-size:13px;font-weight:600;color:var(--txt);min-width:90px}
 .hist-best{font-size:14px;font-weight:800;font-family:"Barlow",sans-serif;color:var(--cyan)}
-.hist-pr{font-size:10px;color:#FFD700;font-weight:800;margin-left:6px}
+.hist-pr{font-size:10px;color:var(--gold);font-weight:800;margin-left:6px}
 .day-strip{display:flex;gap:4px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px}
 .day-pill{flex-shrink:0;width:40px;text-align:center;cursor:pointer;border-radius:10px;padding:6px 4px;border:1px solid var(--c3);background:var(--c1);transition:all .2s}
 .day-pill.hit{border-color:var(--gbr);background:var(--gbg)}
@@ -203,7 +204,7 @@ textarea.genin{resize:none}
 <body>
 <div id="warn-banner" class="warn-banner">Private mode detected &#x2014; data will NOT be saved</div>
 <div class="hdr">
-  <div class="ey">Roshan Fitness v2.2c &middot; build 2026-07-20</div>
+  <div class="ey">Roshan Fitness v2.2d &middot; build 2026-07-26</div>
   <div class="ht">Fitness Tracker</div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -238,30 +239,30 @@ const DAYS=[
     {n:'Machine chest fly',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight'},
     {n:'Seated DB shoulder press',s:3,r:'10\u201312',nt:'Seated \u2014 less pressure on seton sites',priority:'must',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)'},
     {n:'Lateral raises',s:3,r:'15\u201320',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)'},
-    {n:'Cable tricep pushdown',s:4,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight'},
+    {n:'Cable tricep pushdown',s:4,r:'12\u201315',nt:'',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight'},
     {n:'Overhead tricep extension',s:3,r:'12',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'DB weight (one hand)'}
   ]},
   {label:'Pull day',focus:'Back \u00b7 Biceps',time:'~6pm',ex:[
     {n:'Pull-ups (unassisted)',s:4,r:'Max reps',nt:'Signature \u2014 beat last week total',priority:'must',noweight:true,inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)'},
     {n:'Lat pulldown',s:3,r:'10\u201312',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Stack weight'},
-    {n:'Seated cable row',s:3,r:'10\u201312',nt:'Exhale as you pull \u2014 no breath holding',priority:'optional',compound:true,inputType:'weight',wlabel:'Stack weight'},
+    {n:'Seated cable row',s:3,r:'10\u201312',nt:'Exhale as you pull \u2014 no breath holding',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight'},
     {n:'Single arm DB row',s:3,r:'12 each',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Dumbbell weight (one hand)'},
     {n:'Face pulls',s:3,r:'15\u201320',nt:'Never skip \u2014 shoulder health',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight'},
-    {n:'Barbell curl',s:3,r:'10\u201312',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Total kg incl. bar (EZ bar ~10kg)'},
+    {n:'Barbell curl',s:3,r:'10\u201312',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Total kg incl. bar (bar weight varies by gym \u2014 check yours)'},
     {n:'Hammer curls',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)'}
   ]},
   {label:'Legs + core',focus:'No squats. No deadlifts.',time:'~6pm',ex:[
     {n:'Leg press',s:4,r:'12\u201315',nt:'Safe \u2014 no spinal or perianal pressure \u00b7 exhale on push, never hold breath',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight'},
     {n:'Leg extension (machine)',s:3,r:'15',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight'},
-    {n:'Seated leg curl',s:3,r:'15',nt:'Seated preferred',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight'},
+    {n:'Seated leg curl',s:3,r:'15',nt:'Seated preferred',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight'},
     {n:'Calf raises',s:4,r:'20',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Add kg if weighted'},
     {n:'Plank',s:3,r:'30\u201360s',nt:'Exhale on entry \u2014 no breath holding',priority:'must',noweight:true,inputType:'seconds',wlabel:'Seconds held'},
     {n:'Dead bug',s:3,r:'10 each',nt:'Best Crohn-safe core move',priority:'must',noweight:true,inputType:'reps_each',wlabel:'Reps per side'},
-    {n:'Cable woodchop',s:3,r:'12 each',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight'}
+    {n:'Hip abduction machine',s:3,r:'15',nt:'Glute work \u2014 light and controlled, no direct pressure needed',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight'}
   ]},
   {label:'Upper body',focus:'Strength + hypertrophy mix',time:'~10\u201311am',ex:[
     {n:'Pull-ups (unassisted)',s:3,r:'Max reps',nt:'',priority:'must',noweight:true,inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)'},
-    {n:'Bench press',s:3,r:'8\u201310',nt:'Higher rep range than Monday \u00b7 exhale on press \u2014 never hold breath',priority:'must',compound:true,inputType:'weight',wlabel:'Total kg incl. 20kg bar'},
+    {n:'Dips (chest-focused, forward lean)',s:3,r:'8\u201310',nt:'Lower chest \u2014 lean forward, elbows flared \u00b7 exhale on push \u2014 never hold breath',priority:'must',compound:true,inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)'},
     {n:'Arnold press',s:3,r:'12',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)'},
     {n:'Cable row',s:3,r:'12',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Stack weight'},
     {n:'Dumbbell curl (alternating)',s:3,r:'12',nt:'Standard supinated curl \u2014 Pull day already covers barbell + hammer',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)'},
@@ -281,7 +282,7 @@ const SUBS={
   'Overhead tricep extension':['Cable overhead extension','Skull crushers'],
   'Pull-ups (unassisted)':['Assisted pull-ups (machine)','Lat pulldown','Band-assisted pull-ups'],
   'Lat pulldown':['Pull-ups','Straight arm pulldown'],
-  'Seated cable row':['DB row','Machine row','T-bar row'],
+  'Seated cable row':['DB row','Machine row','T-bar row','Smith machine row'],
   'Single arm DB row':['Cable single arm row','Machine row'],
   'Face pulls':['Reverse cable fly','Rear delt machine fly','Band pull-apart'],
   'Barbell curl':['DB curl','EZ bar curl','Cable curl'],
@@ -290,11 +291,12 @@ const SUBS={
   'Leg extension (machine)':['TKE \u2014 terminal knee extension'],
   'Seated leg curl':['Lying leg curl (if ok)','Nordic curl'],
   'Calf raises':['Seated calf raise','Single-leg calf raise'],
-  'Plank':['Dead bug','Bear crawl hold','Pallof press'],
+  'Plank':['Dead bug','Bear crawl hold','Pallof press','Cable crunch'],
+  'Dips (chest-focused, forward lean)':['Decline press (Smith machine)','Decline machine press'],
   'Dead bug':['Bird-dog','Pallof press'],
-  'Cable woodchop':['Pallof press','Band woodchop'],
+  'Hip abduction machine':['Cable kickback','Machine hip thrust'],
   'Arnold press':['DB shoulder press','Machine shoulder press'],
-  'Cable row':['DB row','Machine row','T-bar row'],
+  'Cable row':['DB row','Machine row','T-bar row','Smith machine row'],
   'Dumbbell curl (alternating)':['EZ bar curl','Cable curl','Machine curl','Barbell curl'],
   'Plank or dead bug':['Bear hold','Pallof press']
 };
@@ -311,6 +313,7 @@ const SUB_TYPE_OVERRIDE={
 };
 function inferSubWlabel(name){
   const n=name.toLowerCase();
+  if(/smith machine/.test(n))return 'Total kg incl. bar (Smith bar weight varies by machine \u2014 check yours)';
   if(/cable|machine|stack|pulldown|pec deck|dip/.test(n))return 'Stack weight';
   if(/single arm|one arm|one hand/.test(n))return 'Dumbbell weight (one hand)';
   if(/db |dumbbell/.test(n))return 'Per dumbbell (each hand)';
@@ -320,7 +323,7 @@ function inferSubWlabel(name){
 const FOODS=[
   {name:'Chicken curry (boneless)',cat:'Protein',per100:{k:165,p:25,c:4,f:6},typ:150},
   {name:'Chicken curry (bone-in)',cat:'Protein',per100:{k:135,p:18,c:3,f:6},typ:200},
-  {name:'Marinated chicken (oven)',cat:'Protein',per100:{k:165,p:31,c:2,f:4},typ:150},
+  {name:'Bulk Soya Protein Isolate (Chocolate)',cat:'Extras',per100:{k:390,p:87,c:5,f:3},typ:30,unit:'scoop',lbl:'per scoop (30g = 26g protein)'},
   {name:'Mutton curry',cat:'Protein',per100:{k:195,p:20,c:3,f:12},typ:150},
   {name:'Fish curry (white fish)',cat:'Protein',per100:{k:120,p:20,c:3,f:4},typ:150},
   {name:'Salmon fry',cat:'Protein',per100:{k:220,p:25,c:1,f:13},typ:105,unit:'piece',lbl:'per fillet (~105g cooked, Tesco/Aldi 4-pack)',oilInclusive:true},
@@ -668,7 +671,7 @@ function saveSession(dl,seqIdx){
   const mlog=lsG('mlog:'+monthKey())||{};
   mlog[todayKey()]={type:'done',dl,seqIdx};
   lsS('mlog:'+monthKey(),mlog);
-  clearDraft();autoBackup();showStickyBtn(false);stopTimerTick();
+  clearDraft();showStickyBtn(false);stopTimerTick();
   const cb=document.getElementById('confbox');
   if(cb){
     cb.style.display='block';
@@ -732,16 +735,6 @@ function skipSession(reason){
 }
 
 /* ===== BACKUP + EXPORT + IMPORT ===== */
-function autoBackup(){
-  try{
-    const all={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&!k.startsWith('ws_draft:'))all[k]=lsG(k);}
-    const blob=new Blob([JSON.stringify(all)],{type:'application/json'});
-    const url=URL.createObjectURL(blob);const a=document.createElement('a');
-    a.href=url;a.download='roshan-fitness-auto-'+todayKey()+'.json';
-    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-    lsS('last_export',todayKey());
-  }catch(e){console.log('Auto-backup:',e);}
-}
 function exportData(){
   const all={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&!k.startsWith('ws_draft:'))all[k]=lsG(k);}
   const blob=new Blob([JSON.stringify(all,null,2)],{type:'application/json'});
@@ -817,12 +810,13 @@ function gastroExport(){
     +'QUESTIONS FOR THIS APPOINTMENT\n'
     +'  - B12: currently oral \u2014 is sublingual or IM better absorbed for terminal ileum disease?\n'
     +'  - Vitamin D: Sheffield latitude + malabsorption risk \u2014 worth testing?\n'
-    +'  - Infliximab: timing and next steps?\n';
+    +'  - Infliximab + azathioprine combination: what\'s an actual safe alcohol limit for me, and how does that interact with the LFT monitoring schedule?\n'
+    +'  - Seton: does axial loading / bracing under load / deep hip flexion pose a specific risk here \u2014 does that include machine-guided squat variations (e.g. leverage/hack squat), not just free squats?\n';
   if(navigator.canShare&&navigator.canShare({text})){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v2.2c';
+const APP_VERSION='v2.2d';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -1083,7 +1077,7 @@ function renderToday(){
       let h=`<div class="exb">
         <div class="exhd">
           <div>
-            <div class="exn${allDone?' done':''}">${ex.name}${allDone?' &#x2713;':''}</div>
+            <div class="exn${allDone?' done':''}">${ex.name}${allDone?' &#x2713;':''} <span class="pill ${orig.priority==='must'?'pr':'pd'}">${orig.priority==='must'?'MUST':'OPTIONAL'}</span></div>
             ${isSubbed?`<div class="subbed">SUB for ${ex.origName}</div>`:''}
             ${prData?`<div style="font-size:11px;color:var(--cyan);margin-top:2px">&#x2605; PR: ${fmtBest(prData)}</div>`:''}
             <div class="ext">${orig.s} sets &times; ${effR||orig.r}</div>
@@ -1137,18 +1131,22 @@ function renderToday(){
       gd.ex.forEach((e,ei)=>{if(e.priority!=='must')html+=`<div style="opacity:.85">${renderEx(ws.ex[ei],ei)}</div>`;});
     }
 
-    const dc=ws.ex.filter(e=>e.sets.filter(s=>!s.isDrop).every(s=>s.done)&&e.sets.filter(s=>!s.isDrop).length>0).length;
-    const pct=Math.round(dc/ws.ex.length*100);
+    const mustList=ws.ex.filter((e,i)=>gd.ex[i].priority==='must');
+    const optList=ws.ex.filter((e,i)=>gd.ex[i].priority!=='must');
+    const isDone=e=>e.sets.filter(s=>!s.isDrop).every(s=>s.done)&&e.sets.filter(s=>!s.isDrop).length>0;
+    const mustDone=mustList.filter(isDone).length;
+    const optDone=optList.filter(isDone).length;
     html+=`<div class="sep"></div>
       <div style="font-size:11px;color:var(--mut);margin-bottom:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Session notes</div>
       <textarea class="genin" rows="2" placeholder="e.g. felt strong, good energy..." oninput="if(WS['${gd.label}']){WS['${gd.label}'].note=this.value;saveDraft('${gd.label}')}">${ws.note}</textarea>
       <div style="font-size:11px;color:var(--mut);margin:10px 0 6px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Pain / joint (optional)</div>
       <textarea class="genin" rows="1" placeholder="e.g. shoulder twinge on bench, left knee..." oninput="if(WS['${gd.label}']){WS['${gd.label}'].painNote=this.value;saveDraft('${gd.label}')}">${ws.painNote||''}</textarea>
       <div style="display:flex;justify-content:space-between;margin:12px 0 5px">
-        <div style="font-size:13px;color:var(--mut);font-weight:600">${dc}/${ws.ex.length} done</div>
-        <div style="font-size:16px;font-weight:900;font-family:'Barlow',sans-serif;color:var(--cyan)">${pct}%</div>
+        <div style="font-size:13px;color:var(--red);font-weight:700">Must: ${mustDone}/${mustList.length} done</div>
+        <div style="font-size:13px;color:var(--dim);font-weight:700">Optional: ${optDone}/${optList.length} done</div>
       </div>
-      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:linear-gradient(90deg,var(--cyan),var(--grn))"></div></div>
+      <div class="prog-bar" style="margin-bottom:6px"><div class="prog-fill" style="width:${mustList.length?Math.round(mustDone/mustList.length*100):100}%;background:var(--red)"></div></div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${optList.length?Math.round(optDone/optList.length*100):100}%;background:var(--dim)"></div></div>
     </div>
     <div id="confbox" class="confbox"></div>
     <button class="btn btn-ghost" onclick="document.getElementById('skipsheet').style.display='block'" style="margin-top:6px">Skip today</button>
@@ -1462,7 +1460,7 @@ function renderFood(){
       <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:2px"><span>Carbs</span><span>${totalC}g / ${t.carbs}g</span></div>
       <div class="prog-bar" style="margin-bottom:6px"><div class="prog-fill" style="width:${Math.min(totalC/t.carbs*100,100)}%;background:var(--cyan)"></div></div>
       <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:2px"><span>Fat</span><span>${totalF}g / ${t.fat}g</span></div>
-      <div class="prog-bar" style="margin-bottom:${remP>0&&!isYesterday?8:12}px"><div class="prog-fill" style="width:${Math.min(totalF/t.fat*100,100)}%;background:var(--purple,#9b7bd4)"></div></div>
+      <div class="prog-bar" style="margin-bottom:${remP>0&&!isYesterday?8:12}px"><div class="prog-fill" style="width:${Math.min(totalF/t.fat*100,100)}%;background:var(--purple)"></div></div>
       ${remP>0&&!isYesterday?`<div style="font-size:12px;color:var(--mut);margin-bottom:12px">&#x25BA; Need <strong style="color:var(--cyan)">${remP}g protein</strong> and <strong>${remK} kcal</strong> more today${totalC>0?` &middot; ${totalC}g carbs &middot; ${totalF}g fat so far`:''}</div>`:''}
       ${totalP>=t.protein&&!isYesterday?`<div style="font-size:12px;color:var(--grn);margin-bottom:12px;font-weight:700">&#x2713; Protein target hit &middot; ${totalC}g carbs &middot; ${totalF}g fat</div>`:''}
       <div class="sep"></div>
@@ -1764,7 +1762,7 @@ function buildSVG(points,color,unit){
     ${points.map((p,i)=>{
       const x=px(i),y=py(p.y);
       const isPR=p.pr;
-      return`<circle cx="${x}" cy="${y}" r="${isPR?5:3}" fill="${isPR?'#FFD700':color}" stroke="${isPR?color:'none'}" stroke-width="1.5"/>`;
+      return`<circle cx="${x}" cy="${y}" r="${isPR?5:3}" fill="${isPR?'var(--gold)':color}" stroke="${isPR?color:'none'}" stroke-width="1.5"/>`;
     }).join('')}
     <text x="${pad}" y="${H}" fill="var(--dim)" font-size="9">${points[0].label}</text>
     <text x="${W-pad}" y="${H}" fill="var(--dim)" font-size="9" text-anchor="end">${points[points.length-1].label}</text>
@@ -2065,7 +2063,7 @@ else if(_draft.date===todayKey()&&_draft.dl){
   const _idx=SEQ.indexOf(_draft.dl);
   if(_idx>=0){adHocDay=DAYS[_idx];adHocSeqIdx=_idx;WS[_draft.dl]=_draft.state;}
 }
-document.getElementById('hsub').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 v2.2c \u00b7 Target 80\u201385kg at 14\u201316% BF';
+document.getElementById('hsub').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 v2.2d \u00b7 Target 80\u201385kg at 14\u201316% BF';
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
 updateHeader();
 renderToday();
