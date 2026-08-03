@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v2.2d</title>
+<title>Roshan Fitness v2.2f</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -204,7 +204,7 @@ textarea.genin{resize:none}
 <body>
 <div id="warn-banner" class="warn-banner">Private mode detected &#x2014; data will NOT be saved</div>
 <div class="hdr">
-  <div class="ey">Roshan Fitness v2.2d &middot; build 2026-07-26</div>
+  <div class="ey">Roshan Fitness v2.2f &middot; build 2026-08-03</div>
   <div class="ht">Fitness Tracker</div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -412,7 +412,19 @@ const MEAL_TYPES=['Breakfast','Lunch','Dinner','Snack'];
 /* ===== STORAGE ===== */
 function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function lsG(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}}
-function lsS(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+function lsS(k,v){
+  try{
+    localStorage.setItem(k,JSON.stringify(v));
+    return true;
+  }catch(e){
+    showStorageFailWarning();
+    return false;
+  }
+}
+function showStorageFailWarning(){
+  if(document.getElementById('storage-fail-banner'))return;
+  document.body.insertAdjacentHTML('afterbegin','<div id="storage-fail-banner" style="position:relative;z-index:998;background:var(--rbg);color:var(--red);font-size:13px;font-weight:700;padding:9px 14px;text-align:center">&#x26A0; Your device is out of storage space \u2014 this change may NOT have saved. Free up space or export/share your data now.</div>');
+}
 function getProfile(){
   return lsG('user_profile')||{targets:{protein:150,kcal:2100,carbs:230,fat:65},weight:85,goalWeight:82,goalBF:15,trainingDaysPerWeek:4,crohnsPhase:'pre-biologic',biologicStartDate:null};
 }
@@ -882,7 +894,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v2.2d';
+const APP_VERSION='v2.2f';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -2165,7 +2177,7 @@ else if(_draft.date===todayKey()&&_draft.dl){
   const _idx=SEQ.indexOf(_draft.dl);
   if(_idx>=0){adHocDay=DAYS[_idx];adHocSeqIdx=_idx;WS[_draft.dl]=_draft.state;}
 }
-document.getElementById('hsub').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 v2.2d \u00b7 Target 80\u201385kg at 14\u201316% BF';
+document.getElementById('hsub').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 v2.2f \u00b7 Target 80\u201385kg at 14\u201316% BF';
 if(navigator.storage&&navigator.storage.persist){
   (async()=>{try{const granted=await navigator.storage.persist();lsS('storage_persisted',granted);}catch{lsS('storage_persisted',false);}})();
 }

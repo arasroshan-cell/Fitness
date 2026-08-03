@@ -12,7 +12,7 @@ function T(name, cond) {
 }
 
 /* ---------- Static checks (grep-level) ---------- */
-T('version stamp v2.2d in header', /Roshan Fitness v2\.2d/.test(src));
+T('version stamp v2.2f in header', /Roshan Fitness v2\.2f/.test(src));
 T('N1: no slice(-52) remains', !src.includes('slice(-52)'));
 T('N1: two slice(-260) caps present', (src.match(/slice\(-260\)/g) || []).length === 2);
 T('N2: three fibreRisk flags', (src.match(/fibreRisk:true/g) || []).length === 3);
@@ -141,6 +141,11 @@ try {
   T('Content: weight smoothing helper exists and header uses it', src.includes('function getSmoothedWeight') && src.includes('const sw=getSmoothedWeight(stats)'));
   T('Round 3: typography swapped to IBM Plex Sans, no raw Inter font-family references remain', src.includes('IBM+Plex+Sans') && !/"Inter"/.test(src) && !/font-family:Inter,/.test(src));
   T('Audit find: no toISOString-based date keys remain anywhere (UTC/local mismatch bug class)', !src.includes('toISOString'));
+  T('Fix12: lsS no longer silently swallows write failures, shows visible warning banner', (() => {
+    const i = src.indexOf('function lsS(');
+    const body = src.slice(i, i + 300);
+    return src.includes('function showStorageFailWarning') && body.includes('return true;') && !body.includes('catch{}');
+  })());
 
   /* S1: PR keyed by actual performed exercise, not the originally scheduled one */
   app.lsS('pr:Cable tricep pushdown', null);
