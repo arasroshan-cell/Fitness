@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#E0A339">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>Roshan Fitness v2.2d</title>
 <style>
 :root{
@@ -21,7 +21,7 @@
   --gold:#D4AF37;--purple:#8B6F9E
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{background:var(--bg);color:var(--txt);font-family:"Inter",-apple-system,sans-serif;font-size:15px;max-width:480px;margin:0 auto;padding-bottom:90px}
+body{background:var(--bg);color:var(--txt);font-family:"IBM Plex Sans",-apple-system,sans-serif;font-size:15px;max-width:480px;margin:0 auto;padding-bottom:90px}
 /* HEADER */
 .hdr{padding:16px 16px 12px;background:var(--bg);position:sticky;top:0;z-index:20;border-bottom:1px solid var(--c3)}
 .ey{font-size:10px;letter-spacing:3px;color:var(--cyan);text-transform:uppercase;margin-bottom:3px;font-weight:700}
@@ -36,7 +36,7 @@ body{background:var(--bg);color:var(--txt);font-family:"Inter",-apple-system,san
 /* TABS */
 .tabs{display:flex;background:var(--c1);border-bottom:1px solid var(--c3);overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
-.tab{padding:14px 18px;border:none;background:transparent;color:var(--mut);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:"Inter",sans-serif;border-bottom:2px solid transparent;flex-shrink:0;transition:color .2s}
+.tab{padding:14px 18px;border:none;background:transparent;color:var(--mut);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:"IBM Plex Sans",sans-serif;border-bottom:2px solid transparent;flex-shrink:0;transition:color .2s}
 .tab.on{color:var(--cyan);border-bottom-color:var(--cyan)}
 .pnl{padding:14px;display:none}
 .pnl.on{display:block}
@@ -93,26 +93,26 @@ body{background:var(--bg);color:var(--txt);font-family:"Inter",-apple-system,san
 .dbtn.dk{background:var(--gbg);border-color:var(--grn);color:var(--grn);box-shadow:0 0 12px rgba(0,230,118,.2)}
 /* CHOICE PICKER */
 .choice-pick{display:flex;gap:8px;margin-bottom:10px}
-.choice-btn{flex:1;padding:12px 8px;border:1px solid var(--c3);border-radius:12px;cursor:pointer;background:var(--c2);color:var(--mut);font-family:"Inter",sans-serif;font-size:13px;font-weight:600;text-align:center;min-height:44px;transition:all .2s}
+.choice-btn{flex:1;padding:12px 8px;border:1px solid var(--c3);border-radius:12px;cursor:pointer;background:var(--c2);color:var(--mut);font-family:"IBM Plex Sans",sans-serif;font-size:13px;font-weight:600;text-align:center;min-height:44px;transition:all .2s}
 .choice-btn.chosen{border-color:var(--cyan);background:var(--cbg);color:var(--cyan)}
 /* SET CONTROLS */
 .set-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-.subbtn{font-size:12px;color:var(--mut);background:var(--c2);border:1px solid var(--c3);border-radius:8px;padding:8px 12px;cursor:pointer;font-family:"Inter",sans-serif;font-weight:600;min-height:36px}
-.addbtn{font-size:12px;color:var(--grn);background:var(--gbg);border:1px solid var(--gbr);border-radius:8px;padding:8px 12px;cursor:pointer;font-family:"Inter",sans-serif;font-weight:700}
-.dropbtn{font-size:12px;color:var(--amb);background:var(--abg);border:1px solid var(--abr);border-radius:8px;padding:8px 12px;cursor:pointer;font-family:"Inter",sans-serif;font-weight:700}
+.subbtn{font-size:12px;color:var(--mut);background:var(--c2);border:1px solid var(--c3);border-radius:8px;padding:8px 12px;cursor:pointer;font-family:"IBM Plex Sans",sans-serif;font-weight:600;min-height:36px}
+.addbtn{font-size:12px;color:var(--grn);background:var(--gbg);border:1px solid var(--gbr);border-radius:8px;padding:8px 12px;cursor:pointer;font-family:"IBM Plex Sans",sans-serif;font-weight:700}
+.dropbtn{font-size:12px;color:var(--amb);background:var(--abg);border:1px solid var(--abr);border-radius:8px;padding:8px 12px;cursor:pointer;font-family:"IBM Plex Sans",sans-serif;font-weight:700}
 .subpanel{background:var(--c2);border-radius:12px;padding:12px;margin-top:8px;border:1px solid var(--cbr)}
-.subopt{display:block;font-size:14px;color:var(--txt);padding:11px 10px;cursor:pointer;background:none;border:none;border-bottom:1px solid var(--c3);width:100%;text-align:left;font-family:"Inter",sans-serif;font-weight:500}
+.subopt{display:block;font-size:14px;color:var(--txt);padding:11px 10px;cursor:pointer;background:none;border:none;border-bottom:1px solid var(--c3);width:100%;text-align:left;font-family:"IBM Plex Sans",sans-serif;font-weight:500}
 .subopt:last-child{border-bottom:none}
 /* REST TIMER */
 .rest-timer{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--cbg);border-radius:12px;margin:8px 0;border:1px solid var(--cbr)}
 .rest-num{font-size:24px;font-weight:800;font-family:"Barlow",sans-serif;color:var(--cyan);min-width:70px}
 /* INPUTS */
-.genin{width:100%;padding:11px 12px;border:1px solid var(--c3);border-radius:10px;font-size:14px;background:var(--c1);color:var(--txt);font-family:"Inter",sans-serif;transition:border-color .2s}
+.genin{width:100%;padding:11px 12px;border:1px solid var(--c3);border-radius:10px;font-size:14px;background:var(--c1);color:var(--txt);font-family:"IBM Plex Sans",sans-serif;transition:border-color .2s}
 .genin::placeholder{color:var(--dim)}
 .genin:focus{outline:none;border-color:var(--cyan)}
 textarea.genin{resize:none}
 /* BUTTONS */
-.btn{padding:15px 16px;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:"Inter",sans-serif;width:100%;margin-top:10px;display:block;text-align:center;transition:opacity .2s,transform .1s}
+.btn{padding:15px 16px;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:"IBM Plex Sans",sans-serif;width:100%;margin-top:10px;display:block;text-align:center;transition:opacity .2s,transform .1s}
 .btn-amb{background:var(--amb);color:#000}.btn-cyan{background:var(--cyan);color:#000}
 .btn-ghost{background:var(--c2);color:var(--txt);border:1px solid var(--c3)}
 .btn-grn{background:var(--gbg);color:var(--grn);border:1px solid var(--gbr)}
@@ -125,7 +125,7 @@ textarea.genin{resize:none}
 /* CONFBOX + SKIP */
 .confbox{background:var(--gbg);color:var(--grn);border:1px solid var(--gbr);border-radius:14px;padding:14px;font-size:15px;font-weight:700;text-align:center;display:none;margin-top:10px}
 .skipsheet{background:var(--c2);border-radius:16px;padding:16px;margin-top:10px;border:1px solid var(--c3);display:none}
-.skipopt{display:block;width:100%;padding:15px;margin-bottom:8px;border:1px solid var(--c3);border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;background:var(--c1);color:var(--txt);font-family:"Inter",sans-serif;text-align:left}
+.skipopt{display:block;width:100%;padding:15px;margin-bottom:8px;border:1px solid var(--c3);border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;background:var(--c1);color:var(--txt);font-family:"IBM Plex Sans",sans-serif;text-align:left}
 .skipopt:last-child{margin-bottom:0}
 /* PROGRESS */
 .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
@@ -136,18 +136,18 @@ textarea.genin{resize:none}
 .prog-fill{height:6px;border-radius:4px;transition:width .4s ease}
 .statrow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--c3);gap:8px}
 .statrow:last-child{border-bottom:none}
-.sinput{padding:9px;border:1px solid var(--c3);border-radius:9px;font-size:14px;background:var(--c2);color:var(--txt);font-family:"Inter",sans-serif;transition:border-color .2s}
+.sinput{padding:9px;border:1px solid var(--c3);border-radius:9px;font-size:14px;background:var(--c2);color:var(--txt);font-family:"IBM Plex Sans",sans-serif;transition:border-color .2s}
 .sinput:focus{outline:none;border-color:var(--cyan)}
 .hitem{padding:10px 0;border-bottom:1px solid var(--c3)}
 .hitem:last-child{border-bottom:none}
 /* FOOD */
-.foodsel{width:100%;padding:12px;border:1px solid var(--c3);border-radius:12px;font-size:14px;background:var(--c2);color:var(--txt);font-family:"Inter",sans-serif;margin-bottom:8px;-webkit-appearance:none}
+.foodsel{width:100%;padding:12px;border:1px solid var(--c3);border-radius:12px;font-size:14px;background:var(--c2);color:var(--txt);font-family:"IBM Plex Sans",sans-serif;margin-bottom:8px;-webkit-appearance:none}
 .foodsel:focus{outline:none;border-color:var(--cyan)}
 .macrow{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--c3);font-size:14px}
 .macrow:last-child{border-bottom:none}
 .macval{font-weight:700;color:var(--cyan);font-family:"Barlow",sans-serif;font-size:16px}
 .seg{display:flex;background:var(--c2);border-radius:12px;padding:3px;gap:3px;margin-bottom:12px}
-.segb{flex:1;padding:10px 6px;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:var(--mut);font-family:"Inter",sans-serif;white-space:nowrap;transition:color .2s}
+.segb{flex:1;padding:10px 6px;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:var(--mut);font-family:"IBM Plex Sans",sans-serif;white-space:nowrap;transition:color .2s}
 .segb.on{background:var(--c1);color:var(--cyan);box-shadow:0 0 12px rgba(0,194,212,.1)}
 /* MEAL TABLE */
 .meal-group{margin-bottom:14px}
@@ -195,7 +195,7 @@ textarea.genin{resize:none}
 .day-pill.part{border-color:var(--abr);background:var(--abg)}
 .day-pill-name{font-size:9px;color:var(--mut);font-weight:700;text-transform:uppercase}
 .day-pill-val{font-size:13px;font-weight:800;font-family:"Barlow",sans-serif;margin-top:2px}
-.ex-search{width:100%;padding:12px;border:1px solid var(--c3);border-radius:12px;font-size:14px;background:var(--c2);color:var(--txt);font-family:"Inter",sans-serif;margin-bottom:8px}
+.ex-search{width:100%;padding:12px;border:1px solid var(--c3);border-radius:12px;font-size:14px;background:var(--c2);color:var(--txt);font-family:"IBM Plex Sans",sans-serif;margin-bottom:8px}
 .ex-search:focus{outline:none;border-color:var(--cyan)}
 .chart-wrap{background:var(--c2);border-radius:12px;padding:12px;margin-top:8px}
 .chart-label{font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
@@ -210,7 +210,7 @@ textarea.genin{resize:none}
   <div class="mrow">
     <div class="met"><div class="mv" id="hdr-p">0g</div><div class="ml" id="hdr-p-lbl">/ 150g protein</div></div>
     <div class="met"><div class="mv" id="hdr-k">0</div><div class="ml" id="hdr-k-lbl">/ 2100 kcal</div></div>
-    <div class="met"><div class="mv" id="hdr-wt">&#x2014;</div><div class="ml">last weight</div></div>
+    <div class="met"><div class="mv" id="hdr-wt">&#x2014;</div><div class="ml">3wk avg wt</div></div>
   </div>
 </div>
 <div class="tabs">
@@ -234,47 +234,47 @@ textarea.genin{resize:none}
 const SEQ=['Push day','Pull day','Legs + core','Upper body'];
 const DAYS=[
   {label:'Push day',focus:'Chest \u00b7 Shoulders \u00b7 Triceps',time:'~6pm',ex:[
-    {n:'Bench press',s:4,r:'6\u20138',nt:'Total kg including 20kg bar \u00b7 exhale on press \u2014 never hold breath',priority:'must',compound:true,inputType:'weight',wlabel:'Total kg incl. 20kg bar'},
-    {n:'Incline DB press',s:3,r:'10\u201312',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)'},
-    {n:'Machine chest fly',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight'},
-    {n:'Seated DB shoulder press',s:3,r:'10\u201312',nt:'Seated \u2014 less pressure on seton sites',priority:'must',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)'},
-    {n:'Lateral raises',s:3,r:'15\u201320',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)'},
-    {n:'Cable tricep pushdown',s:4,r:'12\u201315',nt:'',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight'},
-    {n:'Overhead tricep extension',s:3,r:'12',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'DB weight (one hand)'}
+    {n:'Bench press',s:4,r:'6\u20138',nt:'Total kg including 20kg bar \u00b7 exhale on press \u2014 never hold breath',priority:'must',compound:true,inputType:'weight',wlabel:'Total kg incl. 20kg bar',primaryMuscles:['Chest'],secondaryMuscles:['Triceps','Front delts']},
+    {n:'Incline DB press',s:3,r:'10\u201312',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Upper chest'],secondaryMuscles:['Front delts','Triceps']},
+    {n:'Machine chest fly',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Chest'],secondaryMuscles:[]},
+    {n:'Seated DB shoulder press',s:3,r:'10\u201312',nt:'Seated \u2014 less pressure on seton sites',priority:'must',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Front delts'],secondaryMuscles:['Triceps','Side delts']},
+    {n:'Lateral raises',s:3,r:'15\u201320',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Side delts'],secondaryMuscles:[]},
+    {n:'Cable tricep pushdown',s:4,r:'12\u201315',nt:'',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Triceps'],secondaryMuscles:[]},
+    {n:'Overhead tricep extension',s:3,r:'12',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'DB weight (one hand)',primaryMuscles:['Triceps'],secondaryMuscles:[]}
   ]},
   {label:'Pull day',focus:'Back \u00b7 Biceps',time:'~6pm',ex:[
-    {n:'Pull-ups (unassisted)',s:4,r:'Max reps',nt:'Signature \u2014 beat last week total',priority:'must',noweight:true,inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)'},
-    {n:'Lat pulldown',s:3,r:'10\u201312',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Stack weight'},
-    {n:'Seated cable row',s:3,r:'10\u201312',nt:'Exhale as you pull \u2014 no breath holding',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight'},
-    {n:'Single arm DB row',s:3,r:'12 each',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Dumbbell weight (one hand)'},
-    {n:'Face pulls',s:3,r:'15\u201320',nt:'Never skip \u2014 shoulder health',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight'},
-    {n:'Barbell curl',s:3,r:'10\u201312',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Total kg incl. bar (bar weight varies by gym \u2014 check yours)'},
-    {n:'Hammer curls',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)'}
+    {n:'Pull-ups (unassisted)',s:4,r:'Max reps',nt:'Signature \u2014 beat last week total',priority:'must',noweight:true,inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',primaryMuscles:['Lats'],secondaryMuscles:['Biceps','Mid-back']},
+    {n:'Lat pulldown',s:3,r:'10\u201312',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Lats'],secondaryMuscles:['Biceps']},
+    {n:'Seated cable row',s:3,r:'10\u201312',nt:'Exhale as you pull \u2014 no breath holding',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps']},
+    {n:'Single arm DB row',s:3,r:'12 each',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Dumbbell weight (one hand)',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps']},
+    {n:'Face pulls',s:3,r:'15\u201320',nt:'Never skip \u2014 shoulder health',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Rear delts'],secondaryMuscles:['Rotator cuff']},
+    {n:'Barbell curl',s:3,r:'10\u201312',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Total kg incl. bar (bar weight varies by gym \u2014 check yours)',primaryMuscles:['Biceps'],secondaryMuscles:[]},
+    {n:'Hammer curls',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Biceps'],secondaryMuscles:['Forearms']}
   ]},
   {label:'Legs + core',focus:'No squats. No deadlifts.',time:'~6pm',ex:[
-    {n:'Leg press',s:4,r:'12\u201315',nt:'Safe \u2014 no spinal or perianal pressure \u00b7 exhale on push, never hold breath',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight'},
-    {n:'Leg extension (machine)',s:3,r:'15',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight'},
-    {n:'Seated leg curl',s:3,r:'15',nt:'Seated preferred',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight'},
-    {n:'Calf raises',s:4,r:'20',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Add kg if weighted'},
-    {n:'Plank',s:3,r:'30\u201360s',nt:'Exhale on entry \u2014 no breath holding',priority:'must',noweight:true,inputType:'seconds',wlabel:'Seconds held'},
-    {n:'Dead bug',s:3,r:'10 each',nt:'Best Crohn-safe core move',priority:'must',noweight:true,inputType:'reps_each',wlabel:'Reps per side'},
-    {n:'Hip abduction machine',s:3,r:'15',nt:'Glute work \u2014 light and controlled, no direct pressure needed',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight'}
+    {n:'Leg press',s:4,r:'12\u201315',nt:'Safe \u2014 no spinal or perianal pressure \u00b7 exhale on push, never hold breath',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Quads'],secondaryMuscles:['Glutes','Hamstrings']},
+    {n:'Leg extension (machine)',s:3,r:'15',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Quads'],secondaryMuscles:[]},
+    {n:'Seated leg curl',s:3,r:'15',nt:'Seated preferred',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Hamstrings'],secondaryMuscles:[]},
+    {n:'Calf raises',s:4,r:'20',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Add kg if weighted',primaryMuscles:['Calves'],secondaryMuscles:[]},
+    {n:'Plank',s:3,r:'30\u201360s',nt:'Exhale on entry \u2014 no breath holding',priority:'must',noweight:true,inputType:'seconds',wlabel:'Seconds held',primaryMuscles:['Core'],secondaryMuscles:[]},
+    {n:'Dead bug',s:3,r:'10 each',nt:'Best Crohn-safe core move',priority:'must',noweight:true,inputType:'reps_each',wlabel:'Reps per side',primaryMuscles:['Core'],secondaryMuscles:[]},
+    {n:'Hip abduction machine',s:3,r:'15',nt:'Glute work \u2014 light and controlled, no direct pressure needed',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Glutes'],secondaryMuscles:[]}
   ]},
   {label:'Upper body',focus:'Strength + hypertrophy mix',time:'~10\u201311am',ex:[
-    {n:'Pull-ups (unassisted)',s:3,r:'Max reps',nt:'',priority:'must',noweight:true,inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)'},
-    {n:'Dips (chest-focused, forward lean)',s:3,r:'8\u201310',nt:'Lower chest \u2014 lean forward, elbows flared \u00b7 exhale on push \u2014 never hold breath',priority:'must',compound:true,inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)'},
-    {n:'Arnold press',s:3,r:'12',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)'},
-    {n:'Cable row',s:3,r:'12',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Stack weight'},
-    {n:'Dumbbell curl (alternating)',s:3,r:'12',nt:'Standard supinated curl \u2014 Pull day already covers barbell + hammer',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)'},
-    {n:'Cable tricep pushdown',s:3,r:'10',nt:'Superset with overhead extension below \u2014 no rest between the two',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight'},
-    {n:'Overhead tricep extension',s:3,r:'10',nt:'Second half of the superset \u2014 straight into this after pushdown',priority:'optional',compound:false,inputType:'weight',wlabel:'DB weight (one hand)'},
-    {n:'Plank or dead bug',s:3,r:'\u2014',nt:'Core finisher \u2014 pick one below',priority:'must',noweight:true,inputType:'choice',
-     choiceOptions:[{name:'Plank',r:'30\u201360s',inputType:'seconds'},{name:'Dead bug',r:'10 each side',inputType:'reps_each'}]}
+    {n:'Pull-ups (unassisted)',s:3,r:'Max reps',nt:'',priority:'must',noweight:true,inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',primaryMuscles:['Lats'],secondaryMuscles:['Biceps','Mid-back']},
+    {n:'Dips (chest-focused, forward lean)',s:3,r:'8\u201310',nt:'Lower chest \u2014 lean forward, elbows flared \u00b7 exhale on push \u2014 never hold breath',priority:'must',compound:true,inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',primaryMuscles:['Lower chest'],secondaryMuscles:['Triceps','Front delts']},
+    {n:'Arnold press',s:3,r:'12',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Front delts'],secondaryMuscles:['Side delts','Triceps']},
+    {n:'Seated cable row',s:3,r:'12',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps']},
+    {n:'Dumbbell curl (alternating)',s:3,r:'12',nt:'Standard supinated curl \u2014 Pull day already covers barbell + hammer',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Biceps'],secondaryMuscles:[]},
+    {n:'Cable tricep pushdown',s:3,r:'10',nt:'Superset with overhead extension below \u2014 no rest between the two',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Triceps'],secondaryMuscles:[]},
+    {n:'Overhead tricep extension',s:3,r:'10',nt:'Second half of the superset \u2014 straight into this after pushdown',priority:'optional',compound:false,inputType:'weight',wlabel:'DB weight (one hand)',primaryMuscles:['Triceps'],secondaryMuscles:[]},
+    {n:'Plank or dead bug',s:3,r:'\u2014',nt:'Core finisher \u2014 pick one below',priority:'must',noweight:true,inputType:'choice',primaryMuscles:['Core'],secondaryMuscles:[],
+     choiceOptions:[{name:'Plank',r:'30\u201360s',inputType:'seconds',primaryMuscles:['Core'],secondaryMuscles:[]},{name:'Dead bug',r:'10 each side',inputType:'reps_each',primaryMuscles:['Core'],secondaryMuscles:[]}]}
   ]}
 ];
 const SUBS={
-  'Bench press':['Smith machine bench press','DB flat chest press','Machine chest press'],
-  'Incline DB press':['Incline machine press','Incline BB press','High-to-low cable fly'],
+  'Bench press':['DB flat chest press','Machine chest press'],
+  'Incline DB press':['Incline machine press','Incline BB press','High-to-low cable fly','Incline press (Smith machine)'],
   'Machine chest fly':['Cable fly','DB fly','Pec deck'],
   'Seated DB shoulder press':['Smith machine shoulder press','Machine shoulder press'],
   'Lateral raises':['Cable lateral raise','Machine lateral raise'],
@@ -296,7 +296,6 @@ const SUBS={
   'Dead bug':['Bird-dog','Pallof press'],
   'Hip abduction machine':['Cable kickback','Machine hip thrust'],
   'Arnold press':['DB shoulder press','Machine shoulder press'],
-  'Cable row':['DB row','Machine row','T-bar row','Smith machine row'],
   'Dumbbell curl (alternating)':['EZ bar curl','Cable curl','Machine curl','Barbell curl'],
   'Plank or dead bug':['Bear hold','Pallof press']
 };
@@ -311,13 +310,24 @@ const SUB_TYPE_OVERRIDE={
   'Wall sit (hold 60s)':{inputType:'seconds',wlabel:'Seconds held',noweight:true},
   'Pallof press':{inputType:'weight',wlabel:'Stack weight'}
 };
+function findExDef(name){
+  for(const d of DAYS){for(const e of d.ex){
+    if(e.n===name)return e;
+    if(e.inputType==='choice'&&e.choiceOptions){const o=e.choiceOptions.find(o=>o.name===name);if(o)return{...e,...o};}
+  }}
+  return null;
+}
 function inferSubWlabel(name){
   const n=name.toLowerCase();
-  if(/smith machine/.test(n))return 'Total kg incl. bar (Smith bar weight varies by machine \u2014 check yours)';
+  if(/smith machine/.test(n)){
+    const sw=(lsG('bar_weights')||{}).smith;
+    return sw?'Total kg incl. bar (Smith bar confirmed: '+sw+'kg)':'Total kg incl. bar (Smith bar weight varies by machine \u2014 check yours)';
+  }
+  if(/ez bar|ez curl/.test(n))return 'Total kg incl. bar (\u2248 10kg EZ bar)';
   if(/cable|machine|stack|pulldown|pec deck|dip/.test(n))return 'Stack weight';
   if(/single arm|one arm|one hand/.test(n))return 'Dumbbell weight (one hand)';
   if(/db |dumbbell/.test(n))return 'Per dumbbell (each hand)';
-  if(/barbell|ez bar|\bbb\b/.test(n))return 'Total kg incl. bar';
+  if(/barbell|\bbb\b/.test(n))return 'Total kg incl. bar (\u2248 20kg Olympic bar)';
   return null;
 }
 const FOODS=[
@@ -325,6 +335,7 @@ const FOODS=[
   {name:'Chicken curry (bone-in)',cat:'Protein',per100:{k:135,p:18,c:3,f:6},typ:200},
   {name:'Bulk Soya Protein Isolate (Chocolate)',cat:'Extras',per100:{k:390,p:87,c:5,f:3},typ:30,unit:'scoop',lbl:'per scoop (30g = 26g protein)'},
   {name:'Mutton curry',cat:'Protein',per100:{k:195,p:20,c:3,f:12},typ:150},
+  {name:'Mutton curry (mixed bone-in/boneless)',cat:'Protein',per100:{k:195,p:20,c:3,f:12},typ:150,lbl:'500g bone-in + 1kg boneless per batch, cooked together for flavour + yield'},
   {name:'Fish curry (white fish)',cat:'Protein',per100:{k:120,p:20,c:3,f:4},typ:150},
   {name:'Salmon fry',cat:'Protein',per100:{k:220,p:25,c:1,f:13},typ:105,unit:'piece',lbl:'per fillet (~105g cooked, Tesco/Aldi 4-pack)',oilInclusive:true},
   {name:'Pomfret fry',cat:'Protein',per100:{k:165,p:22,c:2,f:8},typ:70,unit:'piece',lbl:'per piece (~70g)',oilInclusive:true},
@@ -399,6 +410,7 @@ const FOODS=[
 const DNAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const MEAL_TYPES=['Breakfast','Lunch','Dinner','Snack'];
 /* ===== STORAGE ===== */
+function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function lsG(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}}
 function lsS(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
 function getProfile(){
@@ -415,6 +427,12 @@ function saveTargets(){
   updateHeader();renderFood();renderProgress();
   alert('Targets saved.');
 }
+function saveBarWeight(){
+  const v=document.getElementById('bar-smith')?.value.trim();
+  lsS('bar_weights',{smith:v||''});
+  renderProgress();
+  if(v)alert('Smith machine bar weight saved: '+v+'kg');
+}
 function lsDel(k){try{localStorage.removeItem(k);}catch{}}
 function todayKey(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function yesterdayKey(){const d=new Date();d.setDate(d.getDate()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -424,17 +442,25 @@ function mergedMlog(){return{...(lsG('mlog:'+prevMonthKey())||{}),...(lsG('mlog:
 function checkStorage(){try{localStorage.setItem('__t__','1');localStorage.removeItem('__t__');}catch{document.getElementById('warn-banner').style.display='block';}}
 
 /* ===== HEADER ===== */
+function getSmoothedWeight(stats){
+  const withWt=(stats||[]).filter(s=>s.wt);
+  if(!withWt.length)return null;
+  const last3=withWt.slice(-3);
+  const avg=last3.reduce((s,e)=>s+parseFloat(e.wt),0)/last3.length;
+  return{value:avg,smoothed:last3.length>1,entriesUsed:last3.length};
+}
 function updateHeader(){
   const log=lsG('food:'+todayKey())||[];
   const t=getProfile().targets;
   const p=Math.round(log.reduce((s,i)=>s+(i.p||0),0));
   const k=Math.round(log.reduce((s,i)=>s+(i.k||0),0));
   const stats=lsG('bstats')||[];
-  const wt=stats.length?stats[stats.length-1].wt+'kg':'\u2014';
+  const sw=getSmoothedWeight(stats);
+  const wt=sw?sw.value.toFixed(1)+'kg'+(sw.smoothed?'*':''):'\u2014';
   const ep=document.getElementById('hdr-p'),ek=document.getElementById('hdr-k'),ew=document.getElementById('hdr-wt');
   const epl=document.getElementById('hdr-p-lbl'),ekl=document.getElementById('hdr-k-lbl');
   if(ep){ep.textContent=p+'g';ep.className='mv'+(p<t.protein*0.53?' warn':'');}
-  if(epl)epl.textContent='/ '+t.protein+'g protein';
+  if(epl)epl.textContent='/ '+t.protein+'\u2013'+Math.round(t.protein*1.15)+'g protein';
   if(ek){ek.textContent=k;ek.className='mv'+(k>t.kcal*1.1?' warn':'');}
   if(ekl)ekl.textContent='/ '+t.kcal+' kcal';
   if(ew)ew.textContent=wt;
@@ -461,7 +487,12 @@ function checkDraft(){
   const d=lsG('ws_draft:'+todayKey());
   if(d&&d.date===todayKey())WS[d.dl]=d.state;
 }
-function clearDraft(){lsDel('ws_draft:'+todayKey());}
+function clearDraft(){
+  for(let i=localStorage.length-1;i>=0;i--){
+    const k=localStorage.key(i);
+    if(k&&k.startsWith('ws_draft:'))localStorage.removeItem(k);
+  }
+}
 
 /* ===== WORKOUT STATE ===== */
 let WS={};
@@ -470,16 +501,26 @@ let adHocSeqIdx=null;
 let _forcePickerOnce=false;
 
 function initWS(dl,def){
+  const pSubs=lsG('persisted_subs')||{};
   if(!WS[dl]){
-    const pSubs=lsG('persisted_subs')||{};
     WS[dl]={
       ex:def.ex.map(e=>({
         name:pSubs[e.n]||e.n,origName:e.n,chosenType:null,
         sets:Array.from({length:e.s},()=>({w:'',r:'',done:false,isDrop:false}))
       })),
-      subOpen:null,note:'',startAt:null,lastSetAt:null
+      subOpen:null,note:'',painNote:'',startAt:null,lastSetAt:null
     };
+    return;
   }
+  /* Reconcile a possibly-stale draft (e.g. loaded from before a source-code update) against
+     the current exercise array, matching by origName so in-progress sets are preserved for
+     exercises that still exist, instead of crashing on index misalignment for new ones. */
+  const old=WS[dl].ex||[];
+  WS[dl].ex=def.ex.map(e=>old.find(o=>o&&o.origName===e.n)||{
+    name:pSubs[e.n]||e.n,origName:e.n,chosenType:null,
+    sets:Array.from({length:e.s},()=>({w:'',r:'',done:false,isDrop:false}))
+  });
+  if(WS[dl].painNote===undefined)WS[dl].painNote='';
 }
 function updSet(dl,ei,si,f,v){if(!WS[dl])return;WS[dl].ex[ei].sets[si][f]=v;saveDraft(dl);}
 function togDone(dl,ei,si){
@@ -575,6 +616,24 @@ const Coach={
     const prevSess=lsG('last:'+session.dl);
     const prevVol=prevSess?.exercises?.reduce((v,e)=>v+(e.exVolume||0),0)||0;
     return{available:true,volume:session.totalVolume,prevVolume:prevVol,trend:prevVol?(session.totalVolume>=prevVol?'up':'down'):'first'};
+  },
+  getWeeklyMuscleVolume(){
+    const cutoff=(()=>{const d=new Date();d.setDate(d.getDate()-7);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
+    const vol={};
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(!k||!k.startsWith('sess:'))continue;
+      const sess=lsG(k);
+      if(!sess||sess.skipped||!sess.exercises||sess.date<cutoff)continue;
+      sess.exercises.forEach(e=>{
+        const def=findExDef(e.origName);
+        if(!def)return;
+        const v=e.exVolume||0;
+        (def.primaryMuscles||[]).forEach(m=>{vol[m]=(vol[m]||0)+v;});
+        (def.secondaryMuscles||[]).forEach(m=>{vol[m]=(vol[m]||0)+v*0.5;});
+      });
+    }
+    return Object.entries(vol).map(([muscle,volume])=>({muscle,volume:Math.round(volume)})).sort((a,b)=>b.volume-a.volume);
   }
 };
 
@@ -606,15 +665,18 @@ function getSuggestion(orig,best,prKey){
 
 /* ===== PR DETECTION ===== */
 function checkPR(origName,best,inputType){
-  if(!best||!best.w||parseFloat(best.w)<=0)return false;
+  if(!best)return false;
   const key='pr:'+origName;const cur=lsG(key);
   const isRepsFirst=inputType==='bodyweight';
   const isTimeFirst=inputType==='seconds';
   if(isRepsFirst){
-    const br=parseInt(best.r||0),cr=cur?parseInt(cur.r||0):0;
-    if(!cur||br>cr){lsS(key,{w:best.w,r:best.r,date:todayKey()});return true;}
+    if(!best.r||parseInt(best.r)<=0)return false;
+    const bw=parseFloat(best.w||0),br=parseInt(best.r||0);
+    const cw=cur?parseFloat(cur.w||0):0,cr=cur?parseInt(cur.r||0):0;
+    if(!cur||br>cr||bw>cw){lsS(key,{w:best.w||'0',r:best.r,date:todayKey()});return true;}
     return false;
   }
+  if(!best.w||parseFloat(best.w)<=0)return false;
   if(isTimeFirst){
     const bw=parseFloat(best.w),cw=cur?parseFloat(cur.w||0):0;
     if(!cur||bw>cw){lsS(key,{w:best.w,r:best.r,date:todayKey()});return true;}
@@ -692,7 +754,7 @@ function editSession(){
       name:e.name,origName:e.origName,chosenType:e.chosenType||null,
       sets:e.sets||[{w:e.best?.w||'',r:e.best?.r||'',done:true,isDrop:false}]
     })),
-    subOpen:null,note:ex.note||'',startAt:Date.now(),lastSetAt:null
+    subOpen:null,note:ex.note||'',painNote:ex.painNote||'',startAt:Date.now(),lastSetAt:null
   };
   lsDel('sess:'+todayKey());
   const mlog=lsG('mlog:'+monthKey())||{};delete mlog[todayKey()];lsS('mlog:'+monthKey(),mlog);
@@ -774,11 +836,15 @@ function gastroExport(){
   const recentStats=stats.filter(s=>s.date>=cutoff28);
   let rateLine='Not enough data yet';
   if(recentStats.length>=2){
-    const a=recentStats[0],b=recentStats[recentStats.length-1];
-    const days=(new Date(b.date)-new Date(a.date))/86400000;
-    if(days>0&&a.wt&&b.wt){
-      const pctPerWeek=(((a.wt-b.wt)/a.wt)*100)/(days/7);
-      rateLine=pctPerWeek.toFixed(2)+'% per week'+(Math.abs(pctPerWeek)>0.75?' \u2014 ABOVE 0.75% threshold, flag to gastro':'');
+    const withWt=recentStats.filter(s=>s.wt);
+    const mid=Math.ceil(withWt.length/2);
+    const firstHalf=withWt.slice(0,mid),secondHalf=withWt.slice(mid).length?withWt.slice(mid):withWt.slice(-1);
+    const avgA=firstHalf.reduce((s,e)=>s+parseFloat(e.wt),0)/firstHalf.length;
+    const avgB=secondHalf.reduce((s,e)=>s+parseFloat(e.wt),0)/secondHalf.length;
+    const days=(new Date(withWt[withWt.length-1].date)-new Date(withWt[0].date))/86400000;
+    if(days>0&&withWt.length>=2){
+      const pctPerWeek=(((avgA-avgB)/avgA)*100)/(days/7);
+      rateLine=pctPerWeek.toFixed(2)+'% per week (smoothed)'+(Math.abs(pctPerWeek)>0.75?' \u2014 ABOVE 0.75% threshold, flag to gastro':'');
     }
   }
   const entries=Object.entries(mergedMlog()).filter(([k])=>k>=cutoff28).map(e=>e[1]);
@@ -822,7 +888,7 @@ function checkUpdate(){
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
     const m=txt.match(/Roshan Fitness (v[\d.]+[a-z]?)/);
     if(m&&m[1]!==APP_VERSION){
-      document.body.insertAdjacentHTML('afterbegin','<div style="position:fixed;top:0;left:0;right:0;z-index:999;background:var(--abg);color:var(--amb);font-size:13px;font-weight:700;padding:9px 14px;text-align:center">'+m[1]+' is live but this device runs '+APP_VERSION+' \u2014 clear cached files (not site data) in browser settings, then reload.</div>');
+      document.body.insertAdjacentHTML('afterbegin','<div style="position:relative;z-index:999;background:var(--abg);color:var(--amb);font-size:13px;font-weight:700;padding:9px 14px;text-align:center">'+m[1]+' is live but this device runs '+APP_VERSION+' \u2014 clear cached files (not site data) in browser settings, then reload.</div>');
     }
   }).catch(()=>{});
 }
@@ -896,7 +962,10 @@ function showStickyBtn(show,dl,seqIdx){
   const w=document.getElementById('sticky-wrap'),b=document.getElementById('sticky-btn');
   if(!w||!b)return;
   w.style.display=show?'block':'none';
-  if(show&&dl!==undefined&&seqIdx!==undefined)b.onclick=()=>saveSession(dl,seqIdx);
+  if(show&&dl!==undefined&&seqIdx!==undefined){
+    b.disabled=false;b.style.opacity='';
+    b.onclick=()=>{if(b.disabled)return;b.disabled=true;b.style.opacity='.6';saveSession(dl,seqIdx);};
+  }
 }
 /* ===== RENDER TODAY ===== */
 function renderToday(){
@@ -1067,7 +1136,9 @@ function renderToday(){
       const fmtBest=(b)=>!b?'':(effType==='seconds'?b.w+'s':effType==='reps_each'?b.w+' each side':b.w+'kg \u00d7 '+b.r);
       const histFall=(!lx?.best)?(getExHistory(trackName).slice(-1)[0]||null):null;
       const lstr=lx?.best?'Last: '+fmtBest(lx.best):histFall?'Last ('+histFall.date.slice(5)+'): '+fmtBest(histFall.best):'First time';
-      const sugg=lx?.suggestion||histFall?.suggestion||'';
+      const effOrigLike=chosenOpt?{...orig,...chosenOpt,noweight:true}:(subOverride?{...orig,...subOverride}:orig);
+      const bestForSugg=lx?.best||histFall?.best||null;
+      const sugg=bestForSugg?getSuggestion(effOrigLike,bestForSugg,trackName):'';
       const allDone=ex.sets.filter(s=>!s.isDrop).every(s=>s.done);
       const isSubbed=ex.name!==ex.origName;
       const subOpen=ws.subOpen===ei;
@@ -1138,9 +1209,9 @@ function renderToday(){
     const optDone=optList.filter(isDone).length;
     html+=`<div class="sep"></div>
       <div style="font-size:11px;color:var(--mut);margin-bottom:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Session notes</div>
-      <textarea class="genin" rows="2" placeholder="e.g. felt strong, good energy..." oninput="if(WS['${gd.label}']){WS['${gd.label}'].note=this.value;saveDraft('${gd.label}')}">${ws.note}</textarea>
+      <textarea class="genin" rows="2" placeholder="e.g. felt strong, good energy..." oninput="if(WS['${gd.label}']){WS['${gd.label}'].note=this.value;saveDraft('${gd.label}')}">${escHtml(ws.note)}</textarea>
       <div style="font-size:11px;color:var(--mut);margin:10px 0 6px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Pain / joint (optional)</div>
-      <textarea class="genin" rows="1" placeholder="e.g. shoulder twinge on bench, left knee..." oninput="if(WS['${gd.label}']){WS['${gd.label}'].painNote=this.value;saveDraft('${gd.label}')}">${ws.painNote||''}</textarea>
+      <textarea class="genin" rows="1" placeholder="e.g. shoulder twinge on bench, left knee..." oninput="if(WS['${gd.label}']){WS['${gd.label}'].painNote=this.value;saveDraft('${gd.label}')}">${escHtml(ws.painNote)}</textarea>
       <div style="display:flex;justify-content:space-between;margin:12px 0 5px">
         <div style="font-size:13px;color:var(--red);font-weight:700">Must: ${mustDone}/${mustList.length} done</div>
         <div style="font-size:13px;color:var(--dim);font-weight:700">Optional: ${optDone}/${optList.length} done</div>
@@ -1244,14 +1315,14 @@ function renderProgress(){
   </div>`;
 
   const recents=[];const now=new Date();
-  for(let d=0;d<14;d++){const dt=new Date(now);dt.setDate(dt.getDate()-d);const s=lsG('sess:'+dt.toISOString().split('T')[0]);if(s)recents.push(s);}
+  for(let d=0;d<14;d++){const dt=new Date(now);dt.setDate(dt.getDate()-d);const dk=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');const s=lsG('sess:'+dk);if(s)recents.push(s);}
   if(recents.length){
     html+=`<div class="card"><div class="cl">Recent sessions</div><div class="ct" style="margin-bottom:10px">Last 14 days</div>
       ${recents.map(s=>`<div class="hitem"><div style="display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif">${s.date}${s.duration?' <span style="font-size:12px;color:var(--dim);font-family:Inter,sans-serif">'+s.duration+'m</span>':''}</div>
+        <div><div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif">${s.date}${s.duration?' <span style="font-size:12px;color:var(--dim);font-family:\'IBM Plex Sans\',sans-serif">'+s.duration+'m</span>':''}</div>
         <div style="font-size:13px;color:var(--mut)">${s.dl}${s.newPRs&&s.newPRs.length?' &#x2605;':''}</div></div>
         <div class="pill ${s.skipped?(s.skipReason==='flare'?'pr':'pa'):'pg'}">${s.skipped?(s.skipReason==='flare'?'Flare':s.skipReason==='tired'?'Tired':'Busy'):'Done &#x2713;'}</div>
-      </div>${s.note?`<div style="font-size:12px;color:var(--dim);margin-top:4px;font-style:italic">"${s.note}"</div>`:''}</div>`).join('')}
+      </div>${s.note?`<div style="font-size:12px;color:var(--dim);margin-top:4px;font-style:italic">"${escHtml(s.note)}"</div>`:''}</div>`).join('')}
     </div>`;
   }
 
@@ -1277,11 +1348,33 @@ function renderProgress(){
     <button class="btn btn-grn btn-sm" style="width:100%;margin-top:10px" onclick="saveTargets()">Save targets</button>
   </div>`;
 
+  const barWts=lsG('bar_weights')||{smith:''};
+  html+=`<div class="card"><div class="cl">Bar Weight Reference</div><div class="ct" style="margin-bottom:10px">For when the gym's labels are worn off</div>
+    <div class="statrow"><div style="font-size:13px;color:var(--txt)">Olympic barbell</div><div style="font-size:13px;color:var(--grn);font-weight:700">20kg &middot; confirmed standard</div></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--txt)">Standard EZ curl bar</div><div style="font-size:13px;color:var(--amb);font-weight:700">~10kg &middot; typical, not lab-verified</div></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--txt)">Smith machine bar</div><input class="sinput" type="text" id="bar-smith" placeholder="not confirmed yet" value="${barWts.smith}" style="width:130px;text-align:right"></div>
+    <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px" onclick="saveBarWeight()">Save Smith machine weight</button>
+    <div class="cs" style="margin-top:8px">No universal standard for Smith machines &mdash; counterweighting varies by model. Check a stamped weight on the bar, ask staff, or the bathroom-scale method, then save it here once.</div>
+  </div>`;
+
+  const muscleVol=Coach.getWeeklyMuscleVolume();
+  const maxVol=muscleVol.length?muscleVol[0].volume:1;
+  html+=`<div class="card"><div class="cl">Weekly Muscle Volume</div><div class="ct" style="margin-bottom:4px">Last 7 days</div>
+    <div class="cs" style="margin-bottom:10px">Primary work counts fully, secondary (incidental) work counts at half, so triceps getting hit by three different pressing movements doesn't look artificially equal to a dedicated triceps exercise. Bars are relative to your biggest muscle group this week, not an absolute physical unit &mdash; weight-based and rep-based exercises use different measures underneath.</div>
+    ${muscleVol.length?muscleVol.map(m=>`
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--txt);margin-bottom:2px"><span>${m.muscle}</span><span style="color:var(--mut)">${m.volume}</span></div>
+        <div class="prog-bar"><div class="prog-fill" style="width:${Math.round(m.volume/maxVol*100)}%;background:var(--cyan)"></div></div>
+      </div>`).join(''):`<div class="cs">No sessions logged in the last 7 days yet.</div>`}
+  </div>`;
+
   const expDays=lastExport?Math.floor((new Date()-new Date(lastExport))/86400000):null;
   const expCol=expDays===null?'var(--red)':expDays<=7?'var(--grn)':expDays<=14?'var(--amb)':'var(--red)';
   const expTxt=expDays===null?'&#x26A0; Never exported &mdash; data at risk':expDays===0?'&#x2713; Exported today':expDays<=7?'&#x2713; Last export: '+expDays+'d ago':'&#x26A0; Last export: '+expDays+'d ago &mdash; export now';
+  const notPersisted=lsG('storage_persisted')===false;
   html+=`<div class="card"><div class="cl">Data backup</div><div class="ct" style="margin-bottom:4px">Export &amp; Import</div>
-    <div class="cs" style="margin-bottom:10px">Export monthly and after every few sessions. Auto-backup triggers on every session save.</div>
+    <div class="cs" style="margin-bottom:10px">Export monthly and after every few sessions.</div>
+    ${notPersisted?`<div class="nt na" style="margin-bottom:10px">&#x26A0; Your browser has not granted persistent storage \u2014 data could be cleared if your phone runs low on space. Export regularly, and consider installing this as an app (Add to Home Screen) to reduce that risk.</div>`:''}
     <div style="font-size:13px;color:${expCol};margin-bottom:10px;font-weight:600">${expTxt}</div>
     <button class="btn btn-grn btn-sm" style="width:100%;margin-bottom:8px" onclick="exportData()">Export all data (JSON)</button>
     <button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:8px" onclick="shareBackup()">Share backup (WhatsApp / Drive)</button>
@@ -1448,7 +1541,7 @@ function renderFood(){
       <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:6px">
         <div>
           <div style="font-size:13px;font-weight:700;color:var(--mut);letter-spacing:.5px;text-transform:uppercase;margin-bottom:2px">Protein</div>
-          <div style="font-size:26px;font-weight:900;font-family:'Barlow',sans-serif;color:${totalP>=t.protein?'var(--grn)':totalP>=t.protein*0.67?'var(--cyan)':'var(--red)'}">${totalP}<span style="font-size:13px;font-weight:400;color:var(--mut)">g / ${t.protein}g</span></div>
+          <div style="font-size:26px;font-weight:900;font-family:'Barlow',sans-serif;color:${totalP>=t.protein?'var(--grn)':totalP>=t.protein*0.67?'var(--cyan)':'var(--red)'}">${totalP}<span style="font-size:13px;font-weight:400;color:var(--mut)">g / ${t.protein}\u2013${Math.round(t.protein*1.15)}g</span></div>
         </div>
         <div style="text-align:right">
           <div style="font-size:13px;font-weight:700;color:var(--mut);letter-spacing:.5px;text-transform:uppercase;margin-bottom:2px">Kcal</div>
@@ -1457,9 +1550,9 @@ function renderFood(){
       </div>
       <div class="prog-bar" style="margin-bottom:4px"><div class="prog-fill" style="width:${Math.min(totalP/t.protein*100,100)}%;background:${totalP>=t.protein?'var(--grn)':totalP>=t.protein*0.67?'var(--cyan)':'var(--red)'}"></div></div>
       <div class="prog-bar" style="margin-bottom:8px"><div class="prog-fill" style="width:${Math.min(totalK/t.kcal*100,100)}%;background:var(--amb)"></div></div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:2px"><span>Carbs</span><span>${totalC}g / ${t.carbs}g</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:2px"><span>Carbs</span><span>${totalC}g / ${t.carbs}\u2013${Math.round(t.carbs*1.15)}g</span></div>
       <div class="prog-bar" style="margin-bottom:6px"><div class="prog-fill" style="width:${Math.min(totalC/t.carbs*100,100)}%;background:var(--cyan)"></div></div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:2px"><span>Fat</span><span>${totalF}g / ${t.fat}g</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:2px"><span>Fat</span><span>${totalF}g / ${t.fat}\u2013${Math.round(t.fat*1.15)}g</span></div>
       <div class="prog-bar" style="margin-bottom:${remP>0&&!isYesterday?8:12}px"><div class="prog-fill" style="width:${Math.min(totalF/t.fat*100,100)}%;background:var(--purple)"></div></div>
       ${remP>0&&!isYesterday?`<div style="font-size:12px;color:var(--mut);margin-bottom:12px">&#x25BA; Need <strong style="color:var(--cyan)">${remP}g protein</strong> and <strong>${remK} kcal</strong> more today${totalC>0?` &middot; ${totalC}g carbs &middot; ${totalF}g fat so far`:''}</div>`:''}
       ${totalP>=t.protein&&!isYesterday?`<div style="font-size:12px;color:var(--grn);margin-bottom:12px;font-weight:700">&#x2713; Protein target hit &middot; ${totalC}g carbs &middot; ${totalF}g fat</div>`:''}
@@ -1978,6 +2071,13 @@ function searchExHistory(query){
       if(e.inputType==='choice'&&e.choiceOptions){const o=e.choiceOptions.find(o=>o.name===name);if(o)return o.inputType;}
     }}return 'weight';
   }
+  function getExDef(name,itype){
+    for(const d of DAYS){for(const e of d.ex){
+      if(e.n===name)return e;
+      if(e.inputType==='choice'&&e.choiceOptions){const o=e.choiceOptions.find(o=>o.name===name);if(o)return{...e,...o};}
+    }}
+    return{inputType:itype,r:'8\u201312',compound:false,noweight:itype==='bodyweight'};
+  }
   function fmtBest(best,itype){
     if(!best)return '—';
     if(itype==='bodyweight')return(best.r||0)+' reps';
@@ -1997,6 +2097,8 @@ function searchExHistory(query){
     }));
     const chartLabel=itype==='bodyweight'?'Reps per session':itype==='seconds'?'Seconds held':itype==='reps_each'?'Reps per side':'Best weight (kg)';
     const chartUnit=itype==='bodyweight'?'reps':itype==='seconds'?'s':itype==='reps_each'?'/side':'kg';
+    const lastBest=hist[hist.length-1]?.best;
+    const liveSugg=lastBest?getSuggestion(getExDef(name,itype),lastBest,name):'';
     html+=`<div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif;margin-bottom:10px;color:var(--txt)">${name}</div>
     ${chartPts.length>=2?`<div class="chart-wrap"><div class="chart-label">${chartLabel}</div>${buildSVG(chartPts,'var(--cyan)',chartUnit)}<div style="font-size:11px;color:var(--dim);margin-top:4px">&#x25CF; Yellow dots = personal records</div></div>`:''}
     <div style="margin-top:12px">
@@ -2006,7 +2108,7 @@ function searchExHistory(query){
         <div class="hist-best">${fmtBest(h.best,itype)}${h.isPR?'<span class="hist-pr">&#x2605; PR</span>':''}</div>
       </div>`).join('')}
     </div>
-    <div style="font-size:12px;color:var(--cyan);margin-top:10px;font-weight:600">${hist[hist.length-1]?.suggestion||''}</div>
+    <div style="font-size:12px;color:var(--cyan);margin-top:10px;font-weight:600">${liveSugg}</div>
     <div class="sep"></div>`;
   }
   el.innerHTML=html||`<div style="font-size:13px;color:var(--dim);padding:8px">No data logged for "${query}" yet</div>`;
@@ -2064,7 +2166,9 @@ else if(_draft.date===todayKey()&&_draft.dl){
   if(_idx>=0){adHocDay=DAYS[_idx];adHocSeqIdx=_idx;WS[_draft.dl]=_draft.state;}
 }
 document.getElementById('hsub').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 v2.2d \u00b7 Target 80\u201385kg at 14\u201316% BF';
-if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
+if(navigator.storage&&navigator.storage.persist){
+  (async()=>{try{const granted=await navigator.storage.persist();lsS('storage_persisted',granted);}catch{lsS('storage_persisted',false);}})();
+}
 updateHeader();
 renderToday();
 renderFlare();

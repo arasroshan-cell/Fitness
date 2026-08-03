@@ -84,7 +84,7 @@ const navigator = { onLine: false, share: undefined, canShare: undefined };
 const script = src.match(/<script>([\s\S]*)<\/script>/)[1];
 try {
   const run = new Function('localStorage', 'document', 'window', 'navigator', 'fetch', 'File', 'URL', 'Blob', 'alert', 'confirm',
-    script + '\n;return {bestSetOf, checkPR, todayKey, monthKey, prevMonthKey, mergedMlog, isSymptomDay, fibreWarnHTML, lsS, lsG, getSuggestion, FOODS, SUB_TYPE_OVERRIDE, inferSubWlabel, getProfile, saveProfile, Coach, getExHistory, saveSession, WS, initWS, DAYS};');
+    script + '\n;return {bestSetOf, checkPR, todayKey, monthKey, prevMonthKey, mergedMlog, isSymptomDay, fibreWarnHTML, lsS, lsG, getSuggestion, FOODS, SUB_TYPE_OVERRIDE, inferSubWlabel, getProfile, saveProfile, Coach, getExHistory, saveSession, WS, initWS, DAYS, findExDef, getSmoothedWeight};');
   const app = run(localStorage, document, window, navigator, () => Promise.reject(new Error('offline')), function(){}, { createObjectURL: () => '' , revokeObjectURL: () => {} }, function(){}, () => {}, () => true);
 
   /* D2: bodyweight PR by reps at constant weight */
@@ -115,8 +115,32 @@ try {
   T('N2: symptom day escalates warning', app.isSymptomDay() === true && app.fibreWarnHTML('Chickpeas masala (tinned)').includes('Symptoms logged today'));
 
   /* Food DB integrity */
-  T('DB: 73 foods (68 + 5 new)', app.FOODS.length === 73);
+  T('DB: 74 foods (73 + mutton curry mixed)', app.FOODS.length === 74);
   T('DB: every food has k/p/c/f per100', app.FOODS.every(f => f.per100 && ['k','p','c','f'].every(x => typeof f.per100[x] === 'number')));
+
+  /* Round 1 bug fixes, 2026-08-02 */
+  T('Fix1: initWS reconciles stale drafts by origName instead of index', src.includes('old.find(o=>o&&o.origName===e.n)'));
+  T('Fix2: sticky save button disables on first click', src.includes('if(b.disabled)return;b.disabled=true'));
+  T('Fix2b (regression caught in audit): showStickyBtn resets disabled state for each new session, not just guards one save', src.includes('b.disabled=false;b.style.opacity=\'\';'));
+  T('Fix3: editSession restores painNote', src.includes("painNote:ex.painNote||''"));
+  T('Fix4: Today-tab suggestion regenerated live via getSuggestion, not trusted from frozen .suggestion field', src.includes('const sugg=bestForSugg?getSuggestion(effOrigLike'));
+  T('Fix4b: history-detail suggestion also regenerated live', src.includes('const liveSugg=lastBest?getSuggestion(getExDef'));
+  T('Fix5: checkPR bodyweight branch no longer gated on weight>0, and considers added weight', (() => {
+    const i = src.indexOf('function checkPR');
+    const body = src.slice(i, i + 900);
+    return body.includes('if(!best.r||parseInt(best.r)<=0)return false;') && body.includes('br>cr||bw>cw');
+  })());
+  T('Fix6: Smith machine removed from flat Bench press subs, added to Incline DB press', !src.includes("'Bench press':['Smith machine bench press'") && src.includes("'Incline DB press':['Incline machine press','Incline BB press','High-to-low cable fly','Incline press (Smith machine)']"));
+  T('Fix7: Cable row renamed to Seated cable row, no dead SUBS key remains', src.includes("n:'Seated cable row',s:3,r:'12'") && !/'Cable row':\[/.test(src));
+  T('Fix8: escHtml sanitizer exists and is applied to note fields', src.includes('function escHtml') && src.includes('${escHtml(ws.note)}') && src.includes('${escHtml(ws.painNote)}') && src.includes('${escHtml(s.note)}'));
+  T('Fix9: version banner no longer position:fixed', !src.includes("position:fixed;top:0;left:0;right:0;z-index:999"));
+  T('Fix10: clearDraft removes all ws_draft keys regardless of date', src.includes("k.startsWith('ws_draft:')"));
+  T('Fix11: storage.persist() result is awaited and stored', src.includes('const granted=await navigator.storage.persist()'));
+  T('Content: bar weight reference card exists with confirmed Olympic/EZ values', src.includes('Bar Weight Reference') && src.includes('20kg &middot; confirmed standard'));
+  T('Content: mutton curry mixed entry present', src.includes("name:'Mutton curry (mixed bone-in/boneless)'"));
+  T('Content: weight smoothing helper exists and header uses it', src.includes('function getSmoothedWeight') && src.includes('const sw=getSmoothedWeight(stats)'));
+  T('Round 3: typography swapped to IBM Plex Sans, no raw Inter font-family references remain', src.includes('IBM+Plex+Sans') && !/"Inter"/.test(src) && !/font-family:Inter,/.test(src));
+  T('Audit find: no toISOString-based date keys remain anywhere (UTC/local mismatch bug class)', !src.includes('toISOString'));
 
   /* S1: PR keyed by actual performed exercise, not the originally scheduled one */
   app.lsS('pr:Cable tricep pushdown', null);
@@ -142,6 +166,23 @@ try {
   const daily = app.Coach.getDailyStatus();
   T('Coach.getDailyStatus: proteinGap computed from profile target', daily.proteinGap === 90);
   T('Coach.get3SessionTrend: returns unavailable with no history', app.Coach.get3SessionTrend('Nonexistent exercise').available === false);
+
+  /* Round 2: muscle tags + weekly volume, 2026-08-02 */
+  const allExDefs = app.DAYS.flatMap(d => d.ex);
+  T('Muscle tags: every exercise has primaryMuscles and secondaryMuscles arrays', allExDefs.every(e => Array.isArray(e.primaryMuscles) && Array.isArray(e.secondaryMuscles)));
+  T('Muscle tags: every exercise has at least one primary muscle', allExDefs.every(e => e.primaryMuscles.length >= 1));
+  T('Muscle tags: choiceOptions also carry muscle tags', allExDefs.filter(e => e.inputType === 'choice').every(e => e.choiceOptions.every(o => Array.isArray(o.primaryMuscles))));
+  T('findExDef: looks up a scheduled exercise by name', app.findExDef('Bench press')?.primaryMuscles.includes('Chest'));
+  T('findExDef: looks up a choiceOption by name', app.findExDef('Dead bug')?.primaryMuscles.includes('Core'));
+  T('Coach.getWeeklyMuscleVolume: weights primary fully and secondary at half, no double counting', (() => {
+    app.lsS('sess:' + app.todayKey(), { date: app.todayKey(), dl: 'Push day', seqIdx: 0, exercises: [
+      { name: 'Bench press', origName: 'Bench press', exVolume: 1000, isPR: false }
+    ], note: '', painNote: '', skipped: false, totalVolume: 1000, newPRs: [] });
+    const vol = app.Coach.getWeeklyMuscleVolume();
+    const chest = vol.find(v => v.muscle === 'Chest');
+    const triceps = vol.find(v => v.muscle === 'Triceps');
+    return chest && chest.volume >= 1000 && triceps && triceps.volume >= 500;
+  })());
 } catch (e) {
   fail++; console.log('X FAIL  script eval crashed: ' + e.message);
 }
