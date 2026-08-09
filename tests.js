@@ -12,7 +12,7 @@ function T(name, cond) {
 }
 
 /* ---------- Static checks (grep-level) ---------- */
-T('version stamp v2.2f in header', /Roshan Fitness v2\.2f/.test(src));
+T('version stamp v2.2l in header', /Roshan Fitness v2\.2l/.test(src));
 T('N1: no slice(-52) remains', !src.includes('slice(-52)'));
 T('N1: two slice(-260) caps present', (src.match(/slice\(-260\)/g) || []).length === 2);
 T('N2: three fibreRisk flags', (src.match(/fibreRisk:true/g) || []).length === 3);
@@ -84,7 +84,7 @@ const navigator = { onLine: false, share: undefined, canShare: undefined };
 const script = src.match(/<script>([\s\S]*)<\/script>/)[1];
 try {
   const run = new Function('localStorage', 'document', 'window', 'navigator', 'fetch', 'File', 'URL', 'Blob', 'alert', 'confirm',
-    script + '\n;return {bestSetOf, checkPR, todayKey, monthKey, prevMonthKey, mergedMlog, isSymptomDay, fibreWarnHTML, lsS, lsG, getSuggestion, FOODS, SUB_TYPE_OVERRIDE, inferSubWlabel, getProfile, saveProfile, Coach, getExHistory, saveSession, WS, initWS, DAYS, findExDef, getSmoothedWeight};');
+    script + '\n;return {bestSetOf, checkPR, todayKey, monthKey, prevMonthKey, mergedMlog, isSymptomDay, fibreWarnHTML, lsS, lsG, getSuggestion, FOODS, SUB_TYPE_OVERRIDE, inferSubWlabel, getProfile, saveProfile, Coach, getExHistory, saveSession, WS, initWS, DAYS, findExDef, getSmoothedWeight, Data};');
   const app = run(localStorage, document, window, navigator, () => Promise.reject(new Error('offline')), function(){}, { createObjectURL: () => '' , revokeObjectURL: () => {} }, function(){}, () => {}, () => true);
 
   /* D2: bodyweight PR by reps at constant weight */
@@ -115,7 +115,9 @@ try {
   T('N2: symptom day escalates warning', app.isSymptomDay() === true && app.fibreWarnHTML('Chickpeas masala (tinned)').includes('Symptoms logged today'));
 
   /* Food DB integrity */
-  T('DB: 74 foods (73 + mutton curry mixed)', app.FOODS.length === 74);
+  T('DB: 74 foods (omelette entries merged into adjustable egg fry, mutton keema added)', app.FOODS.length === 74);
+  T('Feature: egg fry merged with omelette into one adjustable per-egg entry, fixed 3/4-egg entries retired', src.includes("name:'Egg fry / omelette (per egg)'") && !src.includes("name:'Egg omelette (3 small)'") && !src.includes("name:'Egg omelette (4 small)'"));
+  T('Feature: Mutton keema added', src.includes("name:'Mutton keema'"));
   T('DB: every food has k/p/c/f per100', app.FOODS.every(f => f.per100 && ['k','p','c','f'].every(x => typeof f.per100[x] === 'number')));
 
   /* Round 1 bug fixes, 2026-08-02 */
@@ -146,6 +148,62 @@ try {
     const body = src.slice(i, i + 300);
     return src.includes('function showStorageFailWarning') && body.includes('return true;') && !body.includes('catch{}');
   })());
+  T('Fix13: draft restoration scans for any ws_draft key from any previous day, not just today (phone-death data loss bug)', src.includes("k.startsWith('ws_draft:')") && src.includes("d.dl==='Free session'"));
+  T('Fix13b: dead checkDraft function removed after finding it was never called (the real bug lived in the init block)', !src.includes('function checkDraft()'));
+  T('Free session: entry point exists on the picker, separate from the 4 sequenced days', src.includes('function startFreeSession') && src.includes("onclick=\"startFreeSession()\""));
+  T('Free session: exercise list is deduplicated and expands choice-type parents into real sub-options', src.includes('function getFreeSessionExerciseList') && src.includes("e.inputType==='choice'&&e.choiceOptions"));
+  T('Free session: adding an exercise pulls its real prescribed set count, not a blank slate', src.includes('function addToFreeSession') && src.includes('length:def.s||3'));
+  T('Free session: removeFromFreeSession exists and removes from both adHocDay and WS state', src.includes('function removeFromFreeSession') && src.includes('adHocDay.ex.splice(ei,1)') && src.includes("WS['Free session'].ex.splice(ei,1)"));
+  T('Free session: saveSession never writes a real seqIdx or corrupts last_seq_idx for a free session', src.includes("const isFree=seqIdx==='free'") && src.includes('if(!isFree)lsS(\'last_seq_idx\',seqIdx)'));
+  T('Free session: init-time draft restoration handles free sessions correctly, not just the 4 fixed day labels', src.includes("d.dl==='Free session'") && src.includes('adHocSeqIdx=null'));
+  T('Deep-dive find: editSession can reconstruct a saved free session (was silently failing after any state reload)', (() => {
+    const i = src.indexOf('function editSession()');
+    const body = src.slice(i, i + 700);
+    return body.includes("const isFree=ex.dl==='Free session'") && body.includes('findExDef(e.origName)');
+  })());
+  T('Free session: exercise list now includes substitute variants, not just the 24 primary exercises', (() => {
+    const i = src.indexOf('function getFreeSessionExerciseList');
+    const body = src.slice(i, i + 700);
+    return body.includes('for(const origName in SUBS)') && body.includes('findExDef(subName)');
+  })());
+  T('Deep-dive find: findExDef itself resolves substitute-only names (not just the picker list), fixing muscle volume for any substitute picked directly', (() => {
+    const i = src.indexOf('function findExDef(name)');
+    const body = src.slice(i, i + 700);
+    return body.includes('for(const origName in SUBS)') && body.includes('SUBS[origName].includes(name)');
+  })());
+  T('Round 1: tricep exercises tagged with head bias (lateral/medial for pushdown, long head for overhead extension)', src.includes("primaryMuscles:['Triceps (lateral/medial)']") && src.includes("primaryMuscles:['Triceps (long head)']"));
+  T('Round 1: Hammer curls leads with Brachialis, Dumbbell curl tagged long-head bias', src.includes("primaryMuscles:['Brachialis']") && src.includes("primaryMuscles:['Biceps (long head)']"));
+  T('Round 1: Face pulls tags Traps as genuine co-primary, not just secondary', src.includes("primaryMuscles:['Rear delts','Traps']"));
+  T('Round 1: Seated cable row (both instances) includes Traps as secondary', (src.match(/secondaryMuscles:\['Lats','Biceps','Traps'\]/g) || []).length === 2);
+  T('Round 1: Hip abduction retagged to Glute medius/minimus, distinct from Leg press', src.includes("primaryMuscles:['Glute medius/minimus']"));
+  T('Round 1: Dumbbell shrugs added to Pull day, closing the traps gap', src.includes("n:'Dumbbell shrugs'") && src.includes("primaryMuscles:['Traps']"));
+  T('Round 1: Cable crunch added as real optional exercise, removed from Plank substitutes to avoid inheriting the wrong input type', src.includes("n:'Cable crunch',s:3") && !/'Plank':\['Dead bug','Bear crawl hold','Pallof press','Cable crunch'\]/.test(src));
+  T('Round 2: Data namespace exists with pr/session/draft accessors', src.includes('const Data={') && src.includes('pr:{') && src.includes('session:{') && src.includes('draft:{'));
+  T('Round 2: Data.pr.set/get produces identical shape to raw pr: storage', (() => {
+    app.Data.pr.set('Test exercise', {w:'60', r:'10'});
+    const viaData = app.Data.pr.get('Test exercise');
+    const viaRaw = app.lsG('pr:Test exercise');
+    return JSON.stringify(viaData) === JSON.stringify(viaRaw) && viaData.w === '60';
+  })());
+  T('Round 2: Data.session.set/get/delete round-trips correctly against real sess: keys', (() => {
+    const fake = {date: app.todayKey(), dl: 'Push day', exercises: [], note: 'roundtrip test', totalVolume: 0};
+    app.Data.session.set(fake);
+    const matches = JSON.stringify(app.Data.session.get()) === JSON.stringify(app.lsG('sess:' + app.todayKey()));
+    app.Data.session.delete();
+    return matches && app.lsG('sess:' + app.todayKey()) === null;
+  })());
+  T('Round 2: Data.draft.findAny locates a draft from any day, matching the phone-death fix behavior', (() => {
+    app.Data.draft.clearAll();
+    app.Data.draft.save('Legs + core', {ex: [], note: 'draft roundtrip', painNote: '', startAt: null, lastSetAt: null});
+    const found = app.Data.draft.findAny();
+    app.Data.draft.clearAll();
+    return found && found.dl === 'Legs + core' && found.state.note === 'draft roundtrip';
+  })());
+  T('Bug fix: exercise safety cues (nt field) now actually render, were silently invisible before despite existing in every exercise', src.includes('${orig.nt?`<div style="font-size:12px;color:var(--amb);font-style:italic'));
+  T('Design fix: header weight number has its own distinct color, was identical to protein/calories before', src.includes('id="hdr-wt" style="color:var(--grn)"'));
+  T('Deep-dive find: Bench press safety cue no longer duplicates equipment text that wlabel already handles, was showing wrong bar info when substituted to dumbbells', src.includes("nt:'Exhale on press \\u2014 never hold breath'") && !src.includes("nt:'Total kg including 20kg bar"));
+  T('Feature: removeSet exists and delete control only shows for extra/drop sets, not standard ones', src.includes('function removeSet') && src.includes('const isExtra=isDrop||si>=(orig.s||3)'));
+  T('Feature: squat machine added as Leg press substitute with pain-stop caution baked into its name', src.includes("'Leg press':['Step-ups (bodyweight)','Wall sit (hold 60s)','Pendulum/hack squat machine (light weight only \\u2014 stop on any pain)']"));
 
   /* S1: PR keyed by actual performed exercise, not the originally scheduled one */
   app.lsS('pr:Cable tricep pushdown', null);

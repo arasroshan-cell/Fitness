@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v2.2j</title>
+<title>Roshan Fitness v2.2l</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -207,13 +207,13 @@ textarea.genin{resize:none}
 <body>
 <div id="warn-banner" class="warn-banner">Private mode detected &#x2014; data will NOT be saved</div>
 <div class="hdr">
-  <div class="ey">Roshan Fitness v2.2j &middot; build 2026-08-08</div>
+  <div class="ey">Roshan Fitness v2.2l &middot; build 2026-08-09</div>
   <div class="ht">Fitness Tracker</div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
     <div class="met"><div class="mv" id="hdr-p">0g</div><div class="ml" id="hdr-p-lbl">/ 150g protein</div></div>
     <div class="met"><div class="mv" id="hdr-k">0</div><div class="ml" id="hdr-k-lbl">/ 2100 kcal</div></div>
-    <div class="met"><div class="mv" id="hdr-wt">&#x2014;</div><div class="ml">3wk avg wt</div></div>
+    <div class="met"><div class="mv" id="hdr-wt" style="color:var(--grn)">&#x2014;</div><div class="ml">3wk avg wt</div></div>
   </div>
 </div>
 <div class="tabs">
@@ -237,22 +237,23 @@ textarea.genin{resize:none}
 const SEQ=['Push day','Pull day','Legs + core','Upper body'];
 const DAYS=[
   {label:'Push day',focus:'Chest \u00b7 Shoulders \u00b7 Triceps',time:'~6pm',ex:[
-    {n:'Bench press',s:4,r:'6\u20138',nt:'Total kg including 20kg bar \u00b7 exhale on press \u2014 never hold breath',priority:'must',compound:true,inputType:'weight',wlabel:'Total kg incl. 20kg bar',primaryMuscles:['Chest'],secondaryMuscles:['Triceps','Front delts']},
+    {n:'Bench press',s:4,r:'6\u20138',nt:'Exhale on press \u2014 never hold breath',priority:'must',compound:true,inputType:'weight',wlabel:'Total kg incl. 20kg bar',primaryMuscles:['Chest'],secondaryMuscles:['Triceps','Front delts']},
     {n:'Incline DB press',s:3,r:'10\u201312',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Upper chest'],secondaryMuscles:['Front delts','Triceps']},
     {n:'Machine chest fly',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Chest'],secondaryMuscles:[]},
     {n:'Seated DB shoulder press',s:3,r:'10\u201312',nt:'Seated \u2014 less pressure on seton sites',priority:'must',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Front delts'],secondaryMuscles:['Triceps','Side delts']},
     {n:'Lateral raises',s:3,r:'15\u201320',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Side delts'],secondaryMuscles:[]},
-    {n:'Cable tricep pushdown',s:4,r:'12\u201315',nt:'',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Triceps'],secondaryMuscles:[]},
-    {n:'Overhead tricep extension',s:3,r:'12',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'DB weight (one hand)',primaryMuscles:['Triceps'],secondaryMuscles:[]}
+    {n:'Cable tricep pushdown',s:4,r:'12\u201315',nt:'Straight bar or rope, your call',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Triceps (lateral/medial)'],secondaryMuscles:[]},
+    {n:'Overhead tricep extension',s:3,r:'12',nt:'Rope attachment \u2014 lets wrists rotate through the stretch',priority:'optional',compound:false,inputType:'weight',wlabel:'DB weight (one hand)',primaryMuscles:['Triceps (long head)'],secondaryMuscles:[]}
   ]},
   {label:'Pull day',focus:'Back \u00b7 Biceps',time:'~6pm',ex:[
     {n:'Pull-ups (unassisted)',s:4,r:'Max reps',nt:'Signature \u2014 beat last week total',priority:'must',noweight:true,inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',primaryMuscles:['Lats'],secondaryMuscles:['Biceps','Mid-back']},
     {n:'Lat pulldown',s:3,r:'10\u201312',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Lats'],secondaryMuscles:['Biceps']},
-    {n:'Seated cable row',s:3,r:'10\u201312',nt:'Exhale as you pull \u2014 no breath holding',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps']},
+    {n:'Seated cable row',s:3,r:'10\u201312',nt:'Exhale as you pull \u2014 no breath holding',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps','Traps']},
     {n:'Single arm DB row',s:3,r:'12 each',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Dumbbell weight (one hand)',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps']},
-    {n:'Face pulls',s:3,r:'15\u201320',nt:'Never skip \u2014 shoulder health',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Rear delts'],secondaryMuscles:['Rotator cuff']},
+    {n:'Face pulls',s:3,r:'15\u201320',nt:'Never skip \u2014 shoulder health \u00b7 rope attachment, not optional for this one',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Rear delts','Traps'],secondaryMuscles:['Rotator cuff']},
     {n:'Barbell curl',s:3,r:'10\u201312',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Total kg incl. bar (bar weight varies by gym \u2014 check yours)',primaryMuscles:['Biceps'],secondaryMuscles:[]},
-    {n:'Hammer curls',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Biceps'],secondaryMuscles:['Forearms']}
+    {n:'Hammer curls',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Brachialis'],secondaryMuscles:['Biceps','Forearms']},
+    {n:'Dumbbell shrugs',s:3,r:'12\u201315',nt:'Straight up, no rolling the shoulders \u2014 that\u2019s where irritation comes from',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Traps'],secondaryMuscles:[]}
   ]},
   {label:'Legs + core',focus:'No squats. No deadlifts.',time:'~6pm',ex:[
     {n:'Leg press',s:4,r:'12\u201315',nt:'Safe \u2014 no spinal or perianal pressure \u00b7 exhale on push, never hold breath',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Quads'],secondaryMuscles:['Glutes','Hamstrings']},
@@ -261,16 +262,17 @@ const DAYS=[
     {n:'Calf raises',s:4,r:'20',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Add kg if weighted',primaryMuscles:['Calves'],secondaryMuscles:[]},
     {n:'Plank',s:3,r:'30\u201360s',nt:'Exhale on entry \u2014 no breath holding',priority:'must',noweight:true,inputType:'seconds',wlabel:'Seconds held',primaryMuscles:['Core'],secondaryMuscles:[]},
     {n:'Dead bug',s:3,r:'10 each',nt:'Best Crohn-safe core move',priority:'must',noweight:true,inputType:'reps_each',wlabel:'Reps per side',primaryMuscles:['Core'],secondaryMuscles:[]},
-    {n:'Hip abduction machine',s:3,r:'15',nt:'Glute work \u2014 light and controlled, no direct pressure needed',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Glutes'],secondaryMuscles:[]}
+    {n:'Hip abduction machine',s:3,r:'15',nt:'Glute work \u2014 light and controlled, no direct pressure needed',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Glute medius/minimus'],secondaryMuscles:[]},
+    {n:'Cable crunch',s:3,r:'12\u201315',nt:'Rope attachment, kneeling \u2014 real flexion work, unlike Plank/Dead bug',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Abs'],secondaryMuscles:[]}
   ]},
   {label:'Upper body',focus:'Strength + hypertrophy mix',time:'~10\u201311am',ex:[
     {n:'Pull-ups (unassisted)',s:3,r:'Max reps',nt:'',priority:'must',noweight:true,inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',primaryMuscles:['Lats'],secondaryMuscles:['Biceps','Mid-back']},
     {n:'Dips (chest-focused, forward lean)',s:3,r:'8\u201310',nt:'Lower chest \u2014 lean forward, elbows flared \u00b7 exhale on push \u2014 never hold breath',priority:'must',compound:true,inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',primaryMuscles:['Lower chest'],secondaryMuscles:['Triceps','Front delts']},
     {n:'Arnold press',s:3,r:'12',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Front delts'],secondaryMuscles:['Side delts','Triceps']},
-    {n:'Seated cable row',s:3,r:'12',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps']},
-    {n:'Dumbbell curl (alternating)',s:3,r:'12',nt:'Standard supinated curl \u2014 Pull day already covers barbell + hammer',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Biceps'],secondaryMuscles:[]},
-    {n:'Cable tricep pushdown',s:3,r:'10',nt:'Superset with overhead extension below \u2014 no rest between the two',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Triceps'],secondaryMuscles:[]},
-    {n:'Overhead tricep extension',s:3,r:'10',nt:'Second half of the superset \u2014 straight into this after pushdown',priority:'optional',compound:false,inputType:'weight',wlabel:'DB weight (one hand)',primaryMuscles:['Triceps'],secondaryMuscles:[]},
+    {n:'Seated cable row',s:3,r:'12',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps','Traps']},
+    {n:'Dumbbell curl (alternating)',s:3,r:'12',nt:'Standard supinated curl \u2014 Pull day already covers barbell + hammer',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Biceps (long head)'],secondaryMuscles:[]},
+    {n:'Cable tricep pushdown',s:3,r:'10',nt:'Superset with overhead extension below \u2014 no rest between the two \u00b7 straight bar or rope',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Triceps (lateral/medial)'],secondaryMuscles:[]},
+    {n:'Overhead tricep extension',s:3,r:'10',nt:'Second half of the superset \u2014 straight into this after pushdown \u00b7 rope attachment',priority:'optional',compound:false,inputType:'weight',wlabel:'DB weight (one hand)',primaryMuscles:['Triceps (long head)'],secondaryMuscles:[]},
     {n:'Plank or dead bug',s:3,r:'\u2014',nt:'Core finisher \u2014 pick one below',priority:'must',noweight:true,inputType:'choice',primaryMuscles:['Core'],secondaryMuscles:[],
      choiceOptions:[{name:'Plank',r:'30\u201360s',inputType:'seconds',primaryMuscles:['Core'],secondaryMuscles:[]},{name:'Dead bug',r:'10 each side',inputType:'reps_each',primaryMuscles:['Core'],secondaryMuscles:[]}]}
   ]}
@@ -294,7 +296,7 @@ const SUBS={
   'Leg extension (machine)':['TKE \u2014 terminal knee extension'],
   'Seated leg curl':['Lying leg curl (if ok)','Nordic curl'],
   'Calf raises':['Seated calf raise','Single-leg calf raise'],
-  'Plank':['Dead bug','Bear crawl hold','Pallof press','Cable crunch'],
+  'Plank':['Dead bug','Bear crawl hold','Pallof press'],
   'Dips (chest-focused, forward lean)':['Decline press (Smith machine)','Decline machine press'],
   'Dead bug':['Bird-dog','Pallof press'],
   'Hip abduction machine':['Cable kickback','Machine hip thrust'],
@@ -469,6 +471,50 @@ function monthKey(){const d=new Date();return d.getFullYear()+'-'+String(d.getMo
 function prevMonthKey(){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
 function mergedMlog(){return{...(lsG('mlog:'+prevMonthKey())||{}),...(lsG('mlog:'+monthKey())||{})};}
 function checkStorage(){try{localStorage.setItem('__t__','1');localStorage.removeItem('__t__');}catch{document.getElementById('warn-banner').style.display='block';}}
+
+/* ===== DATA LAYER (first slice \u2014 PR/session/draft access only, existing call sites not yet migrated) =====
+   This exists so the next migration pass has a single, tested, correct place to point every
+   old lsG/lsS call at, instead of each call site inventing its own key-naming convention.
+   Every method here mirrors exactly what the scattered inline calls already do today, so
+   swapping a call site to use this later is a safe, behavior-identical change, not a rewrite. */
+const Data={
+  pr:{
+    get(name){return lsG('pr:'+name);},
+    set(name,best){return lsS('pr:'+name,{w:best.w,r:best.r,date:todayKey()});},
+    clearAll(){
+      for(let i=localStorage.length-1;i>=0;i--){
+        const k=localStorage.key(i);
+        if(k&&k.startsWith('pr:'))localStorage.removeItem(k);
+      }
+    }
+  },
+  session:{
+    get(dateKey){return lsG('sess:'+(dateKey||todayKey()));},
+    set(session,dateKey){return lsS('sess:'+(dateKey||todayKey()),session);},
+    delete(dateKey){return lsDel('sess:'+(dateKey||todayKey()));},
+    getLast(dl){return lsG('last:'+dl);},
+    setLast(dl,data){return lsS('last:'+dl,data);}
+  },
+  draft:{
+    save(dl,state){return lsS('ws_draft:'+todayKey(),{dl,state,date:todayKey()});},
+    findAny(){
+      for(let i=0;i<localStorage.length;i++){
+        const k=localStorage.key(i);
+        if(k&&k.startsWith('ws_draft:')){
+          const d=lsG(k);
+          if(d&&d.dl&&d.state)return d;
+        }
+      }
+      return null;
+    },
+    clearAll(){
+      for(let i=localStorage.length-1;i>=0;i--){
+        const k=localStorage.key(i);
+        if(k&&k.startsWith('ws_draft:'))localStorage.removeItem(k);
+      }
+    }
+  }
+};
 
 /* ===== HEADER ===== */
 function getSmoothedWeight(stats){
@@ -914,7 +960,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v2.2j';
+const APP_VERSION='v2.2l';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -1192,6 +1238,7 @@ function renderToday(){
             ${prData?`<div style="font-size:11px;color:var(--cyan);margin-top:2px">&#x2605; PR: ${fmtBest(prData)}</div>`:''}
             <div class="ext">${orig.s} sets &times; ${effR||orig.r}</div>
             ${(subWlabel||orig.wlabel)?`<div class="wlbl">${subWlabel||orig.wlabel}</div>`:''}
+            ${orig.nt?`<div style="font-size:12px;color:var(--amb);font-style:italic;margin-top:4px">${orig.nt}</div>`:''}
           </div>
           <div style="text-align:right;flex-shrink:0"><div class="exlast">${lstr}</div>${sugg?`<div class="exsugg">${sugg}</div>`:''}</div>
         </div>`;
@@ -2290,7 +2337,7 @@ if(!lsG('sess:'+todayKey())){
     }
   }
 }
-document.getElementById('hsub').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 v2.2j \u00b7 Target 80\u201385kg at 14\u201316% BF';
+document.getElementById('hsub').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 v2.2l \u00b7 Target 80\u201385kg at 14\u201316% BF';
 if(navigator.storage&&navigator.storage.persist){
   (async()=>{try{const granted=await navigator.storage.persist();lsS('storage_persisted',granted);}catch{lsS('storage_persisted',false);}})();
 }
