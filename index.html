@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v2.2f</title>
+<title>Roshan Fitness v2.2j</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -83,6 +83,7 @@ body{background:var(--bg);color:var(--txt);font-family:"IBM Plex Sans",-apple-sy
 .srow.setdone{background:rgba(0,230,118,.05);border-radius:10px;padding:8px 6px}
 .srow.droprow{background:rgba(245,166,35,.07);border-radius:10px;padding:8px 6px}
 .snum{font-size:12px;color:var(--dim);width:22px;text-align:center;flex-shrink:0;font-weight:700;font-family:"Barlow",sans-serif}
+.setdel{background:none;border:none;color:var(--dim);font-size:11px;padding:2px;margin-top:3px;cursor:pointer;display:block;width:100%}
 .dbadge{font-size:9px;font-weight:800;color:var(--amb);background:var(--abg);padding:1px 5px;border-radius:4px;display:block;text-align:center}
 .nin{width:62px;padding:11px 6px;border:1px solid var(--c3);border-radius:10px;font-size:20px;font-weight:800;font-family:"Barlow",sans-serif;background:var(--c2);color:var(--txt);text-align:center;-webkit-appearance:none;transition:border-color .2s}
 .nin:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 2px var(--cbg)}
@@ -173,6 +174,8 @@ textarea.genin{resize:none}
 .sym-val-btn{flex:1;padding:10px 4px;border:1px solid var(--c3);border-radius:10px;font-size:16px;font-weight:800;font-family:"Barlow",sans-serif;cursor:pointer;background:var(--c2);color:var(--mut);text-align:center;min-height:44px;transition:all .15s}
 /* AD-HOC / SESSION PICKER */
 .sess-option{display:flex;justify-content:space-between;align-items:center;padding:16px;margin-bottom:8px;border:1px solid var(--c3);border-radius:14px;cursor:pointer;background:var(--c1);transition:border-color .2s}
+.free-ex-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--c3);cursor:pointer;font-size:14px}
+.free-ex-row:last-child{border-bottom:none}
 .sess-option:last-child{margin-bottom:0}
 .sess-option:active{border-color:var(--cyan)}
 .sess-option.suggested{border-color:var(--cbr);background:rgba(0,194,212,.04)}
@@ -204,7 +207,7 @@ textarea.genin{resize:none}
 <body>
 <div id="warn-banner" class="warn-banner">Private mode detected &#x2014; data will NOT be saved</div>
 <div class="hdr">
-  <div class="ey">Roshan Fitness v2.2f &middot; build 2026-08-03</div>
+  <div class="ey">Roshan Fitness v2.2j &middot; build 2026-08-08</div>
   <div class="ht">Fitness Tracker</div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -287,7 +290,7 @@ const SUBS={
   'Face pulls':['Reverse cable fly','Rear delt machine fly','Band pull-apart'],
   'Barbell curl':['DB curl','EZ bar curl','Cable curl'],
   'Hammer curls':['Cable hammer curl','Cross-body curl'],
-  'Leg press':['Step-ups (bodyweight)','Wall sit (hold 60s)'],
+  'Leg press':['Step-ups (bodyweight)','Wall sit (hold 60s)','Pendulum/hack squat machine (light weight only \u2014 stop on any pain)'],
   'Leg extension (machine)':['TKE \u2014 terminal knee extension'],
   'Seated leg curl':['Lying leg curl (if ok)','Nordic curl'],
   'Calf raises':['Seated calf raise','Single-leg calf raise'],
@@ -315,6 +318,20 @@ function findExDef(name){
     if(e.n===name)return e;
     if(e.inputType==='choice'&&e.choiceOptions){const o=e.choiceOptions.find(o=>o.name===name);if(o)return{...e,...o};}
   }}
+  for(const origName in SUBS){
+    if(SUBS[origName].includes(name)){
+      const origDef=DAYS.flatMap(d=>d.ex).find(x=>x.n===origName);
+      const override=SUB_TYPE_OVERRIDE[name];
+      return{
+        n:name,s:origDef?.s||3,r:origDef?.r||'10\u201312',
+        inputType:override?.inputType||origDef?.inputType||'weight',
+        wlabel:override?.wlabel||inferSubWlabel(name)||origDef?.wlabel||'kg',
+        noweight:override?.noweight||false,compound:origDef?.compound||false,
+        primaryMuscles:origDef?.primaryMuscles||[],secondaryMuscles:origDef?.secondaryMuscles||[],
+        subOf:origName
+      };
+    }
+  }
   return null;
 }
 function inferSubWlabel(name){
@@ -336,6 +353,7 @@ const FOODS=[
   {name:'Bulk Soya Protein Isolate (Chocolate)',cat:'Extras',per100:{k:390,p:87,c:5,f:3},typ:30,unit:'scoop',lbl:'per scoop (30g = 26g protein)'},
   {name:'Mutton curry',cat:'Protein',per100:{k:195,p:20,c:3,f:12},typ:150},
   {name:'Mutton curry (mixed bone-in/boneless)',cat:'Protein',per100:{k:195,p:20,c:3,f:12},typ:150,lbl:'500g bone-in + 1kg boneless per batch, cooked together for flavour + yield'},
+  {name:'Mutton keema',cat:'Protein',per100:{k:210,p:19,c:4,f:14},typ:150,lbl:'sourced from Tesco halal mince spec, adjusted for draining + curry base \u2014 tell me if it needs adjusting once made'},
   {name:'Fish curry (white fish)',cat:'Protein',per100:{k:120,p:20,c:3,f:4},typ:150},
   {name:'Salmon fry',cat:'Protein',per100:{k:220,p:25,c:1,f:13},typ:105,unit:'piece',lbl:'per fillet (~105g cooked, Tesco/Aldi 4-pack)',oilInclusive:true},
   {name:'Pomfret fry',cat:'Protein',per100:{k:165,p:22,c:2,f:8},typ:70,unit:'piece',lbl:'per piece (~70g)',oilInclusive:true},
@@ -346,8 +364,7 @@ const FOODS=[
   {name:'Chicken thigh (bone-in, oven, masala)',cat:'Protein',per100:{k:210,p:20,c:1,f:14},typ:95,unit:'piece',lbl:'per thigh (~95g cooked)',oilInclusive:true},
   {name:'Egg (boiled, small)',cat:'Eggs',per100:{k:155,p:13,c:1,f:11},typ:45,unit:'piece',lbl:'per small egg'},
   {name:'Egg (boiled, medium)',cat:'Eggs',per100:{k:155,p:13,c:1,f:11},typ:58,unit:'piece',lbl:'per egg'},
-  {name:'Egg omelette (3 small)',cat:'Eggs',per100:{k:193,p:12,c:1,f:15.6},typ:195,unit:'piece',lbl:'3-egg omelette (oil-inclusive)',oilInclusive:true},
-  {name:'Egg omelette (4 small)',cat:'Eggs',per100:{k:187,p:12,c:1,f:14.9},typ:260,unit:'piece',lbl:'4-egg omelette (oil-inclusive)',oilInclusive:true},
+  {name:'Egg fry / omelette (per egg)',cat:'Eggs',per100:{k:190,p:12,c:1,f:15},typ:55,unit:'piece',lbl:'per egg, fried or in omelette (oil-inclusive) \u2014 log 2 or 3 for a full omelette',oilInclusive:true},
   {name:'Egg dosa (home, small)',cat:'Eggs',per100:{k:227,p:8,c:14,f:14.7},typ:95,unit:'piece',lbl:'per egg dosa (oil-inclusive)',oilInclusive:true},
   {name:'Sona Masoori rice (cooked)',cat:'Carbs',per100:{k:115,p:2.3,c:25,f:0.3},typ:150,lbl:'cooked weight \u2014 ~55g dry rice makes ~150g cooked'},
   {name:'Ponni rice (cooked)',cat:'Carbs',per100:{k:120,p:2.5,c:26,f:0.3},typ:150,lbl:'cooked weight \u2014 ~55g dry rice makes ~150g cooked'},
@@ -494,11 +511,6 @@ function getSkipWarnings(){
 
 /* ===== DRAFT ===== */
 function saveDraft(dl){if(WS[dl])lsS('ws_draft:'+todayKey(),{dl,state:WS[dl],date:todayKey()});}
-function checkDraft(){
-  if(lsG('sess:'+todayKey()))return;
-  const d=lsG('ws_draft:'+todayKey());
-  if(d&&d.date===todayKey())WS[d.dl]=d.state;
-}
 function clearDraft(){
   for(let i=localStorage.length-1;i>=0;i--){
     const k=localStorage.key(i);
@@ -548,6 +560,11 @@ function togDone(dl,ei,si){
 function addSet(dl,ei){
   if(!WS[dl])return;
   WS[dl].ex[ei].sets.push({w:'',r:'',done:false,isDrop:false});
+  saveDraft(dl);renderToday();
+}
+function removeSet(dl,ei,si){
+  if(!WS[dl])return;
+  WS[dl].ex[ei].sets.splice(si,1);
   saveDraft(dl);renderToday();
 }
 function addDropSet(dl,ei){
@@ -737,13 +754,14 @@ function saveSession(dl,seqIdx){
     return{name:effName,origName:effOrigName,best,sets:ex.sets,chosenType:ex.chosenType,suggestion:getSuggestion(effOrig,best,effName),isPR,inputType:effOrig.inputType,exVolume};
   });
   const totalVolume=exercises.reduce((v,e)=>v+(e.exVolume||0),0);
-  const session={date:todayKey(),dl,seqIdx,exercises,note:s.note,painNote:s.painNote||'',skipped:false,duration,newPRs,totalVolume};
+  const isFree=seqIdx==='free';
+  const session={date:todayKey(),dl,seqIdx:isFree?null:seqIdx,exercises,note:s.note,painNote:s.painNote||'',skipped:false,duration,newPRs,totalVolume};
   lsS('sess:'+todayKey(),session);
   lsS('last:'+dl,{date:todayKey(),exercises});
-  lsS('last_seq_idx',seqIdx);
+  if(!isFree)lsS('last_seq_idx',seqIdx);
   lsS('last_dl',dl);
   const mlog=lsG('mlog:'+monthKey())||{};
-  mlog[todayKey()]={type:'done',dl,seqIdx};
+  mlog[todayKey()]={type:'done',dl,seqIdx:isFree?undefined:seqIdx};
   lsS('mlog:'+monthKey(),mlog);
   clearDraft();showStickyBtn(false);stopTimerTick();
   const cb=document.getElementById('confbox');
@@ -759,8 +777,10 @@ function saveSession(dl,seqIdx){
 function editSession(){
   if(!confirm('Unlock today\'s session for editing? Current save will be removed.'))return;
   const ex=lsG('sess:'+todayKey());if(!ex||ex.skipped)return;
-  const seqIdx=ex.seqIdx!==undefined?ex.seqIdx:SEQ.indexOf(ex.dl);
-  const gd=DAYS[seqIdx]||DAYS.find(d=>d.label===ex.dl);if(!gd)return;
+  const isFree=ex.dl==='Free session';
+  const seqIdx=isFree?null:(ex.seqIdx!==undefined&&ex.seqIdx!==null?ex.seqIdx:SEQ.indexOf(ex.dl));
+  const gd=isFree?{label:'Free session',focus:'Your combo today',time:'',ex:ex.exercises.map(e=>({n:e.origName,...(findExDef(e.origName)||{}),priority:'must'}))}:(DAYS[seqIdx]||DAYS.find(d=>d.label===ex.dl));
+  if(!gd)return;
   WS[ex.dl]={
     ex:ex.exercises.map((e,ei)=>({
       name:e.name,origName:e.origName,chosenType:e.chosenType||null,
@@ -770,7 +790,7 @@ function editSession(){
   };
   lsDel('sess:'+todayKey());
   const mlog=lsG('mlog:'+monthKey())||{};delete mlog[todayKey()];lsS('mlog:'+monthKey(),mlog);
-  lsS('last_seq_idx',(seqIdx+3)%4);
+  if(!isFree)lsS('last_seq_idx',(seqIdx+3)%4);
   adHocDay=gd;adHocSeqIdx=seqIdx;
   saveDraft(ex.dl);
   renderToday();
@@ -894,7 +914,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v2.2f';
+const APP_VERSION='v2.2j';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -1095,6 +1115,13 @@ function renderToday(){
         </div>
         <div style="color:var(--cyan);font-size:22px">&#x203A;</div>
       </div>`).join('')}
+      <div class="sess-option" style="border-top:1px dashed var(--c3);margin-top:6px;padding-top:14px" onclick="startFreeSession()">
+        <div>
+          <div style="font-size:17px;font-weight:700;font-family:'Barlow',sans-serif">Free session</div>
+          <div style="font-size:12px;color:var(--mut);margin-top:2px">Build your own combo \u2014 doesn't affect your Push/Pull/Legs/Upper sequence</div>
+        </div>
+        <div style="color:var(--cyan);font-size:22px">&#x203A;</div>
+      </div>
       <div style="text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--c3)">
         <button onclick="showSkipSheet()" style="background:none;border:none;font-size:13px;color:var(--mut);cursor:pointer;font-family:inherit;padding:4px 8px">Not training today \u2014 skip this day</button>
       </div>
@@ -1104,7 +1131,7 @@ function renderToday(){
   /* -- Active workout -- */
   else{
     const last=lsG('last:'+gd.label);
-    const seqIdx=adHocSeqIdx!==null?adHocSeqIdx:(nextIdx!==null?nextIdx:0);
+    const seqIdx=gd.label==='Free session'?'free':(adHocSeqIdx!==null?adHocSeqIdx:(nextIdx!==null?nextIdx:0));
     initWS(gd.label,gd);
     const ws=WS[gd.label];
     const elapsed=ws.startAt?getElapsed(ws.startAt):'0m 00s';
@@ -1175,8 +1202,9 @@ function renderToday(){
       if(!isChoice||ex.chosenType){
         ex.sets.forEach((set,si)=>{
           const isDrop=set.isDrop;
+          const isExtra=isDrop||si>=(orig.s||3);
           h+=`<div class="srow${set.done?' setdone':''}${isDrop?' droprow':''}"${si===ex.sets.length-1&&!subOpen?' style="border-bottom:none"':''}>
-            <div class="snum">${isDrop?`S${si+1}<span class="dbadge">DROP</span>`:`S${si+1}`}</div>
+            <div class="snum">${isDrop?`S${si+1}<span class="dbadge">DROP</span>`:`S${si+1}`}${isExtra?`<button class="setdel" onclick="removeSet('${gd.label}',${ei},${si})" title="Remove this set">&#x2715;</button>`:''}</div>
             <div style="text-align:center">
               <input class="nin" type="number" inputmode="decimal" placeholder="${effType==='seconds'?'sec':effType==='reps_each'?'reps':'kg'}" min="0" step="${effType==='weight'?0.5:1}" value="${set.w}" oninput="updSet('${gd.label}',${ei},${si},'w',this.value)">
               <div class="nin-lbl">${effType==='seconds'?'sec':effType==='reps_each'?'/side':'kg'}</div>
@@ -1206,12 +1234,31 @@ function renderToday(){
       return h;
     }
 
-    html+=`<div class="sect-div"><div class="sect-lbl must">Must do</div><div class="sect-line"></div></div>`;
-    gd.ex.forEach((e,ei)=>{if(e.priority==='must')html+=renderEx(ws.ex[ei],ei);});
+    if(gd.label==='Free session'){
+      const exList=getFreeSessionExerciseList();
+      html+=`<div class="card" style="margin-bottom:12px">
+        <div class="cl">Add an exercise</div>
+        <input class="genin" id="free-ex-search" placeholder="Search exercises..." oninput="filterFreeExList(this.value)" style="margin:8px 0">
+        <div id="free-ex-list" style="max-height:180px;overflow-y:auto">
+          ${exList.map(e=>`<div class="free-ex-row" data-name="${e.n.toLowerCase()}" onclick="addToFreeSession('${e.n.replace(/'/g,"\\'")}')">
+            <span>${e.n}${e.subOf?`<span style="color:var(--dim);font-size:11px"> &middot; sub for ${e.subOf}</span>`:''}</span><span style="color:var(--cyan);font-size:18px">+</span>
+          </div>`).join('')}
+        </div>
+      </div>`;
+      if(!gd.ex.length){
+        html+=`<div class="cs" style="text-align:center;padding:20px 0">No exercises added yet \u2014 search above to build today's session.</div>`;
+      }
+      gd.ex.forEach((e,ei)=>{
+        html+=`<div style="position:relative">${renderEx(ws.ex[ei],ei)}<button class="setdel" style="position:absolute;top:14px;right:14px;width:auto" onclick="removeFromFreeSession(${ei})">Remove exercise</button></div>`;
+      });
+    }else{
+      html+=`<div class="sect-div"><div class="sect-lbl must">Must do</div><div class="sect-line"></div></div>`;
+      gd.ex.forEach((e,ei)=>{if(e.priority==='must')html+=renderEx(ws.ex[ei],ei);});
     const optExist=gd.ex.some(e=>e.priority!=='must');
     if(optExist){
       html+=`<div class="sect-div"><div class="sect-lbl opt">If got time</div><div class="sect-line"></div></div>`;
       gd.ex.forEach((e,ei)=>{if(e.priority!=='must')html+=`<div style="opacity:.85">${renderEx(ws.ex[ei],ei)}</div>`;});
+    }
     }
 
     const mustList=ws.ex.filter((e,i)=>gd.ex[i].priority==='must');
@@ -1271,6 +1318,59 @@ function startSession(dayIndex){
   _forcePickerOnce=false;
   adHocDay=DAYS[dayIndex];adHocSeqIdx=dayIndex;
   initWS(adHocDay.label,adHocDay);
+  renderToday();
+}
+function startFreeSession(){
+  _forcePickerOnce=false;
+  adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:[]};
+  adHocSeqIdx=null;
+  WS['Free session']={ex:[],subOpen:null,note:'',painNote:'',startAt:Date.now(),lastSetAt:null};
+  saveDraft('Free session');
+  renderToday();
+}
+function getFreeSessionExerciseList(){
+  const seen=new Set();const list=[];
+  for(const d of DAYS){for(const e of d.ex){
+    if(e.inputType==='choice'&&e.choiceOptions){
+      for(const o of e.choiceOptions){
+        if(!seen.has(o.name)){seen.add(o.name);list.push({...e,...o,n:o.name});}
+      }
+    }else if(!seen.has(e.n)){seen.add(e.n);list.push(e);}
+  }}
+  for(const origName in SUBS){
+    for(const subName of SUBS[origName]){
+      if(seen.has(subName))continue;
+      seen.add(subName);
+      const def=findExDef(subName);
+      if(def)list.push(def);
+    }
+  }
+  return list.sort((a,b)=>a.n.localeCompare(b.n));
+}
+function addToFreeSession(name){
+  if(!adHocDay||adHocDay.label!=='Free session')return;
+  const def=getFreeSessionExerciseList().find(e=>e.n===name);
+  if(!def)return;
+  adHocDay.ex.push({...def,priority:'must'});
+  const pSubs=lsG('persisted_subs')||{};
+  WS['Free session'].ex.push({
+    name:pSubs[def.n]||def.n,origName:def.n,chosenType:null,
+    sets:Array.from({length:def.s||3},()=>({w:'',r:'',done:false,isDrop:false}))
+  });
+  saveDraft('Free session');
+  renderToday();
+}
+function filterFreeExList(q){
+  const query=q.toLowerCase();
+  document.querySelectorAll('.free-ex-row').forEach(row=>{
+    row.style.display=row.dataset.name.includes(query)?'flex':'none';
+  });
+}
+function removeFromFreeSession(ei){
+  if(!adHocDay||adHocDay.label!=='Free session')return;
+  adHocDay.ex.splice(ei,1);
+  WS['Free session'].ex.splice(ei,1);
+  saveDraft('Free session');
   renderToday();
 }
 /* ===== RENDER PROGRESS ===== */
@@ -2171,13 +2271,26 @@ function runMigration(){
 runMigration();
 checkStorage();
 checkUpdate();
-const _draft=lsG('ws_draft:'+todayKey());
-if(!_draft){adHocDay=null;adHocSeqIdx=null;}
-else if(_draft.date===todayKey()&&_draft.dl){
-  const _idx=SEQ.indexOf(_draft.dl);
-  if(_idx>=0){adHocDay=DAYS[_idx];adHocSeqIdx=_idx;WS[_draft.dl]=_draft.state;}
+if(!lsG('sess:'+todayKey())){
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k&&k.startsWith('ws_draft:')){
+      const d=lsG(k);
+      if(d&&d.dl&&d.state){
+        WS[d.dl]=d.state;
+        if(d.dl==='Free session'){
+          adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:d.state.ex.map(e=>({n:e.origName,...(findExDef(e.origName)||{}),priority:'must'}))};
+          adHocSeqIdx=null;
+        }else{
+          const _idx=SEQ.indexOf(d.dl);
+          if(_idx>=0){adHocDay=DAYS[_idx];adHocSeqIdx=_idx;}
+        }
+        break;
+      }
+    }
+  }
 }
-document.getElementById('hsub').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 v2.2f \u00b7 Target 80\u201385kg at 14\u201316% BF';
+document.getElementById('hsub').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 v2.2j \u00b7 Target 80\u201385kg at 14\u201316% BF';
 if(navigator.storage&&navigator.storage.persist){
   (async()=>{try{const granted=await navigator.storage.persist();lsS('storage_persisted',granted);}catch{lsS('storage_persisted',false);}})();
 }
