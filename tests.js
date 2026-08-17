@@ -12,12 +12,12 @@ function T(name, cond) {
 }
 
 /* ---------- Static checks (grep-level) ---------- */
-T('version stamp v2.2l in header', /Roshan Fitness v2\.2l/.test(src));
+T('version stamp v2.2r in header', /Roshan Fitness v2\.2r/.test(src));
 T('N1: no slice(-52) remains', !src.includes('slice(-52)'));
 T('N1: two slice(-260) caps present', (src.match(/slice\(-260\)/g) || []).length === 2);
 T('N2: three fibreRisk flags', (src.match(/fibreRisk:true/g) || []).length === 3);
 T('P2: both quickLog onclick sites escape apostrophes', (src.match(/\.replace\(\/'\/g,"\\\\'"\)/g) || []).length >= 2);
-T('P3: four new exhale cues', (src.match(/[Ee]xhale (on press|as you pull|on push)/g) || []).length === 4);
+T('P3: exhale cues present, count never decreases from the confirmed baseline of 4', (src.match(/[Ee]xhale (on press|as you pull|on push)/g) || []).length >= 4);
 T('P4: checkUpdate fetches live site', src.includes("arasroshan-cell.github.io/Fitness") && src.includes('checkUpdate();'));
 T('N3: shareBackup exists and card calls it', src.includes('function shareBackup') && src.includes('onclick="shareBackup()"'));
 T('UTC purge: no toISOString date keys remain in storage reads', !/lsG\('sym:'\+dt\.toISOString/.test(src));
@@ -81,7 +81,8 @@ const document = new Proxy({}, { get: (t, p) => {
 }});
 const window = { addEventListener: () => {}, matchMedia: () => ({ matches: false, addEventListener: () => {} }), location: { reload: () => {} } };
 const navigator = { onLine: false, share: undefined, canShare: undefined };
-const script = src.match(/<script>([\s\S]*)<\/script>/)[1];
+const scriptBlocks = [...src.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+const script = scriptBlocks[scriptBlocks.length - 1][1];
 try {
   const run = new Function('localStorage', 'document', 'window', 'navigator', 'fetch', 'File', 'URL', 'Blob', 'alert', 'confirm',
     script + '\n;return {bestSetOf, checkPR, todayKey, monthKey, prevMonthKey, mergedMlog, isSymptomDay, fibreWarnHTML, lsS, lsG, getSuggestion, FOODS, SUB_TYPE_OVERRIDE, inferSubWlabel, getProfile, saveProfile, Coach, getExHistory, saveSession, WS, initWS, DAYS, findExDef, getSmoothedWeight, Data};');
@@ -202,6 +203,47 @@ try {
   T('Bug fix: exercise safety cues (nt field) now actually render, were silently invisible before despite existing in every exercise', src.includes('${orig.nt?`<div style="font-size:12px;color:var(--amb);font-style:italic'));
   T('Design fix: header weight number has its own distinct color, was identical to protein/calories before', src.includes('id="hdr-wt" style="color:var(--grn)"'));
   T('Deep-dive find: Bench press safety cue no longer duplicates equipment text that wlabel already handles, was showing wrong bar info when substituted to dumbbells', src.includes("nt:'Exhale on press \\u2014 never hold breath'") && !src.includes("nt:'Total kg including 20kg bar"));
+  T('Bug fix: sticky Save & Finish button now hides on every tab except Today, was floating over Food/Progress/History before since tab-switching never told it to hide', (() => {
+    const i = src.indexOf("document.querySelectorAll('.tab').forEach(btn=>{");
+    const body = src.slice(i, i + 500);
+    return body.includes("if(t===0){renderToday();}else{showStickyBtn(false);}");
+  })());
+  T('Feature: Hip adduction machine added as real companion to Hip abduction, confirmed via real equipment photos, closing the adductor gap', src.includes("n:'Hip adduction machine'") && src.includes("primaryMuscles:['Adductors']"));
+  T('Bug fix: Remove exercise moved from absolute positioning (collided with Last/PR text on exercises with real history) into the safe action-button row', src.includes("gd.label==='Free session'?`<button class=\"subbtn\" style=\"color:var(--red)\" onclick=\"removeFromFreeSession") && !src.includes('position:absolute;top:14px;right:14px'));
+  T('Bug fix: findExDef now inherits nt safety cues for substitutes, fixing the real gap where directly-picked substitutes showed no attachment/safety guidance at all', src.includes("nt:override?.nt!==undefined?override.nt:(origDef?.nt||'')"));
+  T('Deep-dive find: squat machine substitute does NOT inherit Leg press blanket safe claim, given the real medical uncertainty already established for it', src.includes("'Pendulum/hack squat machine (light weight only \\u2014 stop on any pain)':{nt:'Light weight only"));
+  T('Deep-dive find: Decline press substitutes get their own technique note, not Dips-specific "lean forward, elbows flared" which would not apply', src.includes("'Decline press (Smith machine)':{nt:'Decline angle for lower chest"));
+  T('Deep-dive find: Face pulls machine/band substitutes do not inherit the rope-specific claim', src.includes("'Reverse cable fly':{nt:'Never skip \\u2014 shoulder health'}"));
+  T('Body diagram: library inlined, BodyMuscles global available', src.includes('var BodyMuscles=') && src.includes('BodyChart:()=>'));
+  T('Body diagram: every muscle tag used anywhere in the app has a real mapping to library region IDs, no gaps', (() => {
+    const daysSrc = src;
+    const tagMatches = [...daysSrc.matchAll(/(?:primary|secondary)Muscles:\[([^\]]*)\]/g)];
+    const allTags = new Set();
+    tagMatches.forEach(m => { [...m[1].matchAll(/'([^']+)'/g)].forEach(t => allTags.add(t[1])); });
+    const mapMatch = daysSrc.match(/const MUSCLE_TAG_TO_LIB_IDS=\{([\s\S]*?)\n\};/);
+    const mapKeys = new Set([...mapMatch[1].matchAll(/'([^']+)':\[/g)].map(m => m[1]));
+    const missing = [...allTags].filter(t => !mapKeys.has(t));
+    return missing.length === 0;
+  })());
+  T('Body diagram: renderBodyDiagram destroys and recreates chart instances each call, since renderProgress rebuilds the DOM every time', src.includes('if(_bodyChartFront)_bodyChartFront.destroy();'));
+  T('Data layer migration: checkPR uses Data.pr instead of raw lsG/lsS calls', (() => {
+    const i = src.indexOf('function checkPR(');
+    const body = src.slice(i, i + 900);
+    return body.includes('Data.pr.get(origName)') && body.includes('Data.pr.set(origName') && !body.includes("'pr:'+origName");
+  })());
+  T('Data layer migration: saveSession, editSession, skipSession, unskipSession all use Data.session instead of raw sess: keys', src.includes('Data.session.set(session)') && src.includes('Data.session.delete()') && src.includes('Data.session.setLast('));
+  T('Data layer migration: saveDraft/clearDraft delegate to Data.draft, and the init-time restoration uses Data.draft.findAny() instead of duplicating the scan logic', src.includes('function saveDraft(dl){if(WS[dl])Data.draft.save(dl,WS[dl]);}') && src.includes('function clearDraft(){Data.draft.clearAll();}') && src.includes('const d=Data.draft.findAny();'));
+  T('Data layer migration: zero raw pr:/sess:/last:/ws_draft: calls remain anywhere outside the Data namespace itself', (() => {
+    const dataStart = src.indexOf('const Data={');
+    const dataEnd = src.indexOf('\n};', dataStart) + 3;
+    const outsideData = src.slice(0, dataStart) + src.slice(dataEnd);
+    return !/lsG\('pr:|lsS\('pr:|lsG\('sess:|lsS\('sess:|lsDel\('sess:|lsG\('last:|lsS\('last:|lsS\('ws_draft:/.test(outsideData);
+  })());
+  T('Bug fix: addPlateToLog now refreshes and switches to Ate after saving, matching logMeal\'s already-correct pattern — plates were saving but staying invisible until something else forced a refresh', (() => {
+    const i = src.indexOf('function addPlateToLog()');
+    const body = src.slice(i, i + 600);
+    return body.includes('renderFood();showFS(\'l\');');
+  })());
   T('Feature: removeSet exists and delete control only shows for extra/drop sets, not standard ones', src.includes('function removeSet') && src.includes('const isExtra=isDrop||si>=(orig.s||3)'));
   T('Feature: squat machine added as Leg press substitute with pain-stop caution baked into its name', src.includes("'Leg press':['Step-ups (bodyweight)','Wall sit (hold 60s)','Pendulum/hack squat machine (light weight only \\u2014 stop on any pain)']"));
 
