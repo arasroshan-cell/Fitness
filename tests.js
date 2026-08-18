@@ -12,7 +12,7 @@ function T(name, cond) {
 }
 
 /* ---------- Static checks (grep-level) ---------- */
-T('version stamp v2.2r in header', /Roshan Fitness v2\.2r/.test(src));
+T('version stamp v3.0 in header', /Roshan Fitness v3\.0/.test(src));
 T('N1: no slice(-52) remains', !src.includes('slice(-52)'));
 T('N1: two slice(-260) caps present', (src.match(/slice\(-260\)/g) || []).length === 2);
 T('N2: three fibreRisk flags', (src.match(/fibreRisk:true/g) || []).length === 3);
@@ -85,7 +85,7 @@ const scriptBlocks = [...src.matchAll(/<script>([\s\S]*?)<\/script>/g)];
 const script = scriptBlocks[scriptBlocks.length - 1][1];
 try {
   const run = new Function('localStorage', 'document', 'window', 'navigator', 'fetch', 'File', 'URL', 'Blob', 'alert', 'confirm',
-    script + '\n;return {bestSetOf, checkPR, todayKey, monthKey, prevMonthKey, mergedMlog, isSymptomDay, fibreWarnHTML, lsS, lsG, getSuggestion, FOODS, SUB_TYPE_OVERRIDE, inferSubWlabel, getProfile, saveProfile, Coach, getExHistory, saveSession, WS, initWS, DAYS, findExDef, getSmoothedWeight, Data};');
+    script + '\n;return {bestSetOf, checkPR, todayKey, monthKey, prevMonthKey, mergedMlog, isSymptomDay, fibreWarnHTML, lsS, lsG, getSuggestion, FOODS, SUB_TYPE_OVERRIDE, inferSubWlabel, getProfile, saveProfile, Coach, getExHistory, saveSession, WS, initWS, DAYS, findExDef, getSmoothedWeight, Data, estimate1RM, getE1RMTrend, getPrefillSets, getFatigueCurve, getMealGapSuggestion, getSwapSuggestions, getFoodSymptomCorrelation};');
   const app = run(localStorage, document, window, navigator, () => Promise.reject(new Error('offline')), function(){}, { createObjectURL: () => '' , revokeObjectURL: () => {} }, function(){}, () => {}, () => true);
 
   /* D2: bodyweight PR by reps at constant weight */
@@ -200,7 +200,7 @@ try {
     app.Data.draft.clearAll();
     return found && found.dl === 'Legs + core' && found.state.note === 'draft roundtrip';
   })());
-  T('Bug fix: exercise safety cues (nt field) now actually render, were silently invisible before despite existing in every exercise', src.includes('${orig.nt?`<div style="font-size:12px;color:var(--amb);font-style:italic'));
+  T('Bug fix: exercise safety cues (nt field) now actually render, were silently invisible before despite existing in every exercise', src.includes('${orig.nt?`<div style="font-size:11px;color:var(--amb);font-style:italic'));
   T('Design fix: header weight number has its own distinct color, was identical to protein/calories before', src.includes('id="hdr-wt" style="color:var(--grn)"'));
   T('Deep-dive find: Bench press safety cue no longer duplicates equipment text that wlabel already handles, was showing wrong bar info when substituted to dumbbells', src.includes("nt:'Exhale on press \\u2014 never hold breath'") && !src.includes("nt:'Total kg including 20kg bar"));
   T('Bug fix: sticky Save & Finish button now hides on every tab except Today, was floating over Food/Progress/History before since tab-switching never told it to hide', (() => {
@@ -225,7 +225,11 @@ try {
     const missing = [...allTags].filter(t => !mapKeys.has(t));
     return missing.length === 0;
   })());
-  T('Body diagram: renderBodyDiagram destroys and recreates chart instances each call, since renderProgress rebuilds the DOM every time', src.includes('if(_bodyChartFront)_bodyChartFront.destroy();'));
+  T('Body diagram: mountBodyDiagram destroys and recreates chart instances each call, since callers rebuild their container DOM every render', (() => {
+    const i = src.indexOf('function mountBodyDiagram(');
+    const body = src.slice(i, i + 400);
+    return body.includes('prevInstances?.front)prevInstances.front.destroy();') && body.includes('prevInstances?.back)prevInstances.back.destroy();');
+  })());
   T('Data layer migration: checkPR uses Data.pr instead of raw lsG/lsS calls', (() => {
     const i = src.indexOf('function checkPR(');
     const body = src.slice(i, i + 900);
@@ -287,6 +291,52 @@ try {
     const chest = vol.find(v => v.muscle === 'Chest');
     const triceps = vol.find(v => v.muscle === 'Triceps');
     return chest && chest.volume >= 1000 && triceps && triceps.volume >= 500;
+  })());
+  T('Round 4: every primary exercise has real form-tip content, not placeholder text', (() => {
+    const names = ['Arnold press','Barbell curl','Bench press','Cable crunch','Cable pull-through','Cable tricep pushdown','Calf raises','Dead bug','Dips (chest-focused, forward lean)','Dumbbell curl (alternating)','Dumbbell shrugs','Dumbbell wrist curls','Face pulls','Hammer curls','Hip abduction machine','Hip adduction machine','Incline DB press','Lat pulldown','Lateral raises','Leg extension (machine)','Leg press','Machine chest fly','Overhead tricep extension','Plank','Pull-ups (unassisted)','Seated DB shoulder press','Seated cable row','Seated leg curl','Single arm DB row'];
+    return names.every(n => {
+      const def = app.findExDef(n);
+      return def && typeof def.tip === 'string' && def.tip.length > 10;
+    });
+  })());
+  T('Round 4: tip apostrophes are properly escaped, no raw contractions that would break the string', !/tip:'[^']*\w'\w[^']*'/.test(src));
+  T('Round 4: card restructure collapsed the header into grouped rows, info button added', src.includes('class="infobtn"') && src.includes("togInfo('${gd.label}',${ei})"));
+  T('Round 4: info panel auto-closes when a set is marked done or typed into', src.includes('if(WS[dl].infoOpen===ei)WS[dl].infoOpen=null;saveDraft(dl);') && src.includes('if(WS[dl].infoOpen===ei)WS[dl].infoOpen=null;\n  saveDraft(dl);renderToday();'));
+  T('Round 4: exercise cards are real bounded containers, not a flat list', src.includes('.exb{background:var(--c1);border:1px solid var(--c3);border-radius:16px'));
+  T('Round 4: mini exercise diagram shows this exercise\u2019s own muscles, primary brighter than secondary', src.includes('function mountMiniExerciseDiagram') && src.includes('intensity:8,selected:false') && src.includes('intensity:3,selected:false'));
+  T('Round 4: header icon fix applied correctly \u2014 warn class toggles on the parent .mv element, not the text span', src.includes("epMv.className='mv'+(p<t.protein*0.53?' warn':'')") && src.includes("ekMv.className='mv'+(k>t.kcal*1.1?' warn':'')"));
+  T('Bug fix: set row kg/reps inputs now stretch flex:1 to fill the full row width, matching the energy/seton button pattern, instead of packing to the left', (() => {
+    const i = src.indexOf('class="srow${set.done');
+    const body = src.slice(i, i + 1500);
+    return (body.match(/text-align:center;flex:1/g) || []).length === 2;
+  })());
+  T('Deep audit find: a free session can now actually be started on a day you already completed your scheduled session, since the completion summary was blocking adHocDay from ever showing before', src.includes("!(adHocDay&&adHocDay.label==='Free session')"));
+  T('Coaching layer: estimate1RM matches hand-calculated Epley+Brzycki average exactly', (() => {
+    const est = app.estimate1RM(80, 8);
+    return Math.abs(est.value - 100.32) < 0.1;
+  })());
+  T('Coaching layer: e1RM correctly detects real progress even when weight is unchanged (more reps at same weight)', app.estimate1RM(80, 10).value > app.estimate1RM(80, 8).value);
+  T('Coaching layer: getExHistory analyzes full history with no time cutoff, exactly as instructed \u2014 not a snapshot, not a recency window', (() => {
+    const i = src.indexOf('function getExHistory(name){');
+    const body = src.slice(i, i + 400);
+    return !body.includes('cutoff') && !/setDate\(d\.getDate\(\)-\d/.test(body);
+  })());
+  T('Coaching layer: prefill correctly leaves weight empty for bodyweight exercises, only prefills reps', (() => {
+    const i = src.indexOf('function getPrefillSets(');
+    const body = src.slice(i, i + 1400);
+    return body.includes("orig.inputType==='bodyweight'?'':String(recW)");
+  })());
+  T('Coaching layer: fatigue curve repeats its last percentage for sets beyond what it explicitly defines, instead of leaving them unprefilled', src.includes('curve[i]!==undefined?curve[i]:curve[curve.length-1]'));
+  T('Food coaching: meal gap suggests realistic typical serving sizes, not a back-calculated amount that could recommend something absurd like 168g of protein powder', (() => {
+    app.lsS('food:' + app.todayKey(), [{ name: 'Rice', k: 200, p: 4, c: 44, f: 1 }]);
+    const gap = app.getMealGapSuggestion();
+    return gap.needed && gap.options.every(o => o.grams <= 250 && o.grams > 0);
+  })());
+  T('Food coaching: swap suggestions are honest about only measuring protein-per-calorie, not sugar, since sugar isn\u2019t a tracked field', app.getSwapSuggestions !== undefined && src.includes('not a sugar comparison'));
+  T('Food coaching: correlation is honestly gated on real sample size, refuses to claim a pattern from too little data', (() => {
+    app.lsS('food:' + app.todayKey(), [{ name: 'test', k: 300, p: 20, c: 10, f: 5 }]);
+    const result = app.getFoodSymptomCorrelation();
+    return result.available === false && result.reason.includes('need at least 10');
   })());
 } catch (e) {
   fail++; console.log('X FAIL  script eval crashed: ' + e.message);
