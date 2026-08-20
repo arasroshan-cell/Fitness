@@ -12,7 +12,7 @@ function T(name, cond) {
 }
 
 /* ---------- Static checks (grep-level) ---------- */
-T('version stamp v3.0 in header', /Roshan Fitness v3\.0/.test(src));
+T('version stamp v3.1 in header', /Roshan Fitness v3\.1/.test(src));
 T('N1: no slice(-52) remains', !src.includes('slice(-52)'));
 T('N1: two slice(-260) caps present', (src.match(/slice\(-260\)/g) || []).length === 2);
 T('N2: three fibreRisk flags', (src.match(/fibreRisk:true/g) || []).length === 3);
@@ -85,7 +85,7 @@ const scriptBlocks = [...src.matchAll(/<script>([\s\S]*?)<\/script>/g)];
 const script = scriptBlocks[scriptBlocks.length - 1][1];
 try {
   const run = new Function('localStorage', 'document', 'window', 'navigator', 'fetch', 'File', 'URL', 'Blob', 'alert', 'confirm',
-    script + '\n;return {bestSetOf, checkPR, todayKey, monthKey, prevMonthKey, mergedMlog, isSymptomDay, fibreWarnHTML, lsS, lsG, getSuggestion, FOODS, SUB_TYPE_OVERRIDE, inferSubWlabel, getProfile, saveProfile, Coach, getExHistory, saveSession, WS, initWS, DAYS, findExDef, getSmoothedWeight, Data, estimate1RM, getE1RMTrend, getPrefillSets, getFatigueCurve, getMealGapSuggestion, getSwapSuggestions, getFoodSymptomCorrelation};');
+    script + '\n;return {bestSetOf, checkPR, todayKey, monthKey, prevMonthKey, mergedMlog, isSymptomDay, fibreWarnHTML, lsS, lsG, getSuggestion, FOODS, SUB_TYPE_OVERRIDE, inferSubWlabel, getProfile, saveProfile, Coach, getExHistory, saveSession, WS, initWS, DAYS, findExDef, getSmoothedWeight, Data, estimate1RM, getE1RMTrend, getPrefillSets, getFatigueCurve, getMealGapSuggestion, getSwapSuggestions, getFoodSymptomCorrelation, getRampPrefill, getModeratePrefill};');
   const app = run(localStorage, document, window, navigator, () => Promise.reject(new Error('offline')), function(){}, { createObjectURL: () => '' , revokeObjectURL: () => {} }, function(){}, () => {}, () => true);
 
   /* D2: bodyweight PR by reps at constant weight */
@@ -321,10 +321,10 @@ try {
     const body = src.slice(i, i + 400);
     return !body.includes('cutoff') && !/setDate\(d\.getDate\(\)-\d/.test(body);
   })());
-  T('Coaching layer: prefill correctly leaves weight empty for bodyweight exercises, only prefills reps', (() => {
-    const i = src.indexOf('function getPrefillSets(');
-    const body = src.slice(i, i + 1400);
-    return body.includes("orig.inputType==='bodyweight'?'':String(recW)");
+  T('Coaching layer: bodyweight prefill leaves weight empty, only prefills reps', (() => {
+    app.Data.session.set({date:app.todayKey(),dl:'Pull day',seqIdx:1,exercises:[{name:'Pull-ups (unassisted)',origName:'Pull-ups (unassisted)',best:{w:15,r:5},sets:[{w:15,r:5,done:true}],isPR:false,inputType:'bodyweight',exVolume:100}],note:'',painNote:'',skipped:false,duration:1,newPRs:[],totalVolume:100});
+    const prefill = app.getPrefillSets(app.findExDef('Pull-ups (unassisted)'), 'Pull-ups (unassisted)', 4);
+    return prefill.every(s => s.w === '');
   })());
   T('Coaching layer: fatigue curve repeats its last percentage for sets beyond what it explicitly defines, instead of leaving them unprefilled', src.includes('curve[i]!==undefined?curve[i]:curve[curve.length-1]'));
   T('Food coaching: meal gap suggests realistic typical serving sizes, not a back-calculated amount that could recommend something absurd like 168g of protein powder', (() => {
@@ -338,6 +338,25 @@ try {
     const result = app.getFoodSymptomCorrelation();
     return result.available === false && result.reason.includes('need at least 10');
   })());
+  T('Real bug reported from live screenshots, re-verified against the two-mode rebuild: a compound exercise that fell well short of an old-style rep target still gets a sensible, grounded ramp \u2014 not a jump to the target ceiling. Smith machine row, only got 2 reps, should build a real ramp around that, not around a "10-12" target it never touched', (() => {
+    app.Data.session.set({date:app.todayKey(),dl:'Pull day',seqIdx:1,exercises:[{name:'Smith machine row',origName:'Seated cable row',best:{w:35,r:2},sets:[{w:35,r:2,done:true}],isPR:false,inputType:'weight',exVolume:70}],note:'',painNote:'',skipped:false,duration:1,newPRs:[],totalVolume:70});
+    const prefill = app.getPrefillSets(app.findExDef('Seated cable row'), 'Smith machine row', 3);
+    const weights = prefill.map(s => parseFloat(s.w));
+    return Math.max(...weights) <= 40 && Math.max(...weights) >= 35;
+  })());
+  T('Ramp-vs-moderate rebuild: compound exercises get a real ramp-to-top-set-plus-drop structure, isolation exercises get a moderate, no-1RM-chase structure \u2014 dispatched off the existing orig.compound field', src.includes('function getRampPrefill(') && src.includes('function getModeratePrefill(') && src.includes('isCompound?getRampPrefill(recW,numSets):getModeratePrefill(recW,numSets)'));
+  T('Ramp prefill: the top (near-max) set always lands second-to-last when there are 3+ sets, with a true drop set after it, matching the actual described method', (() => {
+    const prefill = app.getRampPrefill(100, 4);
+    return prefill[2].r === '2' && parseFloat(prefill[2].w) === 100 && parseFloat(prefill[3].w) < parseFloat(prefill[2].w) && parseInt(prefill[3].r) > parseInt(prefill[2].r);
+  })());
+  T('Moderate prefill: isolation work never drops to a 1-2 rep top set, stays in a genuinely moderate-to-high rep range throughout, per the research on joint stress and hypertrophy volume', (() => {
+    const prefill = app.getModeratePrefill(20, 3);
+    return prefill.every(s => parseInt(s.r) >= 6);
+  })());
+  T('Mini exercise diagram enlarged from 70px to 130px, so it\u2019s actually legible instead of tiny', src.includes('id="miniex-front" style="width:130px"') && src.includes('id="miniex-back" style="width:130px"'));
+  T('Deload signal: dispatches off the real, already-tested freshness calculation rather than a separate metric, and requires a real minimum sample before saying anything', src.includes('if(fresh.length<4)return{available:false'));
+  T('Deload signal: correctly wired into the sandbox and dispatches off the real, already-tested freshness calculation, not a separate metric', src.includes('getDeloadSignal(){') && src.includes('const fresh=this.getMuscleFreshness();'));
+  T('Deload card: only renders when the signal genuinely fires, not a permanent fixture', src.includes("if(deload.available&&deload.suggestDeload){"));
 } catch (e) {
   fail++; console.log('X FAIL  script eval crashed: ' + e.message);
 }

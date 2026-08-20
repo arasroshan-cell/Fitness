@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v3.0</title>
+<title>Roshan Fitness v3.1</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -214,7 +214,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-08-18">v3.0</div>
+    <div class="vtag" title="build 2026-08-20">v3.1</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -832,9 +832,9 @@ function renderExInfoPanel(ex,orig,ei){
   return `<div class="exinfo">
     ${orig.tip?`<div style="font-size:13px;color:var(--txt);margin-bottom:8px">${orig.tip}</div>`:''}
     <a href="${ytUrl}" target="_blank" rel="noopener" style="font-size:12px;color:var(--cyan);text-decoration:underline">Watch form video &#x2197;</a>
-    <div style="display:flex;gap:10px;justify-content:center;margin-top:10px">
-      <div id="miniex-front" style="width:70px"></div>
-      <div id="miniex-back" style="width:70px"></div>
+    <div style="display:flex;gap:14px;justify-content:center;margin-top:10px">
+      <div id="miniex-front" style="width:130px"></div>
+      <div id="miniex-back" style="width:130px"></div>
     </div>
   </div>`;
 }
@@ -954,6 +954,26 @@ const Coach={
       const freshness=Math.min(1,Math.max(0,daysSince/recoveryWindow));
       return{muscle,daysSince,freshness,lastDate:last.date};
     }).sort((a,b)=>a.freshness-b.freshness);
+  },
+  /* Deload/overreaching signal: reuses the freshness calculation above rather than a
+     separate metric. If a genuine majority of currently-tracked muscles are simultaneously
+     showing meaningful fatigue relative to their own normal (not just one muscle fresh from
+     yesterday's session), that's a real system-wide signal worth surfacing \u2014 not a single
+     sore muscle, a broad pattern across the whole week's training. Honestly gated on having
+     enough muscles with real history to say anything at all. */
+  getDeloadSignal(){
+    const fresh=this.getMuscleFreshness();
+    if(fresh.length<4)return{available:false,reason:'Not enough muscles with recent training history yet to say anything real.'};
+    const fatigued=fresh.filter(f=>f.freshness<0.3);
+    const ratio=fatigued.length/fresh.length;
+    return{
+      available:true,
+      totalMuscles:fresh.length,
+      fatiguedCount:fatigued.length,
+      fatiguedMuscles:fatigued.map(f=>f.muscle),
+      suggestDeload:ratio>=0.5,
+      ratioPercent:Math.round(ratio*100)
+    };
   }
 };
 
@@ -970,9 +990,14 @@ function getSuggestion(orig,best,prKey){
     if(pr&&parseInt(best.r||0)<parseInt(pr.r||0))return 'Work back to PR: '+pr.r+' reps (got '+best.r+' today)';
     return 'Beat '+best.r+' reps \u2014 add 1 per week';
   }
-  const w=parseFloat(best.w),r=parseInt(best.r),inc=orig.compound!==false?2.5:1.0;
+  const w=parseFloat(best.w),r=parseInt(best.r);
   const pr=prKey?Data.pr.get(prKey):null;
   if(pr&&w<parseFloat(pr.w))return 'Work back to PR: '+parseFloat(pr.w).toFixed(1)+'kg (was '+w+'kg today)';
+  if(orig.compound!==false){
+    const{recW}=getNextTargetWeight(orig,prKey||'',w,r);
+    return recW>w?'Last top set: '+w+'kg \u00d7 '+r+' \u2014 try '+recW.toFixed(1)+'kg for today\u2019s top set':'Last top set: '+w+'kg \u00d7 '+r+' \u2014 hold '+w+'kg, aim for a clean rep';
+  }
+  const inc=1.0;
   if(orig.r.includes('\u2013')){
     const[lo,hi]=orig.r.split('\u2013').map(Number);
     if(r>=hi)return 'Increase to '+(w+inc).toFixed(1)+'kg \u2014 maxed '+hi+' reps';
@@ -1205,7 +1230,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v3.0';
+const APP_VERSION='v3.1';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -1705,8 +1730,16 @@ function renderProgress(){
   const measurements=lsG('measurements')||[];const latestM=measurements[measurements.length-1];
   const lastExport=lsG('last_export');
   const nextIdx=getNextIdx();
+  const deload=Coach.getDeloadSignal();
 
   let html='';
+  if(deload.available&&deload.suggestDeload){
+    html+=`<div class="card warm" style="margin-bottom:12px">
+      <div class="cl">Consider a lighter session</div>
+      <div class="cs" style="margin-bottom:6px">${deload.fatiguedCount} of ${deload.totalMuscles} muscles you\u2019ve trained recently (${deload.ratioPercent}%) are still running meaningfully harder than their own normal \u2014 not just one muscle sore from yesterday, a pattern across the week.</div>
+      <div class="cs">${deload.fatiguedMuscles.join(', ')}</div>
+    </div>`;
+  }
   if(nextIdx!==null){
     html+=`<div class="card" style="margin-bottom:12px">
       <div class="cl">Training sequence</div>
@@ -2404,39 +2437,81 @@ function getFatigueCurve(orig){
   if(orig.compound!==false)return[1,0.75,0.55];
   return[1,0.85,0.75];
 }
-/* The actual prefill: real numbers written into set.w/set.r, not just advisory text, so
-   accepting with one tap logs the recommended number and overwriting is just typing over it.
-   Uses the e1RM trend to personalize the next weight jump when there's enough reliable
-   history (2+ points, none from the >10-rep low-confidence range); falls back to the existing
-   flat increment otherwise \u2014 honest about not having enough data rather than guessing. */
+/* Ramp to a real top set, then a drop set \u2014 matches the actual method described:
+   progressively heavier sets building to a genuine near-max effort (low reps), then one
+   backoff/drop set for extra volume. The generator scales to whatever set count is
+   configured, always landing the top effort second-to-last (or last, if 2 sets) and the
+   drop set truly last when there are 3+ sets. */
+function getRampPrefill(topWeight,numSets){
+  const round=v=>Math.round(v/0.5)*0.5;
+  if(numSets<2)return[{w:String(round(topWeight)),r:'2'}];
+  const hasDrop=numSets>=3;
+  const rampSteps=hasDrop?numSets-1:numSets;
+  return Array.from({length:numSets},(_,i)=>{
+    if(hasDrop&&i===numSets-1)return{w:String(round(topWeight*0.55)),r:'9'};
+    if(i===rampSteps-1)return{w:String(round(topWeight)),r:'2'};
+    const frac=rampSteps<=1?0:i/(rampSteps-1);
+    const pct=0.55+frac*0.35,reps=Math.round(12-frac*8);
+    return{w:String(round(topWeight*pct)),r:String(Math.max(2,reps))};
+  });
+}
+/* Isolation work: still progressively loaded and still finishes with a burn/drop set, but
+   deliberately never chases a 1-2 rep max \u2014 stays in a moderate-to-high rep, genuinely
+   close-to-failure zone throughout. Smaller joints and tendons carry a worse risk-to-benefit
+   ratio at true near-max singles than compounds do, and hypertrophy tracks with weekly
+   close-to-failure volume more reliably than with a strength peak. */
+function getModeratePrefill(targetWeight,numSets){
+  const round=v=>Math.round(v/0.5)*0.5;
+  return Array.from({length:numSets},(_,i)=>{
+    const isLast=i===numSets-1;
+    if(isLast&&numSets>=3)return{w:String(round(targetWeight*0.65)),r:'14'};
+    const frac=numSets<=1?1:i/(numSets-1);
+    const pct=0.8+frac*0.2,reps=Math.round(14-frac*4);
+    return{w:String(round(targetWeight*pct)),r:String(Math.max(6,reps))};
+  });
+}
+/* The actual prefill dispatcher: real numbers written into set.w/set.r, not just advisory
+   text, so accepting with one tap logs the recommended number and overwriting is just
+   typing over it. Uses the existing orig.compound field \u2014 already correctly tagged across
+   every exercise \u2014 to route compounds through the ramp-to-top-set model and isolation work
+   through the moderate, no-1RM-chase model, rather than one flat scheme for everything. */
+/* Shared by getPrefillSets and getSuggestion so the advisory text and the actual prefilled
+   numbers can never disagree \u2014 both call this same function for the target weight. */
+function getNextTargetWeight(orig,trackName,w,r){
+  const targetR=orig.r&&orig.r.includes&&orig.r.includes('\u2013')?Number(orig.r.split('\u2013')[1]):(parseInt(orig.r)||r);
+  const gotTop=r>=targetR;
+  const isCompound=orig.compound!==false;
+  let recW=w;
+  if(gotTop||isCompound){
+    const inc=isCompound?2.5:1.0;
+    const trend=getE1RMTrend(trackName);
+    if(trend.available&&!trend.lowConfidence&&trend.trending==='up'){
+      recW=Math.round((w+Math.max(inc,Math.min(inc*2,trend.ratePerWeek*0.5)))*2)/2;
+    }else if(gotTop||isCompound){
+      recW=w+inc;
+    }
+  }
+  return{recW,isCompound,gotTop,targetR};
+}
+/* The actual prefill dispatcher: real numbers written into set.w/set.r, not just advisory
+   text, so accepting with one tap logs the recommended number and overwriting is just
+   typing over it. Uses the existing orig.compound field \u2014 already correctly tagged across
+   every exercise \u2014 to route compounds through the ramp-to-top-set model and isolation work
+   through the moderate, no-1RM-chase model, rather than one flat scheme for everything. */
 function getPrefillSets(orig,trackName,numSets){
   const hist=getExHistory(trackName);
   const lastBest=hist.length?hist[hist.length-1].best:null;
   if(!lastBest||!lastBest.w||orig.inputType==='seconds'||orig.inputType==='reps_each')return null;
-  const w=parseFloat(lastBest.w),r=parseInt(lastBest.r);
-  const targetR=orig.r&&orig.r.includes&&orig.r.includes('\u2013')?Number(orig.r.split('\u2013')[1]):(parseInt(orig.r)||r);
-  const gotTop=r>=targetR;
-  let recW=w;
-  if(gotTop){
-    const inc=orig.inputType==='bodyweight'?0:(orig.compound!==false?2.5:1.0);
-    const trend=getE1RMTrend(trackName);
-    if(orig.inputType==='bodyweight'){
-      recW=0; // bodyweight progression is reps, not weight; handled via curve below
-    }else if(trend.available&&!trend.lowConfidence&&trend.trending==='up'){
-      const personalizedInc=Math.max(inc,Math.min(inc*2,trend.ratePerWeek*0.5));
-      recW=Math.round((w+personalizedInc)*2)/2;
-    }else{
-      recW=w+inc;
-    }
+  if(orig.inputType==='bodyweight'){
+    const curve=getFatigueCurve(orig),r=parseInt(lastBest.r);
+    return Array.from({length:numSets},(_,i)=>{
+      const pct=curve[i]!==undefined?curve[i]:curve[curve.length-1];
+      return{w:'',r:String(Math.max(1,Math.round(r*pct)))};
+    });
   }
-  const curve=getFatigueCurve(orig);
-  return Array.from({length:numSets},(_,i)=>{
-    const pct=curve[i]!==undefined?curve[i]:curve[curve.length-1];
-    return{
-      w:orig.inputType==='bodyweight'?'':String(recW),
-      r:String(Math.max(1,Math.round(targetR*pct)))
-    };
-  });
+  const w=parseFloat(lastBest.w),r=parseInt(lastBest.r);
+  const{recW,isCompound}=getNextTargetWeight(orig,trackName,w,r);
+  return isCompound?getRampPrefill(recW,numSets):getModeratePrefill(recW,numSets);
 }
 
 /* ===== FOOD COACHING ===== */
