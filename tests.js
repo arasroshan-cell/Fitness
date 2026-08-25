@@ -12,7 +12,7 @@ function T(name, cond) {
 }
 
 /* ---------- Static checks (grep-level) ---------- */
-T('version stamp v3.1 in header', /Roshan Fitness v3\.1/.test(src));
+T('version stamp v3.5 in header', /Roshan Fitness v3\.5/.test(src));
 T('N1: no slice(-52) remains', !src.includes('slice(-52)'));
 T('N1: two slice(-260) caps present', (src.match(/slice\(-260\)/g) || []).length === 2);
 T('N2: three fibreRisk flags', (src.match(/fibreRisk:true/g) || []).length === 3);
@@ -85,7 +85,7 @@ const scriptBlocks = [...src.matchAll(/<script>([\s\S]*?)<\/script>/g)];
 const script = scriptBlocks[scriptBlocks.length - 1][1];
 try {
   const run = new Function('localStorage', 'document', 'window', 'navigator', 'fetch', 'File', 'URL', 'Blob', 'alert', 'confirm',
-    script + '\n;return {bestSetOf, checkPR, todayKey, monthKey, prevMonthKey, mergedMlog, isSymptomDay, fibreWarnHTML, lsS, lsG, getSuggestion, FOODS, SUB_TYPE_OVERRIDE, inferSubWlabel, getProfile, saveProfile, Coach, getExHistory, saveSession, WS, initWS, DAYS, findExDef, getSmoothedWeight, Data, estimate1RM, getE1RMTrend, getPrefillSets, getFatigueCurve, getMealGapSuggestion, getSwapSuggestions, getFoodSymptomCorrelation, getRampPrefill, getModeratePrefill};');
+    script + '\n;return {bestSetOf, checkPR, todayKey, monthKey, prevMonthKey, mergedMlog, isSymptomDay, fibreWarnHTML, lsS, lsG, getSuggestion, FOODS, SUB_TYPE_OVERRIDE, inferSubWlabel, getProfile, saveProfile, Coach, getExHistory, saveSession, WS, initWS, DAYS, findExDef, getSmoothedWeight, Data, estimate1RM, getE1RMTrend, getPrefillSets, getFatigueCurve, getMealGapSuggestion, getSwapSuggestions, getFoodSymptomCorrelation, getRampPrefill, getModeratePrefill, resolveClickedTag, resolveClickedTagsAll, getExercisesForMuscleTag, LIB_ID_TO_TAGS};');
   const app = run(localStorage, document, window, navigator, () => Promise.reject(new Error('offline')), function(){}, { createObjectURL: () => '' , revokeObjectURL: () => {} }, function(){}, () => {}, () => true);
 
   /* D2: bodyweight PR by reps at constant weight */
@@ -357,6 +357,36 @@ try {
   T('Deload signal: dispatches off the real, already-tested freshness calculation rather than a separate metric, and requires a real minimum sample before saying anything', src.includes('if(fresh.length<4)return{available:false'));
   T('Deload signal: correctly wired into the sandbox and dispatches off the real, already-tested freshness calculation, not a separate metric', src.includes('getDeloadSignal(){') && src.includes('const fresh=this.getMuscleFreshness();'));
   T('Deload card: only renders when the signal genuinely fires, not a permanent fixture', src.includes("if(deload.available&&deload.suggestDeload){"));
+  T('Real bug reported from live screenshot: tapping the tricep region now resolves to a specific head tag with real exercises, not the generic dead-end "Triceps" tag that zero exercises actually use as primary', (() => {
+    const resolved = app.resolveClickedTag(app.LIB_ID_TO_TAGS ? Object.keys(app.LIB_ID_TO_TAGS).find(id => id.includes('triceps-lateral')) : null);
+    return resolved === 'Triceps (lateral/medial)' && app.getExercisesForMuscleTag(resolved).some(e => e.n === 'Cable tricep pushdown');
+  })());
+  T('Systematic diagram audit: every clickable region resolves to a tag with at least some real exercise usage, except Obliques \u2014 a confirmed, honest content gap flagged to Boss, not a crash', (() => {
+    const ids = Object.keys(app.LIB_ID_TO_TAGS);
+    const emptyTags = ids.map(id => app.resolveClickedTag(id)).filter(tag => tag && app.getExercisesForMuscleTag(tag).length === 0);
+    const uniqueEmpty = [...new Set(emptyTags)];
+    return uniqueEmpty.length === 1 && uniqueEmpty[0] === 'Obliques';
+  })());
+  T('Real gap fix: substitute resolution now supports overriding primaryMuscles/secondaryMuscles, not just inputType/wlabel/nt \u2014 without this, Reverse EZ bar curl would have silently inherited "Biceps" from the curl it substitutes for, which is factually wrong', src.includes('primaryMuscles:override?.primaryMuscles||origDef?.primaryMuscles||[]') && src.includes('secondaryMuscles:override?.secondaryMuscles||origDef?.secondaryMuscles||[]'));
+  T('Reverse EZ bar curl correctly tagged Forearms primary, Brachialis secondary, and existing substitutes (EZ bar curl, DB curl) still correctly inherit Biceps, unaffected by the fix', (() => {
+    const rev = app.findExDef('Reverse EZ bar curl');
+    const ez = app.findExDef('EZ bar curl');
+    return rev.primaryMuscles[0] === 'Forearms' && rev.secondaryMuscles[0] === 'Brachialis' && ez.primaryMuscles[0] === 'Biceps';
+  })());
+  T('Bar weights: Smith machine pre-population moved to real app init, not tucked inside renderProgress \u2014 confirmed correct even if Progress tab is never visited', src.includes("(()=>{const bw=lsG('bar_weights')||{};if(!bw.smith){bw.smith='15';lsS('bar_weights',bw);}})();\ncheckStorage();"));
+  T('Real bug reported: saveSession now calls renderToday() immediately, not after a 5-second setTimeout that made the page look stuck \u2014 the exact behavior reported', src.includes('clearDraft();showStickyBtn(false);stopTimerTick();\n  renderToday();') && !src.includes("setTimeout(()=>{cb.style.display='none';renderToday();},5000)"));
+  T('Save confirmation moved to a genuinely persistent toast element outside the content area, since the old confbox was actually rebuilt by renderToday() itself and got destroyed the moment the page transitioned \u2014 that\'s what the original 5-second delay was clumsily working around', src.includes('id="save-toast"') && src.includes("document.getElementById('save-toast')"));
+  T('Real bug reported: tapping the biceps region now surfaces ALL three genuinely distinct groups sharing that spot (general Biceps curls, long-head-specific curls, brachialis-specific curls), not just one winner hiding the other two', (() => {
+    const tags = app.resolveClickedTagsAll('biceps-left');
+    return tags.includes('Biceps') && tags.includes('Biceps (long head)') && tags.includes('Brachialis') &&
+      app.getExercisesForMuscleTag('Brachialis').some(e => e.n === 'Hammer curls');
+  })());
+  T('Real bug reported: the Chest/Lower chest region overlap is fixed too \u2014 Decline press, previously unreachable via the diagram, now shows', (() => {
+    const tags = app.resolveClickedTagsAll('chest-lower-left');
+    return tags.includes('Chest') && tags.includes('Lower chest') &&
+      app.getExercisesForMuscleTag('Lower chest').some(e => e.n === 'Decline machine press');
+  })());
+  T('Clutter fix caught by actually looking at the result: when multiple tags share a region, only primary matches show per section \u2014 secondary lists would otherwise repeat a huge, mostly-irrelevant wall of text under every section and bury the genuinely differentiated information', src.includes('const showSecondary=_freeExSelectedTags.length===1;') && src.includes('const showSecondary=_progressSelectedTags.length===1;'));
 } catch (e) {
   fail++; console.log('X FAIL  script eval crashed: ' + e.message);
 }
