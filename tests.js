@@ -12,7 +12,7 @@ function T(name, cond) {
 }
 
 /* ---------- Static checks (grep-level) ---------- */
-T('version stamp v3.5 in header', /Roshan Fitness v3\.5/.test(src));
+T('version stamp v3.8 in header', /Roshan Fitness v3\.8/.test(src));
 T('N1: no slice(-52) remains', !src.includes('slice(-52)'));
 T('N1: two slice(-260) caps present', (src.match(/slice\(-260\)/g) || []).length === 2);
 T('N2: three fibreRisk flags', (src.match(/fibreRisk:true/g) || []).length === 3);
@@ -283,14 +283,19 @@ try {
   T('Muscle tags: choiceOptions also carry muscle tags', allExDefs.filter(e => e.inputType === 'choice').every(e => e.choiceOptions.every(o => Array.isArray(o.primaryMuscles))));
   T('findExDef: looks up a scheduled exercise by name', app.findExDef('Bench press')?.primaryMuscles.includes('Chest'));
   T('findExDef: looks up a choiceOption by name', app.findExDef('Dead bug')?.primaryMuscles.includes('Core'));
-  T('Coach.getWeeklyMuscleVolume: weights primary fully and secondary at half, no double counting', (() => {
+  T('Coach.getWeeklyMuscleVolume: real sets-count metric \u2014 primary full, secondary half, drop sets excluded, comparable across every exercise type', (() => {
     app.lsS('sess:' + app.todayKey(), { date: app.todayKey(), dl: 'Push day', seqIdx: 0, exercises: [
-      { name: 'Bench press', origName: 'Bench press', exVolume: 1000, isPR: false }
-    ], note: '', painNote: '', skipped: false, totalVolume: 1000, newPRs: [] });
+      { name: 'Bench press', origName: 'Bench press', isPR: false, sets: [
+        { w: 80, r: 8, done: true, isDrop: false },
+        { w: 80, r: 8, done: true, isDrop: false },
+        { w: 80, r: 8, done: true, isDrop: false },
+        { w: 50, r: 12, done: true, isDrop: true }
+      ]}
+    ], note: '', painNote: '', skipped: false, totalVolume: 0, newPRs: [] });
     const vol = app.Coach.getWeeklyMuscleVolume();
     const chest = vol.find(v => v.muscle === 'Chest');
     const triceps = vol.find(v => v.muscle === 'Triceps');
-    return chest && chest.volume >= 1000 && triceps && triceps.volume >= 500;
+    return chest && chest.volume === 3 && triceps && triceps.volume === 1.5;
   })());
   T('Round 4: every primary exercise has real form-tip content, not placeholder text', (() => {
     const names = ['Arnold press','Barbell curl','Bench press','Cable crunch','Cable pull-through','Cable tricep pushdown','Calf raises','Dead bug','Dips (chest-focused, forward lean)','Dumbbell curl (alternating)','Dumbbell shrugs','Dumbbell wrist curls','Face pulls','Hammer curls','Hip abduction machine','Hip adduction machine','Incline DB press','Lat pulldown','Lateral raises','Leg extension (machine)','Leg press','Machine chest fly','Overhead tricep extension','Plank','Pull-ups (unassisted)','Seated DB shoulder press','Seated cable row','Seated leg curl','Single arm DB row'];
@@ -387,6 +392,23 @@ try {
       app.getExercisesForMuscleTag('Lower chest').some(e => e.n === 'Decline machine press');
   })());
   T('Clutter fix caught by actually looking at the result: when multiple tags share a region, only primary matches show per section \u2014 secondary lists would otherwise repeat a huge, mostly-irrelevant wall of text under every section and bury the genuinely differentiated information', src.includes('const showSecondary=_freeExSelectedTags.length===1;') && src.includes('const showSecondary=_progressSelectedTags.length===1;'));
+  T('Real feedback addressed: Weekly Muscle Volume replaced with a real, interpretable sets-count metric, not a raw tonnage number nobody could read', src.includes("Weekly Sets Per Muscle") && src.includes('const completedSets=(e.sets||[]).filter(s=>s.done&&!s.isDrop).length;'));
+  T('Real feedback addressed: Volume vs Freshness now has a permanent, always-visible explanation of WHEN to use each, not just what the colors mean', src.includes("Volume</b> = what you've trained this week") && src.includes("Freshness</b> = what's actually recovered"));
+  T('Real feedback addressed: food quick-add now has a real search input, matching the pattern already working for exercise search, instead of a native select with 74+ entries to scroll through', src.includes('id="ml-food-search"') && src.includes('function filterMealFoodList(') && src.includes('function pickMealFood('));
+  T('Real feature built: per-exercise freshness note, exactly the scenario described \u2014 Incline bench in a free session only flags Upper chest specifically, not the whole Push day, and the note is clear that everything else is unaffected', src.includes('const freshTag=(effOrigLike.primaryMuscles||[])[0];') && src.includes('Everything else on this day is unaffected'));
+  T('Progress tab restructure: Bar Weight Reference moved to Today tab where it\u2019s actually useful mid-workout, no longer in Progress', src.includes('Bar Weight Reference') && (() => {
+    const todayIdx = src.indexOf("document.getElementById('p0').innerHTML=html;");
+    const progressStart = src.indexOf('function renderProgress()');
+    const progressEnd = src.indexOf('function renderFood()');
+    const progressBody = src.slice(progressStart, progressEnd);
+    return !progressBody.includes('Bar Weight Reference');
+  })());
+  T('Progress tab restructure: Daily targets moved to Food tab, Recent sessions and Health log moved to History tab \u2014 Progress now only contains actual progress insight, not settings or history lookback', (() => {
+    const progressStart = src.indexOf('function renderProgress()');
+    const progressEnd = src.indexOf('function renderFood()');
+    const progressBody = src.slice(progressStart, progressEnd);
+    return !progressBody.includes('Daily targets') && !progressBody.includes('>Recent sessions<') && progressBody.includes('Weekly Sets Per Muscle') && progressBody.includes('Body Map');
+  })());
 } catch (e) {
   fail++; console.log('X FAIL  script eval crashed: ' + e.message);
 }

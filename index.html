@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v3.5</title>
+<title>Roshan Fitness v3.8</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -214,7 +214,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-08-21">v3.5</div>
+    <div class="vtag" title="build 2026-08-22">v3.8</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -944,7 +944,7 @@ const Coach={
   },
   getWeeklyMuscleVolume(){
     const cutoff=(()=>{const d=new Date();d.setDate(d.getDate()-7);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
-    const vol={};
+    const sets={};
     for(let i=0;i<localStorage.length;i++){
       const k=localStorage.key(i);
       if(!k||!k.startsWith('sess:'))continue;
@@ -953,12 +953,13 @@ const Coach={
       sess.exercises.forEach(e=>{
         const def=findExDef(e.origName);
         if(!def)return;
-        const v=e.exVolume||0;
-        (def.primaryMuscles||[]).forEach(m=>{vol[m]=(vol[m]||0)+v;});
-        (def.secondaryMuscles||[]).forEach(m=>{vol[m]=(vol[m]||0)+v*0.5;});
+        const completedSets=(e.sets||[]).filter(s=>s.done&&!s.isDrop).length;
+        if(!completedSets)return;
+        (def.primaryMuscles||[]).forEach(m=>{sets[m]=(sets[m]||0)+completedSets;});
+        (def.secondaryMuscles||[]).forEach(m=>{sets[m]=(sets[m]||0)+completedSets*0.5;});
       });
     }
-    return Object.entries(vol).map(([muscle,volume])=>({muscle,volume:Math.round(volume)})).sort((a,b)=>b.volume-a.volume);
+    return Object.entries(sets).map(([muscle,volume])=>({muscle,volume:Math.round(volume*10)/10})).sort((a,b)=>b.volume-a.volume);
   },
   /* Real freshness: recency weighted by how hard that specific session was relative to this
      muscle's own recent normal, not just a flat days-since-trained count. A heavier-than-usual
@@ -1269,7 +1270,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v3.5';
+const APP_VERSION='v3.8';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -1362,6 +1363,7 @@ function renderToday(){
   const sym=lsG('sym:'+todayKey())||{};
   const water=lsG('water:'+todayKey())||0;
   const symDone=sym.energy&&sym.seton&&sym.bowel;
+  const _freshList=Coach.getMuscleFreshness();
   let html='';
 
   html+=`<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
@@ -1543,6 +1545,11 @@ function renderToday(){
       if(prData)contextParts.push(`&#x2605; ${fmtBest(prData)}`);
       contextParts.push(lstr);
       if(sugg)contextParts.push(sugg);
+      const freshTag=(effOrigLike.primaryMuscles||[])[0];
+      const freshEntry=freshTag?_freshList.find(f=>f.muscle===freshTag):null;
+      const freshNote=(freshEntry&&freshEntry.freshness<0.4)
+        ?`${freshTag} is still recovering \u2014 trained ${freshEntry.daysSince===0?'today':freshEntry.daysSince===1?'yesterday':freshEntry.daysSince+' days ago'}. Everything else on this day is unaffected; sub this one if you want a different angle.`
+        :null;
       let h=`<div class="exb">
         <div class="exhd">
           <div style="flex:1">
@@ -1554,6 +1561,7 @@ function renderToday(){
             <div style="font-size:12px;color:var(--mut);margin-top:3px">${contextParts.join(' &middot; ')}</div>
             <div style="font-size:12px;color:var(--txt);margin-top:2px">${orig.s} sets &times; ${effR||orig.r}${(subWlabel||orig.wlabel)?` &middot; ${subWlabel||orig.wlabel}`:''}</div>
             ${orig.nt?`<div style="font-size:11px;color:var(--amb);font-style:italic;margin-top:3px">${orig.nt}</div>`:''}
+            ${freshNote?`<div style="font-size:11px;color:var(--cyan);margin-top:4px;padding:6px 8px;background:var(--c2);border-radius:8px">&#x21BB; ${freshNote}</div>`:''}
           </div>
         </div>
         ${ws.infoOpen===ei?renderExInfoPanel(ex,orig,ei):''}`;
@@ -1682,6 +1690,15 @@ function renderToday(){
       <button class="water-btn" onclick="adjWater(1)">+</button>
     </div>
     <div class="prog-bar" style="margin-top:8px"><div id="water-bar" class="prog-fill" style="width:${wp}%;background:var(--cyan)"></div></div>
+  </div>`;
+
+  const barWts=lsG('bar_weights')||{};
+  html+=`<div class="card" style="margin-top:12px"><div class="cl">Bar Weight Reference</div><div class="ct" style="margin-bottom:10px">For when the gym's labels are worn off</div>
+    <div class="statrow"><div style="font-size:13px;color:var(--txt)">Olympic barbell</div><div style="font-size:13px;color:var(--grn);font-weight:700">20kg &middot; confirmed standard</div></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--txt)">Standard EZ curl bar</div><div style="font-size:13px;color:var(--grn);font-weight:700">10kg &middot; confirmed at your gym</div></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--txt)">Smith machine bar</div><input class="sinput" type="text" id="bar-smith" placeholder="not confirmed yet" value="${barWts.smith}" style="width:130px;text-align:right"></div>
+    <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px" onclick="saveBarWeight()">Save Smith machine weight</button>
+    <div class="cs" style="margin-top:8px">No universal standard for Smith machines &mdash; counterweighting varies by model. Check a stamped weight on the bar, ask staff, or the bathroom-scale method, then save it here once.</div>
   </div>`;
 
   document.getElementById('p0').innerHTML=html;
@@ -1815,61 +1832,20 @@ function renderProgress(){
     <div id="mconf" class="confbox">Measurements saved &#x2713;</div>
   </div>`;
 
-  const recents=[];const now=new Date();
-  for(let d=0;d<14;d++){const dt=new Date(now);dt.setDate(dt.getDate()-d);const dk=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');const s=Data.session.get(dk);if(s)recents.push(s);}
-  if(recents.length){
-    html+=`<div class="card"><div class="cl">Recent sessions</div><div class="ct" style="margin-bottom:10px">Last 14 days</div>
-      ${recents.map(s=>`<div class="hitem"><div style="display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif">${s.date}${s.duration?' <span style="font-size:12px;color:var(--dim);font-family:\'IBM Plex Sans\',sans-serif">'+s.duration+'m</span>':''}</div>
-        <div style="font-size:13px;color:var(--mut)">${s.dl}${s.newPRs&&s.newPRs.length?' &#x2605;':''}</div></div>
-        <div class="pill ${s.skipped?(s.skipReason==='flare'?'pr':'pa'):'pg'}">${s.skipped?(s.skipReason==='flare'?'Flare':s.skipReason==='tired'?'Tired':'Busy'):'Done &#x2713;'}</div>
-      </div>${s.note?`<div style="font-size:12px;color:var(--dim);margin-top:4px;font-style:italic">"${escHtml(s.note)}"</div>`:''}</div>`).join('')}
-    </div>`;
-  }
-
-  const symH=[];for(let d=0;d<7;d++){const dt=new Date(now);dt.setDate(dt.getDate()-d);const s=lsG('sym:'+dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'));if(s&&s.energy)symH.push(s);}
-  if(symH.length){
-    html+=`<div class="card"><div class="cl">Health log &mdash; 7 days</div><div class="ct" style="margin-bottom:10px">Show to your gastroenterologist</div>
-      ${symH.map(s=>`<div class="hitem"><div style="display:flex;justify-content:space-between;align-items:center">
-        <div style="font-size:13px;color:var(--mut);font-weight:500">${s.date}</div>
-        <div style="display:flex;gap:14px;font-size:13px;font-weight:700">
-          <span>Energy ${s.energy||'&mdash;'}/5</span><span>Seton ${s.seton||'&mdash;'}/5</span>
-          <span style="color:${s.bowel==='normal'?'var(--grn)':s.bowel?'var(--red)':'var(--dim)'}">${s.bowel==='normal'?'&#x2713;':'off'}</span>
-        </div>
-      </div></div>`).join('')}
-    </div>`;
-  }
-
-  const prof=getProfile();
-  html+=`<div class="card"><div class="cl">Settings</div><div class="ct" style="margin-bottom:10px">Daily targets</div>
-    <div class="statrow"><div style="font-size:13px;color:var(--mut)">Protein (g)</div><input class="sinput" type="number" id="prof-protein" value="${prof.targets.protein}" style="width:80px"></div>
-    <div class="statrow"><div style="font-size:13px;color:var(--mut)">Kcal</div><input class="sinput" type="number" id="prof-kcal" value="${prof.targets.kcal}" style="width:80px"></div>
-    <div class="statrow"><div style="font-size:13px;color:var(--mut)">Carbs (g)</div><input class="sinput" type="number" id="prof-carbs" value="${prof.targets.carbs}" style="width:80px"></div>
-    <div class="statrow"><div style="font-size:13px;color:var(--mut)">Fat (g)</div><input class="sinput" type="number" id="prof-fat" value="${prof.targets.fat}" style="width:80px"></div>
-    <button class="btn btn-grn btn-sm" style="width:100%;margin-top:10px" onclick="saveTargets()">Save targets</button>
-  </div>`;
-
-  const barWts=lsG('bar_weights')||{};
-  html+=`<div class="card"><div class="cl">Bar Weight Reference</div><div class="ct" style="margin-bottom:10px">For when the gym's labels are worn off</div>
-    <div class="statrow"><div style="font-size:13px;color:var(--txt)">Olympic barbell</div><div style="font-size:13px;color:var(--grn);font-weight:700">20kg &middot; confirmed standard</div></div>
-    <div class="statrow"><div style="font-size:13px;color:var(--txt)">Standard EZ curl bar</div><div style="font-size:13px;color:var(--grn);font-weight:700">10kg &middot; confirmed at your gym</div></div>
-    <div class="statrow"><div style="font-size:13px;color:var(--txt)">Smith machine bar</div><input class="sinput" type="text" id="bar-smith" placeholder="not confirmed yet" value="${barWts.smith}" style="width:130px;text-align:right"></div>
-    <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px" onclick="saveBarWeight()">Save Smith machine weight</button>
-    <div class="cs" style="margin-top:8px">No universal standard for Smith machines &mdash; counterweighting varies by model. Check a stamped weight on the bar, ask staff, or the bathroom-scale method, then save it here once.</div>
-  </div>`;
+  const now=new Date();
 
   const muscleVol=Coach.getWeeklyMuscleVolume();
-  const maxVol=muscleVol.length?muscleVol[0].volume:1;
-  html+=`<div class="card"><div class="cl">Weekly Muscle Volume</div><div class="ct" style="margin-bottom:4px">Last 7 days</div>
-    <div class="cs" style="margin-bottom:10px">Primary work counts fully, secondary (incidental) work counts at half, so triceps getting hit by three different pressing movements doesn't look artificially equal to a dedicated triceps exercise. Bars are relative to your biggest muscle group this week, not an absolute physical unit &mdash; weight-based and rep-based exercises use different measures underneath.</div>
+  html+=`<div class="card"><div class="cl">Weekly Sets Per Muscle</div><div class="ct" style="margin-bottom:4px">Last 7 days</div>
+    <div class="cs" style="margin-bottom:10px">Primary work counts as a full set, secondary (incidental) work counts as half a set. Roughly 10\u201320 sets a week per muscle is the commonly-cited range for growth \u2014 not a hard rule, just a reference point.</div>
     ${muscleVol.length?muscleVol.map(m=>`
       <div style="margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--txt);margin-bottom:2px"><span>${m.muscle}</span><span style="color:var(--mut)">${m.volume}</span></div>
-        <div class="prog-bar"><div class="prog-fill" style="width:${Math.round(m.volume/maxVol*100)}%;background:var(--cyan)"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--txt);margin-bottom:2px"><span>${m.muscle}</span><span style="color:var(--mut)">${m.volume} set${m.volume===1?'':'s'}</span></div>
+        <div class="prog-bar"><div class="prog-fill" style="width:${Math.min(100,Math.round(m.volume/20*100))}%;background:${m.volume<8?'var(--amb)':'var(--cyan)'}"></div></div>
       </div>`).join(''):`<div class="cs">No sessions logged in the last 7 days yet.</div>`}
   </div>`;
 
-  html+=`<div class="card"><div class="cl">Body Map</div><div class="ct" style="margin-bottom:4px">Tap a muscle</div>
+  html+=`<div class="card"><div class="cl">Body Map</div><div class="ct" style="margin-bottom:8px">Tap a muscle</div>
+    <div class="cs" style="margin-bottom:10px"><b style="color:var(--txt)">Volume</b> = what you've trained this week, looking back. <b style="color:var(--txt)">Freshness</b> = what's actually recovered and ready right now, looking forward \u2014 check this before picking today's session, not after.</div>
     <div style="display:flex;gap:8px;margin-bottom:10px">
       <button class="btn ${_progressDiagMode==='volume'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setProgressDiagMode('volume')">Volume</button>
       <button class="btn ${_progressDiagMode==='freshness'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setProgressDiagMode('freshness')">Freshness</button>
@@ -1987,6 +1963,13 @@ function renderFood(){
       <div style="color:var(--dim);font-size:11px;margin-top:2px">${s.note}</div>
     </div>`).join('')}
   </div>`:''}
+  <div class="card" style="margin-bottom:10px"><div class="cl">Daily targets</div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut)">Protein (g)</div><input class="sinput" type="number" id="prof-protein" value="${t.protein}" style="width:80px"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut)">Kcal</div><input class="sinput" type="number" id="prof-kcal" value="${t.kcal}" style="width:80px"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut)">Carbs (g)</div><input class="sinput" type="number" id="prof-carbs" value="${t.carbs}" style="width:80px"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut)">Fat (g)</div><input class="sinput" type="number" id="prof-fat" value="${t.fat}" style="width:80px"></div>
+    <button class="btn btn-grn btn-sm" style="width:100%;margin-top:10px" onclick="saveTargets()">Save targets</button>
+  </div>
   <div class="seg">
     <button class="segb" id="fsb-c" onclick="showFS('c')">Cook</button>
     <button class="segb" id="fsb-pl" onclick="showFS('pl')">Plate</button>
@@ -2113,7 +2096,11 @@ function renderFood(){
       <div style="display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap">
         ${MEAL_TYPES.map(m=>`<button id="ql-mt-${m}" onclick="selQuickMeal('${m}')" style="padding:8px 12px;border:1px solid var(--c3);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:var(--c2);color:var(--mut);font-family:inherit;min-height:36px;transition:all .2s">${m}</button>`).join('')}
       </div>
-      <select class="foodsel" id="ml-food" onchange="prefillAmt()">${opts}</select>
+      <input class="genin" type="text" id="ml-food-search" placeholder="Search foods..." autocomplete="off" oninput="filterMealFoodList(this.value)" onfocus="filterMealFoodList(this.value)">
+      <input type="hidden" id="ml-food">
+      <div id="ml-food-list" style="max-height:180px;overflow-y:auto;display:none;background:var(--c2);border:1px solid var(--c3);border-radius:10px;margin-top:4px">
+        ${allFoods().map(f=>`<div class="free-ex-row" data-name="${f.name.toLowerCase()}" onclick="pickMealFood('${f.name.replace(/'/g,"\\'")}')"><span>${f.name}${f.fibreRisk?' &#x26A0;':''}${f.lbl?` <span style="color:var(--dim);font-size:11px">(${f.lbl})</span>`:''}</span></div>`).join('')}
+      </div>
       <div class="statrow" style="margin-bottom:4px">
         <div style="font-size:13px;color:var(--mut);font-weight:500" id="ml-amt-lbl">Amount (g)</div>
         <input class="sinput" type="number" inputmode="decimal" id="ml-amt" placeholder="150" step="0.5" style="width:80px;text-align:center" oninput="updMealPreview()">
@@ -2282,6 +2269,22 @@ function logMeal(){
   const fw=fibreWarnHTML(food.name);
   renderFood();showFS('l');
   if(fw){const pv=document.getElementById('ml-preview');if(pv)pv.innerHTML=fw;}
+}
+function filterMealFoodList(q){
+  const list=document.getElementById('ml-food-list');
+  if(!list)return;
+  const query=q.toLowerCase().trim();
+  list.style.display=query?'block':'none';
+  list.querySelectorAll('.free-ex-row').forEach(row=>{
+    row.style.display=row.dataset.name.includes(query)?'flex':'none';
+  });
+}
+function pickMealFood(name){
+  const hidden=document.getElementById('ml-food'),search=document.getElementById('ml-food-search'),list=document.getElementById('ml-food-list');
+  if(hidden)hidden.value=name;
+  if(search)search.value=name;
+  if(list)list.style.display='none';
+  prefillAmt();
 }
 function prefillAmt(){
   const sel=document.getElementById('ml-food');if(!sel)return;
@@ -2670,6 +2673,32 @@ function renderHistory(){
   }
 
   let html='';
+
+  const recents=[];
+  for(let d=0;d<14;d++){const dt=new Date(now);dt.setDate(dt.getDate()-d);const dk=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');const s=Data.session.get(dk);if(s)recents.push(s);}
+  if(recents.length){
+    html+=`<div class="card"><div class="cl">Recent sessions</div><div class="ct" style="margin-bottom:10px">Last 14 days</div>
+      ${recents.map(s=>`<div class="hitem"><div style="display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif">${s.date}${s.duration?' <span style="font-size:12px;color:var(--dim);font-family:\'IBM Plex Sans\',sans-serif">'+s.duration+'m</span>':''}</div>
+        <div style="font-size:13px;color:var(--mut)">${s.dl}${s.newPRs&&s.newPRs.length?' &#x2605;':''}</div></div>
+        <div class="pill ${s.skipped?(s.skipReason==='flare'?'pr':'pa'):'pg'}">${s.skipped?(s.skipReason==='flare'?'Flare':s.skipReason==='tired'?'Tired':'Busy'):'Done &#x2713;'}</div>
+      </div>${s.note?`<div style="font-size:12px;color:var(--dim);margin-top:4px;font-style:italic">"${escHtml(s.note)}"</div>`:''}</div>`).join('')}
+    </div>`;
+  }
+
+  const symH=[];for(let d=0;d<7;d++){const dt=new Date(now);dt.setDate(dt.getDate()-d);const s=lsG('sym:'+dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'));if(s&&s.energy)symH.push(s);}
+  if(symH.length){
+    html+=`<div class="card"><div class="cl">Health log &mdash; 7 days</div><div class="ct" style="margin-bottom:10px">Show to your gastroenterologist</div>
+      ${symH.map(s=>`<div class="hitem"><div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:13px;color:var(--mut);font-weight:500">${s.date}</div>
+        <div style="display:flex;gap:14px;font-size:13px;font-weight:700">
+          <span>Energy ${s.energy||'&mdash;'}/5</span><span>Seton ${s.seton||'&mdash;'}/5</span>
+          <span style="color:${s.bowel==='normal'?'var(--grn)':s.bowel?'var(--red)':'var(--dim)'}">${s.bowel==='normal'?'&#x2713;':'off'}</span>
+        </div>
+      </div></div>`).join('')}
+    </div>`;
+  }
+
 
   // 1. WEEK SNAPSHOT (top — most used)
   html+=`<div class="card" style="margin-bottom:12px">
