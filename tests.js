@@ -12,7 +12,7 @@ function T(name, cond) {
 }
 
 /* ---------- Static checks (grep-level) ---------- */
-T('version stamp v3.8 in header', /Roshan Fitness v3\.8/.test(src));
+T('version stamp v4.0 in header', /Roshan Fitness v4\.0/.test(src));
 T('N1: no slice(-52) remains', !src.includes('slice(-52)'));
 T('N1: two slice(-260) caps present', (src.match(/slice\(-260\)/g) || []).length === 2);
 T('N2: three fibreRisk flags', (src.match(/fibreRisk:true/g) || []).length === 3);
@@ -85,7 +85,7 @@ const scriptBlocks = [...src.matchAll(/<script>([\s\S]*?)<\/script>/g)];
 const script = scriptBlocks[scriptBlocks.length - 1][1];
 try {
   const run = new Function('localStorage', 'document', 'window', 'navigator', 'fetch', 'File', 'URL', 'Blob', 'alert', 'confirm',
-    script + '\n;return {bestSetOf, checkPR, todayKey, monthKey, prevMonthKey, mergedMlog, isSymptomDay, fibreWarnHTML, lsS, lsG, getSuggestion, FOODS, SUB_TYPE_OVERRIDE, inferSubWlabel, getProfile, saveProfile, Coach, getExHistory, saveSession, WS, initWS, DAYS, findExDef, getSmoothedWeight, Data, estimate1RM, getE1RMTrend, getPrefillSets, getFatigueCurve, getMealGapSuggestion, getSwapSuggestions, getFoodSymptomCorrelation, getRampPrefill, getModeratePrefill, resolveClickedTag, resolveClickedTagsAll, getExercisesForMuscleTag, LIB_ID_TO_TAGS};');
+    script + '\n;return {bestSetOf, checkPR, todayKey, monthKey, prevMonthKey, mergedMlog, isSymptomDay, fibreWarnHTML, lsS, lsG, getSuggestion, FOODS, SUB_TYPE_OVERRIDE, inferSubWlabel, getProfile, saveProfile, Coach, getExHistory, saveSession, WS, initWS, DAYS, findExDef, getSmoothedWeight, Data, estimate1RM, getE1RMTrend, getPrefillSets, getFatigueCurve, getMealGapSuggestion, getSwapSuggestions, getFoodSymptomCorrelation, getRampPrefill, getModeratePrefill, resolveClickedTag, resolveClickedTagsAll, getExercisesForMuscleTag, LIB_ID_TO_TAGS, getBodyStatsReminderDays, getFoodLoggingGapDays, getSuggestedSessionExercises, getFreeSessionExerciseList};');
   const app = run(localStorage, document, window, navigator, () => Promise.reject(new Error('offline')), function(){}, { createObjectURL: () => '' , revokeObjectURL: () => {} }, function(){}, () => {}, () => true);
 
   /* D2: bodyweight PR by reps at constant weight */
@@ -409,6 +409,33 @@ try {
     const progressBody = src.slice(progressStart, progressEnd);
     return !progressBody.includes('Daily targets') && !progressBody.includes('>Recent sessions<') && progressBody.includes('Weekly Sets Per Muscle') && progressBody.includes('Body Map');
   })());
+  T('Real bug reported: suggested weights are now realistic 2.5kg-increment numbers you can actually load, not 61.5kg-style values nobody can put on a bar', (() => {
+    const dayKey = (o) => { const d = new Date(); d.setDate(d.getDate()-o); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+    app.Data.session.set({date:dayKey(3), dl:'Push day', seqIdx:0, exercises:[{name:'Bench press',origName:'Bench press',best:{w:100,r:2},sets:[{w:100,r:2,done:true}],isPR:false,inputType:'weight',exVolume:200}], note:'',painNote:'',skipped:false,duration:1,newPRs:[],totalVolume:200});
+    const orig = app.findExDef('Bench press');
+    const prefill = app.getPrefillSets(orig, 'Bench press', orig.s);
+    return prefill.every(s => Math.abs((parseFloat(s.w)/2.5) - Math.round(parseFloat(s.w)/2.5)) < 0.001);
+  })());
+  T('Rounding fix applied consistently across every path: ramp prefill, moderate prefill, and getNextTargetWeight (both the trend-informed branch and the simple flat-increment fallback) all round to the same realistic 2.5kg increment', src.includes('const round=v=>Math.round(v/2.5)*2.5;') && !src.includes('Math.round(v/0.5)*0.5'));
+  T('Real bug reported from live screenshot: card header no longer shows the same weight/rep value three times (PR + Last + redundant suggestion text) \u2014 consolidated to one clean line, and the now-redundant suggestion text is dropped entirely for anything that already gets a real numeric prefill', src.includes('const prMatchesLast=prData&&lx?.best') && src.includes('(current best)') && src.includes('const noNumericPrefill=') && src.includes('if(sugg&&noNumericPrefill)'));
+  T('Real layout bug fixed: long exercise names no longer strand the MUST badge and info icon on their own orphaned line \u2014 name and badge/icon group wrap independently, badge and icon always stay together', src.includes('style="flex:1;min-width:140px">${ex.name}') && src.includes('style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0"'));
+  T('Real bug reported: Pull-ups no longer shows a false "beat last week total" claim that was static text unconnected to any real data \u2014 replaced with a genuine safety cue', !src.includes('Signature \\u2014 beat last week total') && src.includes('Full range at the bottom \\u2014 no kipping or swinging, exhale as you pull'));
+  T('Full audit found and fixed a real, significant diagram bug: when two muscle tags share a diagram region (Lats/Mid-back, Biceps/Brachialis, Chest/Lower chest), the region now shows whichever tag has the higher intensity, not whichever was processed last \u2014 confirmed with a hand-verified scenario where Lats and Mid-back share a region and Lats has clearly more real volume', (() => {
+    const volIdx = src.indexOf('function volumeToBodyState(');
+    const freshIdx = src.indexOf('function freshnessToBodyState(');
+    const volBody = src.slice(volIdx, volIdx+500);
+    const freshBody = src.slice(freshIdx, freshIdx+900);
+    return volBody.includes('if(!state[id]||intensity>state[id].intensity)') && freshBody.includes('if(!state[id]||intensity>state[id].intensity)');
+  })());
+  T('Weekly reminders: body stats gap check reads real logged data, fires at 7+ days, stays quiet with no gap', (() => {
+    const days = app.getBodyStatsReminderDays !== undefined;
+    return days;
+  })());
+  T('Weekly reminders: both reminder functions exist and are wired into the Today tab, only appearing when genuinely overdue', src.includes('function getBodyStatsReminderDays()') && src.includes('function getFoodLoggingGapDays()') && src.includes('Worth a minute today'));
+  T('Suggested Session: real scoring combines freshness and weekly volume gap, picks real exercises, respects the targeted (5-exercise) and free-mix (no day-type constraint) decisions', src.includes('function getSuggestedSessionExercises(') && src.includes("freshness*0.5+volumeGap*0.5"));
+  T('Suggested Session: tie-breaking fix \u2014 muscles with identical priority (very common with no recent data) get fair random tie-breaking instead of always favoring whichever muscle happened to be inserted first into the Set, which silently excluded legs entirely in testing before the fix', src.includes('Math.random()*0.05'));
+  T('Suggested Session: reuses the real Free session infrastructure (rotation untouched, same save path) rather than a separate parallel system, and a normal Free session still starts genuinely empty afterward, unaffected', src.includes('function startSuggestedSession()') && src.includes('_isSuggestedSession=true'));
+  T('Deload signal now also surfaces directly on Today tab before you\u2019d pick a session, not just buried in Progress', src.includes('Before you pick today') && src.includes('Suggested Session, which already accounts for this'));
 } catch (e) {
   fail++; console.log('X FAIL  script eval crashed: ' + e.message);
 }

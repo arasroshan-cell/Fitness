@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v3.8</title>
+<title>Roshan Fitness v4.0</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -214,7 +214,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-08-22">v3.8</div>
+    <div class="vtag" title="build 2026-08-22">v4.0</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -258,7 +258,7 @@ const DAYS=[
     {n:'Overhead tricep extension',s:3,r:'12',nt:'Rope attachment \u2014 lets wrists rotate through the stretch',priority:'optional',compound:false,inputType:'weight',wlabel:'DB weight (one hand)',primaryMuscles:['Triceps (long head)'],secondaryMuscles:[],tip:'Elbows point forward, not flared out to the sides \u2014 that\u2019s what keeps tension on the long head.'}
   ]},
   {label:'Pull day',focus:'Back \u00b7 Biceps',time:'~6pm',ex:[
-    {n:'Pull-ups (unassisted)',s:4,r:'Max reps',nt:'Signature \u2014 beat last week total',priority:'must',noweight:true,inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',primaryMuscles:['Lats'],secondaryMuscles:['Biceps','Mid-back'],tip:'Full extension at the bottom, drive your elbows down and back \u2014 no kipping or swinging.'},
+    {n:'Pull-ups (unassisted)',s:4,r:'Max reps',nt:'Full range at the bottom \u2014 no kipping or swinging, exhale as you pull',priority:'must',noweight:true,inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',primaryMuscles:['Lats'],secondaryMuscles:['Biceps','Mid-back'],tip:'Full extension at the bottom, drive your elbows down and back \u2014 no kipping or swinging.'},
     {n:'Lat pulldown',s:3,r:'10\u201312',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Lats'],secondaryMuscles:['Biceps'],tip:'Lead with your elbows, pull to your upper chest \u2014 don\u2019t lean back to cheat the weight down.'},
     {n:'Seated cable row',s:3,r:'10\u201312',nt:'Exhale as you pull \u2014 no breath holding',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps','Traps'],tip:'Chest up, pull to your lower ribs \u2014 if your lower back is rounding, drop the weight.'},
     {n:'Single arm DB row',s:3,r:'12 each',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Dumbbell weight (one hand)',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps'],tip:'Brace your free hand, keep your torso still \u2014 don\u2019t twist to help the weight up.'},
@@ -549,7 +549,9 @@ function volumeToBodyState(volumeList){
     if(!ids)return;
     const ratio=v.volume/maxVol;
     const intensity=Math.min(10,Math.max(1,Math.round(ratio*10)));
-    ids.forEach(id=>{state[id]={intensity,selected:false};});
+    ids.forEach(id=>{
+      if(!state[id]||intensity>state[id].intensity)state[id]={intensity,selected:false};
+    });
   });
   return state;
 }
@@ -561,7 +563,11 @@ function freshnessToBodyState(freshnessList){
     /* Inverted: freshness 0 (just trained) -> intensity 10 (deep red, "still recovering").
        freshness 1 (fully recovered) -> intensity 0 (neutral grey, nothing to flag). */
     const intensity=Math.round((1-f.freshness)*10);
-    ids.forEach(id=>{state[id]={intensity,selected:false};});
+    ids.forEach(id=>{
+      /* Max wins on a shared region \u2014 if either overlapping muscle is still fatigued,
+         show that, don't silently show as fresher because of processing order. */
+      if(!state[id]||intensity>state[id].intensity)state[id]={intensity,selected:false};
+    });
   });
   return state;
 }
@@ -749,6 +755,26 @@ const Data={
 };
 
 /* ===== HEADER ===== */
+/* Real reminder checks, not just a proposal \u2014 both read actual logged data, no fixed schedule assumptions. */
+function getBodyStatsReminderDays(){
+  const stats=lsG('bstats')||[];
+  if(!stats.length)return null;
+  const last=stats[stats.length-1];
+  const days=Math.floor((new Date()-new Date(last.date))/86400000);
+  return days>=7?days:null;
+}
+function getFoodLoggingGapDays(){
+  const now=new Date();
+  let gap=0;
+  for(let d=1;d<=7;d++){
+    const dt=new Date(now);dt.setDate(dt.getDate()-d);
+    const key=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+    const log=lsG('food:'+key);
+    if(log&&log.length)break;
+    gap=d;
+  }
+  return gap>=3?gap:null;
+}
 function getSmoothedWeight(stats){
   const withWt=(stats||[]).filter(s=>s.wt);
   if(!withWt.length)return null;
@@ -1270,7 +1296,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v3.8';
+const APP_VERSION='v4.0';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -1365,6 +1391,24 @@ function renderToday(){
   const symDone=sym.energy&&sym.seton&&sym.bowel;
   const _freshList=Coach.getMuscleFreshness();
   let html='';
+
+  const statsGapDays=getBodyStatsReminderDays();
+  const foodGapDays=getFoodLoggingGapDays();
+  if(statsGapDays||foodGapDays){
+    html+=`<div class="card warm" style="margin-bottom:10px">
+      <div class="cl">Worth a minute today</div>
+      ${statsGapDays?`<div class="cs" style="margin-bottom:4px">&#x2696; It's been ${statsGapDays} days since your last weigh-in \u2014 log this week's stats in Progress when you get a chance.</div>`:''}
+      ${foodGapDays?`<div class="cs">&#x1F374; No food logged in ${foodGapDays} days \u2014 even a rough log beats none, your targets are only as good as what's tracked against them.</div>`:''}
+    </div>`;
+  }
+
+  const deload=Coach.getDeloadSignal();
+  if(deload.available&&deload.suggestDeload){
+    html+=`<div class="card warm" style="margin-bottom:10px">
+      <div class="cl">Before you pick today's session</div>
+      <div class="cs">${deload.fatiguedCount} of ${deload.totalMuscles} recently-trained muscles are still running meaningfully harder than normal (${deload.ratioPercent}%) \u2014 ${deload.fatiguedMuscles.join(', ')}. Worth considering a lighter session or Suggested Session, which already accounts for this.</div>
+    </div>`;
+  }
 
   html+=`<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
     <button class="btn btn-ghost btn-sm" onclick="gastroExport()">&#x1F4CB; Gastro summary</button>
@@ -1472,7 +1516,14 @@ function renderToday(){
         </div>
         <div style="color:var(--cyan);font-size:22px">&#x203A;</div>
       </div>`).join('')}
-      <div class="sess-option" style="border-top:1px dashed var(--c3);margin-top:6px;padding-top:14px" onclick="startFreeSession()">
+      <div class="sess-option" style="border-top:1px dashed var(--c3);margin-top:6px;padding-top:14px" onclick="startSuggestedSession()">
+        <div>
+          <div style="font-size:17px;font-weight:700;font-family:'Barlow',sans-serif">Suggested session</div>
+          <div style="font-size:12px;color:var(--mut);margin-top:2px">The app picks what to train, based on what's fresh and what's due this week</div>
+        </div>
+        <div style="color:var(--cyan);font-size:22px">&#x203A;</div>
+      </div>
+      <div class="sess-option" style="padding-top:14px" onclick="startFreeSession()">
         <div>
           <div style="font-size:17px;font-weight:700;font-family:'Barlow',sans-serif">Free session</div>
           <div style="font-size:12px;color:var(--mut);margin-top:2px">Build your own combo \u2014 doesn't affect your Push/Pull/Legs/Upper sequence</div>
@@ -1542,9 +1593,15 @@ function renderToday(){
       const cid='ci'+ei;
       const prData=Data.pr.get(trackName);
       const contextParts=[];
-      if(prData)contextParts.push(`&#x2605; ${fmtBest(prData)}`);
-      contextParts.push(lstr);
-      if(sugg)contextParts.push(sugg);
+      const prMatchesLast=prData&&lx?.best&&String(prData.w)===String(lx.best.w)&&String(prData.r)===String(lx.best.r);
+      if(prData&&prMatchesLast){
+        contextParts.push(`&#x2605; ${fmtBest(prData)} (current best)`);
+      }else{
+        if(prData)contextParts.push(`&#x2605; Best: ${fmtBest(prData)}`);
+        contextParts.push(lstr);
+      }
+      const noNumericPrefill=effType==='seconds'||effType==='reps_each';
+      if(sugg&&noNumericPrefill)contextParts.push(sugg);
       const freshTag=(effOrigLike.primaryMuscles||[])[0];
       const freshEntry=freshTag?_freshList.find(f=>f.muscle===freshTag):null;
       const freshNote=(freshEntry&&freshEntry.freshness<0.4)
@@ -1553,9 +1610,12 @@ function renderToday(){
       let h=`<div class="exb">
         <div class="exhd">
           <div style="flex:1">
-            <div class="exn${allDone?' done':''}">${ex.name}${allDone?' &#x2713;':''}
-              <span class="pill ${orig.priority==='must'?'pr':'pd'}">${orig.priority==='must'?'MUST':'OPTIONAL'}</span>
-              <button class="infobtn" onclick="togInfo('${gd.label}',${ei})" title="Form tips">&#x24D8;</button>
+            <div class="exn${allDone?' done':''}" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-weight:700">
+              <span style="flex:1;min-width:140px">${ex.name}${allDone?' &#x2713;':''}</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0">
+                <span class="pill ${orig.priority==='must'?'pr':'pd'}">${orig.priority==='must'?'MUST':'OPTIONAL'}</span>
+                <button class="infobtn" onclick="togInfo('${gd.label}',${ei})" title="Form tips">&#x24D8;</button>
+              </span>
             </div>
             ${isSubbed?`<div class="subbed">SUB for ${ex.origName}</div>`:''}
             <div style="font-size:12px;color:var(--mut);margin-top:3px">${contextParts.join(' &middot; ')}</div>
@@ -1608,6 +1668,24 @@ function renderToday(){
     if(gd.label==='Free session'){
       const exList=getFreeSessionExerciseList();
       const mode=_freeExPickerMode||'search';
+      if(_isSuggestedSession&&gd.ex.length){
+        const freshList=Coach.getMuscleFreshness();
+        const volList=Coach.getWeeklyMuscleVolume();
+        const freshByMuscle={};freshList.forEach(f=>{freshByMuscle[f.muscle]=f.freshness;});
+        const volByMuscle={};volList.forEach(v=>{volByMuscle[v.muscle]=v.volume;});
+        html+=`<div class="card cyan" style="margin-bottom:12px">
+          <div class="cl">Why these</div>
+          <div class="cs" style="margin-bottom:8px">Picked from what's fresh and what's under 10 sets this week \u2014 mixed freely across muscle groups, not locked to a Push/Pull/Legs category.</div>
+          ${gd.ex.map(e=>{
+            const m=(e.primaryMuscles||[])[0];
+            const sets=volByMuscle[m]||0;
+            const fresh=freshByMuscle[m];
+            const reason=fresh===undefined?'no recent history':fresh>=0.7?'well recovered':fresh>=0.4?'mostly recovered':'still recovering, but scored well on weekly volume';
+            return `<div style="font-size:12px;color:var(--mut);padding:3px 0">${e.n} \u2014 <span style="color:var(--txt)">${m}</span>: ${sets} set${sets===1?'':'s'} this week, ${reason}</div>`;
+          }).join('')}
+          <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px" onclick="startSuggestedSession()">&#x21BB; Regenerate</button>
+        </div>`;
+      }
       html+=`<div class="card" style="margin-bottom:12px">
         <div class="cl">Add an exercise</div>
         <div style="display:flex;gap:8px;margin:8px 0">
@@ -1721,6 +1799,66 @@ function startFreeSession(){
   adHocSeqIdx=null;
   WS['Free session']={ex:[],subOpen:null,note:'',painNote:'',startAt:Date.now(),lastSetAt:null};
   _freeExPickerMode='search';_freeExSelectedTags=[];
+  _isSuggestedSession=false;
+  saveDraft('Free session');
+  renderToday();
+}
+let _isSuggestedSession=false;
+/* Real scoring: freshness (ready to train right now) + weekly volume gap (under-trained
+   this week), each 0-1 and equally weighted. Muscles with no recent history default to
+   freshness=1 (nothing says otherwise) and full volume gap (zero logged sets this week).
+   10 sets/week is used as the reference floor for the gap calculation, matching the same
+   commonly-cited range already shown in the Weekly Sets Per Muscle card. */
+function getSuggestedSessionExercises(numExercises){
+  const freshList=Coach.getMuscleFreshness();
+  const volList=Coach.getWeeklyMuscleVolume();
+  const freshByMuscle={};freshList.forEach(f=>{freshByMuscle[f.muscle]=f.freshness;});
+  const volByMuscle={};volList.forEach(v=>{volByMuscle[v.muscle]=v.volume;});
+
+  const allPrimaryMuscles=new Set();
+  DAYS.forEach(d=>d.ex.forEach(e=>(e.primaryMuscles||[]).forEach(m=>allPrimaryMuscles.add(m))));
+
+  const scored=[...allPrimaryMuscles].map(muscle=>{
+    const freshness=freshByMuscle[muscle]!==undefined?freshByMuscle[muscle]:1;
+    const weeklySets=volByMuscle[muscle]||0;
+    const volumeGap=Math.max(0,Math.min(1,(10-weeklySets)/10));
+    /* Small random jitter breaks ties fairly among muscles with identical priority (very
+       common when several have zero recent data) \u2014 without this, whichever muscle happened
+       to be inserted first into the Set always won, an arbitrary artifact of DAYS array
+       order that quietly favored the same muscles every time, not genuine merit. */
+    return{muscle,freshness,weeklySets,priority:freshness*0.5+volumeGap*0.5+Math.random()*0.05};
+  }).sort((a,b)=>b.priority-a.priority);
+
+  const chosen=[];
+  const covered=new Set();
+  const list=getFreeSessionExerciseList().filter(e=>!e.subOf);
+
+  scored.forEach(s=>{
+    if(chosen.length>=numExercises||covered.has(s.muscle))return;
+    const candidates=list.filter(e=>(e.primaryMuscles||[]).includes(s.muscle)&&!chosen.some(c=>c.n===e.n));
+    if(!candidates.length)return;
+    const pick=candidates.find(e=>e.compound!==false)||candidates[0];
+    chosen.push(pick);
+    covered.add(s.muscle);
+    (pick.secondaryMuscles||[]).forEach(m=>covered.add(m));
+  });
+  return chosen;
+}
+function startSuggestedSession(){
+  startFreeSession();
+  _isSuggestedSession=true;
+  const picks=getSuggestedSessionExercises(5);
+  const pSubs=lsG('persisted_subs')||{};
+  picks.forEach(p=>{
+    adHocDay.ex.push({...p,priority:'must'});
+    const trackN=pSubs[p.n]||p.n;
+    const prefill=getPrefillSets(p,trackN,p.s||3);
+    WS['Free session'].ex.push({
+      name:trackN,origName:p.n,chosenType:null,
+      sets:Array.from({length:p.s||3},(_,si)=>({w:prefill?.[si]?.w||'',r:prefill?.[si]?.r||'',done:false,isDrop:false}))
+    });
+  });
+  adHocDay.focus='Chosen for you \u2014 fresh and due muscles, mixed freely';
   saveDraft('Free session');
   renderToday();
 }
@@ -2484,7 +2622,10 @@ function getFatigueCurve(orig){
    configured, always landing the top effort second-to-last (or last, if 2 sets) and the
    drop set truly last when there are 3+ sets. */
 function getRampPrefill(topWeight,numSets){
-  const round=v=>Math.round(v/0.5)*0.5;
+  /* Round to 2.5kg, the realistic minimum increment for a plate-loaded barbell (1.25kg per
+     side) and close enough for most dumbbell racks and cable stacks too. 0.5kg rounding
+     produced numbers like 61.5kg that nobody can actually load. */
+  const round=v=>Math.round(v/2.5)*2.5;
   if(numSets<2)return[{w:String(round(topWeight)),r:'2'}];
   const hasDrop=numSets>=3;
   const rampSteps=hasDrop?numSets-1:numSets;
@@ -2502,7 +2643,7 @@ function getRampPrefill(topWeight,numSets){
    ratio at true near-max singles than compounds do, and hypertrophy tracks with weekly
    close-to-failure volume more reliably than with a strength peak. */
 function getModeratePrefill(targetWeight,numSets){
-  const round=v=>Math.round(v/0.5)*0.5;
+  const round=v=>Math.round(v/2.5)*2.5;
   return Array.from({length:numSets},(_,i)=>{
     const isLast=i===numSets-1;
     if(isLast&&numSets>=3)return{w:String(round(targetWeight*0.65)),r:'14'};
@@ -2519,6 +2660,7 @@ function getModeratePrefill(targetWeight,numSets){
 /* Shared by getPrefillSets and getSuggestion so the advisory text and the actual prefilled
    numbers can never disagree \u2014 both call this same function for the target weight. */
 function getNextTargetWeight(orig,trackName,w,r){
+  const round=v=>Math.round(v/2.5)*2.5;
   const targetR=orig.r&&orig.r.includes&&orig.r.includes('\u2013')?Number(orig.r.split('\u2013')[1]):(parseInt(orig.r)||r);
   const gotTop=r>=targetR;
   const isCompound=orig.compound!==false;
@@ -2527,9 +2669,9 @@ function getNextTargetWeight(orig,trackName,w,r){
     const inc=isCompound?2.5:1.0;
     const trend=getE1RMTrend(trackName);
     if(trend.available&&!trend.lowConfidence&&trend.trending==='up'){
-      recW=Math.round((w+Math.max(inc,Math.min(inc*2,trend.ratePerWeek*0.5)))*2)/2;
+      recW=round(w+Math.max(inc,Math.min(inc*2,trend.ratePerWeek*0.5)));
     }else if(gotTop||isCompound){
-      recW=w+inc;
+      recW=round(w+inc);
     }
   }
   return{recW,isCompound,gotTop,targetR};
