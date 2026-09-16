@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v4.0</title>
+<title>Roshan Fitness v4.9</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -214,7 +214,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-08-22">v4.0</div>
+    <div class="vtag" title="build 2026-08-22">v4.9</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -274,6 +274,7 @@ const DAYS=[
     {n:'Seated leg curl',s:3,r:'15',nt:'Seated preferred',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Hamstrings'],secondaryMuscles:[],tip:'Full range, controlled tempo \u2014 don\u2019t bounce out of the stretch at the bottom.'},
     {n:'Calf raises',s:4,r:'20',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Add kg if weighted',primaryMuscles:['Calves'],secondaryMuscles:[],tip:'Pause at the top, full stretch at the bottom \u2014 bouncing through the reps skips the actual work.'},
     {n:'Plank',s:3,r:'30\u201360s',nt:'Exhale on entry \u2014 no breath holding',priority:'must',noweight:true,inputType:'seconds',wlabel:'Seconds held',primaryMuscles:['Core'],secondaryMuscles:[],tip:'Hips level \u2014 not sagging, not piked up. Breathe normally, don\u2019t hold your breath.'},
+    {n:'Side plank',s:3,r:'20\u201340s',nt:'Isometric hold, no twisting \u2014 breathe normally, do both sides each set',priority:'optional',noweight:true,inputType:'seconds',wlabel:'Seconds held (each side)',primaryMuscles:['Obliques'],secondaryMuscles:['Core'],tip:'Stack hips and shoulders in one straight line \u2014 don\u2019t let the top hip roll forward or the hips sag toward the floor.'},
     {n:'Dead bug',s:3,r:'10 each',nt:'Best Crohn-safe core move',priority:'must',noweight:true,inputType:'reps_each',wlabel:'Reps per side',primaryMuscles:['Core'],secondaryMuscles:[],tip:'Lower back stays pressed into the floor the whole time \u2014 if it arches, you\u2019ve gone too far.'},
     {n:'Hip abduction machine',s:3,r:'15',nt:'Glute work \u2014 light and controlled, no direct pressure needed',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Glute medius/minimus'],secondaryMuscles:[],tip:'Controlled push out, controlled return \u2014 no need to rush this one.'},
     {n:'Hip adduction machine',s:3,r:'15',nt:'Same machine as abduction, opposite direction \u2014 light and controlled',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Adductors'],secondaryMuscles:[],tip:'Same machine as abduction, opposite direction \u2014 light and controlled here too.'},
@@ -608,6 +609,13 @@ function getExercisesForMuscleTag(tag){
     (e.primaryMuscles||[]).includes(tag)||(e.secondaryMuscles||[]).includes(tag)
   );
 }
+/* Real fix for a real reported bug: the diagram's tap regions can be too small/close together
+   to hit precisely on a small mobile screen, which can make a tag look empty when you've
+   actually landed on a neighboring region. This gives a reliable, precision-independent way
+   to pick a muscle directly by name instead. */
+function allMuscleTagsWithExercises(){
+  return Object.keys(MUSCLE_TAG_TO_LIB_IDS).filter(t=>getExercisesForMuscleTag(t).length>0).sort();
+}
 function mountBodyDiagram(frontElId,backElId,bodyState,onMuscleClick,prevInstances){
   if(prevInstances?.front)prevInstances.front.destroy();
   if(prevInstances?.back)prevInstances.back.destroy();
@@ -618,6 +626,10 @@ function mountBodyDiagram(frontElId,backElId,bodyState,onMuscleClick,prevInstanc
   return{front,back};
 }
 let _progressCharts={front:null,back:null},_progressDiagMode='volume',_progressSelectedTags=[];
+let _weightGraphPeriod='week',_exerciseGraphPeriod='week',_exerciseGraphPick=null;
+function setWeightGraphPeriod(p){_weightGraphPeriod=p;renderProgress();}
+function setExerciseGraphPeriod(p){_exerciseGraphPeriod=p;renderProgress();}
+function setExerciseGraphPick(n){_exerciseGraphPick=n;renderProgress();}
 function setProgressDiagMode(mode){
   _progressDiagMode=mode;
   _progressSelectedTags=[];
@@ -765,6 +777,8 @@ function getBodyStatsReminderDays(){
 }
 function getFoodLoggingGapDays(){
   const now=new Date();
+  const todayLog=lsG('food:'+todayKey());
+  if(todayLog&&todayLog.length)return null;
   let gap=0;
   for(let d=1;d<=7;d++){
     const dt=new Date(now);dt.setDate(dt.getDate()-d);
@@ -774,6 +788,74 @@ function getFoodLoggingGapDays(){
     gap=d;
   }
   return gap>=3?gap:null;
+}
+/* Real, native SVG line chart \u2014 no external library, matching the single-file, no-dependency
+   architecture. Handles too-little-data honestly instead of drawing a misleading flat line. */
+function renderLineChartSVG(points,opts){
+  opts=opts||{};
+  const width=opts.width||320,height=opts.height||150,padding=32;
+  if(!points||points.length<2)return `<div class="cs" style="text-align:center;padding:20px 0">Not enough data yet \u2014 need at least 2 points to draw a trend.</div>`;
+  const values=points.map(p=>p.y);
+  const minY=Math.min(...values),maxY=Math.max(...values);
+  const range=(maxY-minY)||1;
+  const xStep=(width-padding*2)/(points.length-1);
+  const coords=points.map((p,i)=>({
+    x:padding+i*xStep,
+    y:height-padding-((p.y-minY)/range)*(height-padding*2)
+  }));
+  const pathD=coords.map((c,i)=>(i===0?'M':'L')+c.x.toFixed(1)+','+c.y.toFixed(1)).join(' ');
+  const areaD=pathD+` L${coords[coords.length-1].x.toFixed(1)},${height-padding} L${coords[0].x.toFixed(1)},${height-padding} Z`;
+  const dots=coords.map((c,i)=>`<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="3" fill="var(--cyan)"><title>${points[i].xLabel}: ${points[i].y}</title></circle>`).join('');
+  return `<svg viewBox="0 0 ${width} ${height}" style="width:100%;height:auto;overflow:visible">
+    <path d="${areaD}" fill="var(--cyan)" opacity="0.08"/>
+    <path d="${pathD}" fill="none" stroke="var(--cyan)" stroke-width="2"/>
+    ${dots}
+    <text x="${padding}" y="${height-6}" font-size="10" fill="var(--mut)">${points[0].xLabel}</text>
+    <text x="${width-padding}" y="${height-6}" font-size="10" fill="var(--mut)" text-anchor="end">${points[points.length-1].xLabel}</text>
+    <text x="2" y="${padding-4}" font-size="10" fill="var(--mut)">${maxY.toFixed(1)}</text>
+    <text x="2" y="${height-padding+4}" font-size="10" fill="var(--mut)">${minY.toFixed(1)}</text>
+  </svg>`;
+}
+/* Weekly view: every real logged entry, since you're only meant to log once a week anyway \u2014
+   no aggregation needed. Monthly view: real average per calendar month, for a longer-term,
+   smoothed read when you have enough history to make that useful. */
+function getWeightTrendPoints(period){
+  const stats=(lsG('bstats')||[]).filter(s=>s.wt).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!stats.length)return[];
+  if(period==='month'){
+    const buckets={};
+    stats.forEach(s=>{
+      const d=new Date(s.date);
+      const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      (buckets[key]=buckets[key]||[]).push(parseFloat(s.wt));
+    });
+    return Object.entries(buckets).sort((a,b)=>a[0].localeCompare(b[0])).map(([key,ws])=>({
+      xLabel:key.slice(5)+'/'+key.slice(2,4),y:Math.round((ws.reduce((a,b)=>a+b,0)/ws.length)*10)/10
+    }));
+  }
+  return stats.map(s=>({xLabel:s.date.slice(5),y:parseFloat(s.wt)}));
+}
+/* Real e1RM per logged session for one exercise, using the same estimate1RM already built
+   for the coaching layer \u2014 not a separate, different calculation. */
+function getExerciseTrendPoints(exerciseName,period){
+  const hist=getExHistory(exerciseName);
+  const points=hist.map(h=>{
+    const est=estimate1RM(h.best.w,h.best.r);
+    return est?{date:h.date,y:Math.round(est.value*10)/10}:null;
+  }).filter(Boolean);
+  if(!points.length)return[];
+  if(period==='month'){
+    const buckets={};
+    points.forEach(p=>{
+      const d=new Date(p.date);
+      const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      (buckets[key]=buckets[key]||[]).push(p.y);
+    });
+    return Object.entries(buckets).sort((a,b)=>a[0].localeCompare(b[0])).map(([key,ys])=>({
+      xLabel:key.slice(5)+'/'+key.slice(2,4),y:Math.round((Math.max(...ys))*10)/10
+    }));
+  }
+  return points.map(p=>({xLabel:p.date.slice(5),y:p.y}));
 }
 function getSmoothedWeight(stats){
   const withWt=(stats||[]).filter(s=>s.wt);
@@ -862,9 +944,71 @@ function togDone(dl,ei,si){
   if(set.done){
     WS[dl].lastSetAt=Date.now();
     if(!WS[dl].startAt)WS[dl].startAt=Date.now();
+    liveCoachAdjust(dl,ei,si);
   }
   if(WS[dl].infoOpen===ei)WS[dl].infoOpen=null;
   saveDraft(dl);renderToday();
+}
+/* Live coach: reacts to what you actually just did, not just what was pre-planned before the
+   set. Compares the just-completed set's real implied capacity (weight and reps combined via
+   the same estimate1RM used everywhere else) against what that same weight was expected to
+   produce, and rescales every remaining undone set in this exercise \u2014 standard, added, and
+   drop sets alike \u2014 by that ratio. Bidirectional on purpose: a genuine overshoot raises the
+   remaining sets too, not just a miss lowering them. Skips the deliberate warm-up set on a
+   compound ramp, since that set is meant to feel easy and reacting to it would be a false
+   alarm. Scoped to weight-type exercises, where weight and reps combine into one comparable
+   number; bodyweight, timed and per-side exercises need a different mechanism entirely. */
+function liveCoachAdjust(dl,ei,si){
+  const ex=WS[dl].ex[ei];
+  const orig=findExDef(ex.origName);
+  if(!orig)return;
+  const completed=ex.sets[si];
+  if(completed.isDrop)return;
+
+  if(orig.inputType==='weight'){
+    const isCompound=orig.compound!==false;
+    if(isCompound&&si===0)return;
+    const actualW=parseFloat(completed.w),actualR=parseInt(completed.r);
+    if(!actualW||!actualR)return;
+    const numSets=ex.sets.filter(s=>!s.isDrop).length;
+    const referencePrefill=isCompound?getRampPrefill(actualW,numSets):getModeratePrefill(actualW,numSets);
+    const expectedR=parseInt(referencePrefill[si]?.r)||actualR;
+    const expected=estimate1RM(actualW,expectedR);
+    const actual=estimate1RM(actualW,actualR);
+    if(!expected||!actual||!expected.value)return;
+    const ratio=actual.value/expected.value;
+    if(ratio>0.85&&ratio<1.15)return;
+    ex.sets.forEach((s,i)=>{
+      if(i<=si||s.done)return;
+      const base=s.w?parseFloat(s.w):actualW;
+      s.w=String(realisticWeightRound(base*ratio));
+    });
+    return;
+  }
+
+  /* Bodyweight, seconds and reps_each: no weight to combine via e1RM, so the comparison is
+     direct \u2014 actual value at this set position against what the fatigue curve (the same one
+     driving the pre-workout prefill) expected there. Since seconds/reps_each never get a
+     pre-workout prefill at all, the first completed set becomes the live baseline for the
+     rest of that session, rather than something derived from history. */
+  if(!['bodyweight','seconds','reps_each'].includes(orig.inputType))return;
+  if(si===0)return;
+  const valueField=orig.inputType==='bodyweight'?'r':'w';
+  const actualVal=orig.inputType==='bodyweight'?parseInt(completed.r):parseFloat(completed.w);
+  if(!actualVal)return;
+  const curve=getFatigueCurve(orig);
+  const curveAt=i=>curve[i]!==undefined?curve[i]:curve[curve.length-1];
+  const firstVal=orig.inputType==='bodyweight'?parseInt(ex.sets[0].r):parseFloat(ex.sets[0].w);
+  const expectedVal=firstVal?firstVal*curveAt(si):actualVal/curveAt(si);
+  if(!expectedVal)return;
+  const ratio=actualVal/expectedVal;
+  if(ratio>0.8&&ratio<1.2)return;
+  const baseline=actualVal/curveAt(si);
+  ex.sets.forEach((s,i)=>{
+    if(i<=si||s.done)return;
+    const projected=Math.max(1,Math.round(baseline*curveAt(i)));
+    s[valueField]=String(projected);
+  });
 }
 function addSet(dl,ei){
   if(!WS[dl])return;
@@ -1007,16 +1151,43 @@ const Coach={
         (def.secondaryMuscles||[]).forEach(m=>add(m,0.5));
       });
     }
+    /* Real energy modifier: a genuine trailing pattern of low logged energy (not just one
+       rough day) widens every muscle's recovery window somewhat, since that reflects reduced
+       overall recovery capacity, not something localized to one muscle. Honestly skipped when
+       there isn't enough real energy data logged, rather than guessing. */
     const today=new Date();
+    const recentEnergy=[];
+    for(let d=0;d<3;d++){
+      const dt=new Date(today);dt.setDate(dt.getDate()-d);
+      const key=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+      const sym=lsG('sym:'+key);
+      if(sym&&sym.energy)recentEnergy.push(sym.energy);
+    }
+    const energyModifier=recentEnergy.length>=2
+      ?(recentEnergy.reduce((s,e)=>s+e,0)/recentEnergy.length<=2.5?1.25:1)
+      :1;
     return Object.entries(history).map(([muscle,entries])=>{
       entries.sort((a,b)=>a.date.localeCompare(b.date));
+      /* Accumulated fatigue: sums how much residual fatigue EVERY recent hit is still
+         contributing, not just the single most recent one. Training the same muscle hard
+         twice in three days correctly compounds here, instead of Thursday's reading only
+         ever considering Wednesday and forgetting Monday happened. */
+      const recentEntries=entries.filter(e=>{
+        const daysSince=Math.floor((today-new Date(e.date))/86400000);
+        return daysSince>=0&&daysSince<=7;
+      });
+      const trailing=entries.slice(-4);
+      const avgContribution=trailing.reduce((s,e)=>s+e.contribution,0)/trailing.length;
+      let totalResidual=0;
+      recentEntries.forEach(e=>{
+        const daysSince=Math.max(0,Math.floor((today-new Date(e.date))/86400000));
+        const ratio=avgContribution>0?e.contribution/avgContribution:1;
+        const window=Math.min(6,Math.max(1.5,3*ratio))*energyModifier;
+        totalResidual+=Math.max(0,1-daysSince/window);
+      });
+      const freshness=Math.min(1,Math.max(0,1-totalResidual));
       const last=entries[entries.length-1];
       const daysSince=Math.max(0,Math.floor((today-new Date(last.date))/86400000));
-      const trailing=entries.slice(-4);
-      const avg=trailing.reduce((s,e)=>s+e.contribution,0)/trailing.length;
-      const ratio=avg>0?last.contribution/avg:1;
-      const recoveryWindow=Math.min(6,Math.max(1.5,3*ratio));
-      const freshness=Math.min(1,Math.max(0,daysSince/recoveryWindow));
       return{muscle,daysSince,freshness,lastDate:last.date};
     }).sort((a,b)=>a.freshness-b.freshness);
   },
@@ -1109,11 +1280,13 @@ function bestSetOf(workingSets,inputType){
     return b;
   },null);
 }
-function saveSession(dl,seqIdx){
+function saveSession(dl,seqIdx,explicitDate){
   const gd=DAYS[seqIdx]||adHocDay||DAYS.find(d=>d.label===dl);
   const s=WS[dl];if(!s||!gd)return;
+  const saveDate=explicitDate||todayKey();
+  const saveMonth=saveDate.slice(0,7);
   const newPRs=[];
-  const duration=s.startAt?Math.round((Date.now()-s.startAt)/60000):null;
+  const duration=(!explicitDate&&s.startAt)?Math.round((Date.now()-s.startAt)/60000):null;
   const exercises=s.ex.map((ex,ei)=>{
     const orig=gd.ex[ei]||gd.ex[0];
     const isChoiceEx=orig.inputType==='choice';
@@ -1136,20 +1309,21 @@ function saveSession(dl,seqIdx){
   });
   const totalVolume=exercises.reduce((v,e)=>v+(e.exVolume||0),0);
   const isFree=seqIdx==='free';
-  const session={date:todayKey(),dl,seqIdx:isFree?null:seqIdx,exercises,note:s.note,painNote:s.painNote||'',skipped:false,duration,newPRs,totalVolume};
-  Data.session.set(session);
-  Data.session.setLast(dl,{date:todayKey(),exercises});
+  const session={date:saveDate,dl,seqIdx:isFree?null:seqIdx,exercises,note:s.note,painNote:s.painNote||'',skipped:false,duration,newPRs,totalVolume};
+  Data.session.set(session,saveDate);
+  Data.session.setLast(dl,{date:saveDate,exercises});
   if(!isFree)lsS('last_seq_idx',seqIdx);
   lsS('last_dl',dl);
-  const mlog=lsG('mlog:'+monthKey())||{};
-  mlog[todayKey()]={type:'done',dl,seqIdx:isFree?undefined:seqIdx};
-  lsS('mlog:'+monthKey(),mlog);
+  const mlog=lsG('mlog:'+saveMonth)||{};
+  mlog[saveDate]={type:'done',dl,seqIdx:isFree?undefined:seqIdx};
+  lsS('mlog:'+saveMonth,mlog);
   clearDraft();showStickyBtn(false);stopTimerTick();
   renderToday();
   const toast=document.getElementById('save-toast');
   if(toast){
     const prTxt=newPRs.length?' &#x2605; NEW PR: '+newPRs.join(', ')+'!':'';
-    toast.innerHTML='&#x2713; Session saved'+(duration?' ('+duration+' min)':'')+'.'+prTxt+' Targets updated.';
+    const dateTxt=explicitDate?' for '+explicitDate:'';
+    toast.innerHTML='&#x2713; Session saved'+dateTxt+(duration?' ('+duration+' min)':'')+'.'+prTxt+' Targets updated.';
     toast.style.display='block';
     setTimeout(()=>{toast.style.display='none';},3000);
   }
@@ -1296,7 +1470,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v4.0';
+const APP_VERSION='v4.9';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -1392,6 +1566,17 @@ function renderToday(){
   const _freshList=Coach.getMuscleFreshness();
   let html='';
 
+  if(_staleDraftPending){
+    html+=`<div class="card warm" style="margin-bottom:10px">
+      <div class="cl">Unfinished session found</div>
+      <div class="cs" style="margin-bottom:10px">Looks like ${_staleDraftPending.dl} from ${_staleDraftPending.date} never got saved \u2014 probably forgot to tap Save &amp; Finish. Save it with that real date, or discard it if it didn't happen.</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-grn btn-sm" style="flex:1" onclick="resolveStaleDraftSave()">Save for ${_staleDraftPending.date}</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="discardStaleDraft()">Discard</button>
+      </div>
+    </div>`;
+  }
+
   const statsGapDays=getBodyStatsReminderDays();
   const foodGapDays=getFoodLoggingGapDays();
   if(statsGapDays||foodGapDays){
@@ -1461,7 +1646,7 @@ function renderToday(){
   }
 
   /* -- Completed session -- */
-  if(existing&&!existing.skipped&&existing.exercises&&!(adHocDay&&adHocDay.label==='Free session')){
+  if(existing&&!existing.skipped&&existing.exercises&&!adHocDay){
     function getExInputType(origName){
       for(const d of DAYS){for(const e of d.ex){
         if(e.n===origName)return e.inputType||'weight';
@@ -1699,7 +1884,11 @@ function renderToday(){
             <span>${e.n}${e.subOf?`<span style="color:var(--dim);font-size:11px"> &middot; sub for ${e.subOf}</span>`:''}</span><span style="color:var(--cyan);font-size:18px">+</span>
           </div>`).join('')}
         </div>`:`
-        <div style="font-size:12px;color:var(--mut);margin-bottom:8px">Tap a muscle to see exercises that train it</div>
+        <div style="font-size:12px;color:var(--mut);margin-bottom:8px">Tap a muscle to see exercises that train it, or pick by name if it's hard to tap precisely:</div>
+        <select class="foodsel" style="margin-bottom:10px" onchange="if(this.value){_freeExSelectedTags=[this.value];renderToday();}">
+          <option value="">Select a muscle...</option>
+          ${allMuscleTagsWithExercises().map(t=>`<option value="${t}" ${_freeExSelectedTags[0]===t?'selected':''}>${t}</option>`).join('')}
+        </select>
         <div style="display:flex;gap:10px;justify-content:center">
           <div id="freediag-front" style="width:46%"></div>
           <div id="freediag-back" style="width:46%"></div>
@@ -1982,6 +2171,29 @@ function renderProgress(){
       </div>`).join(''):`<div class="cs">No sessions logged in the last 7 days yet.</div>`}
   </div>`;
 
+  html+=`<div class="card"><div class="cl">Body Weight Trend</div><div class="ct" style="margin-bottom:8px">From your logged weigh-ins</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="btn ${_weightGraphPeriod==='week'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setWeightGraphPeriod('week')">Weekly</button>
+      <button class="btn ${_weightGraphPeriod==='month'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setWeightGraphPeriod('month')">Monthly</button>
+    </div>
+    ${renderLineChartSVG(getWeightTrendPoints(_weightGraphPeriod),{})}
+  </div>`;
+
+  const exNamesWithHistory=[...new Set(DAYS.flatMap(d=>d.ex.map(e=>e.n)))].filter(n=>getExHistory(n).length>=2);
+  if(!_exerciseGraphPick||!exNamesWithHistory.includes(_exerciseGraphPick))_exerciseGraphPick=exNamesWithHistory[0]||null;
+  html+=`<div class="card"><div class="cl">Exercise Trend</div><div class="ct" style="margin-bottom:8px">Estimated 1RM over time, from your real logged sessions</div>
+    ${exNamesWithHistory.length?`
+    <select class="foodsel" onchange="setExerciseGraphPick(this.value)" style="margin-bottom:10px">
+      ${exNamesWithHistory.map(n=>`<option value="${n}" ${n===_exerciseGraphPick?'selected':''}>${n}</option>`).join('')}
+    </select>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="btn ${_exerciseGraphPeriod==='week'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setExerciseGraphPeriod('week')">Weekly</button>
+      <button class="btn ${_exerciseGraphPeriod==='month'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setExerciseGraphPeriod('month')">Monthly</button>
+    </div>
+    ${renderLineChartSVG(getExerciseTrendPoints(_exerciseGraphPick,_exerciseGraphPeriod),{})}
+    `:`<div class="cs">Log the same exercise at least twice to see a trend here.</div>`}
+  </div>`;
+
   html+=`<div class="card"><div class="cl">Body Map</div><div class="ct" style="margin-bottom:8px">Tap a muscle</div>
     <div class="cs" style="margin-bottom:10px"><b style="color:var(--txt)">Volume</b> = what you've trained this week, looking back. <b style="color:var(--txt)">Freshness</b> = what's actually recovered and ready right now, looking forward \u2014 check this before picking today's session, not after.</div>
     <div style="display:flex;gap:8px;margin-bottom:10px">
@@ -1991,6 +2203,10 @@ function renderProgress(){
     <div class="cs" style="margin-bottom:10px">${_progressDiagMode==='freshness'
       ?'Deeper red means trained harder and more recently, relative to that muscle\u2019s own normal \u2014 fading toward grey as it recovers. Not a literal green light yet, the color scale available doesn\u2019t support that.'
       :'Brighter means more volume this week, relative to your busiest muscle.'}</div>
+    <select class="foodsel" style="margin-bottom:10px" onchange="if(this.value){_progressSelectedTags=[this.value];renderProgress();}">
+      <option value="">Hard to tap precisely? Pick by name...</option>
+      ${allMuscleTagsWithExercises().map(t=>`<option value="${t}" ${_progressSelectedTags[0]===t?'selected':''}>${t}</option>`).join('')}
+    </select>
     <div style="display:flex;gap:12px;justify-content:center">
       <div id="bodydiag-front" style="width:45%"></div>
       <div id="bodydiag-back" style="width:45%"></div>
@@ -2613,6 +2829,7 @@ function getE1RMTrend(exerciseName){
    holds up best, compound sits between. */
 function getFatigueCurve(orig){
   if(orig.inputType==='bodyweight')return[1,0.65,0.5];
+  if(orig.inputType==='seconds'||orig.inputType==='reps_each')return[1,0.85,0.75];
   if(orig.compound!==false)return[1,0.75,0.55];
   return[1,0.85,0.75];
 }
@@ -2621,11 +2838,21 @@ function getFatigueCurve(orig){
    backoff/drop set for extra volume. The generator scales to whatever set count is
    configured, always landing the top effort second-to-last (or last, if 2 sets) and the
    drop set truly last when there are 3+ sets. */
+/* Real gym equipment doesn't round the same way at every weight. 2.5kg steps are right for
+   a barbell (1.25kg plates per side), but at light dumbbell weight that same step can be
+   larger than the weight itself \u2014 rounding 3.2kg to the nearest 2.5 gives 2.5, a huge swing
+   for what's actually a fine, sensible number. Using 1kg steps below 20kg, matching how
+   light dumbbells actually increment, and 2.5kg at barbell-relevant weight and above. */
+function realisticWeightRound(v){
+  if(v<=0)return 0;
+  const step=v<20?1:2.5;
+  return Math.round(v/step)*step;
+}
 function getRampPrefill(topWeight,numSets){
   /* Round to 2.5kg, the realistic minimum increment for a plate-loaded barbell (1.25kg per
      side) and close enough for most dumbbell racks and cable stacks too. 0.5kg rounding
      produced numbers like 61.5kg that nobody can actually load. */
-  const round=v=>Math.round(v/2.5)*2.5;
+  const round=realisticWeightRound;
   if(numSets<2)return[{w:String(round(topWeight)),r:'2'}];
   const hasDrop=numSets>=3;
   const rampSteps=hasDrop?numSets-1:numSets;
@@ -2643,11 +2870,12 @@ function getRampPrefill(topWeight,numSets){
    ratio at true near-max singles than compounds do, and hypertrophy tracks with weekly
    close-to-failure volume more reliably than with a strength peak. */
 function getModeratePrefill(targetWeight,numSets){
-  const round=v=>Math.round(v/2.5)*2.5;
+  const round=realisticWeightRound;
+  const hasDrop=numSets>=3;
+  const workingSets=hasDrop?numSets-1:numSets;
   return Array.from({length:numSets},(_,i)=>{
-    const isLast=i===numSets-1;
-    if(isLast&&numSets>=3)return{w:String(round(targetWeight*0.65)),r:'14'};
-    const frac=numSets<=1?1:i/(numSets-1);
+    if(hasDrop&&i===numSets-1)return{w:String(round(targetWeight*0.65)),r:'14'};
+    const frac=workingSets<=1?1:i/(workingSets-1);
     const pct=0.8+frac*0.2,reps=Math.round(14-frac*4);
     return{w:String(round(targetWeight*pct)),r:String(Math.max(6,reps))};
   });
@@ -2660,7 +2888,7 @@ function getModeratePrefill(targetWeight,numSets){
 /* Shared by getPrefillSets and getSuggestion so the advisory text and the actual prefilled
    numbers can never disagree \u2014 both call this same function for the target weight. */
 function getNextTargetWeight(orig,trackName,w,r){
-  const round=v=>Math.round(v/2.5)*2.5;
+  const round=realisticWeightRound;
   const targetR=orig.r&&orig.r.includes&&orig.r.includes('\u2013')?Number(orig.r.split('\u2013')[1]):(parseInt(orig.r)||r);
   const gotTop=r>=targetR;
   const isCompound=orig.compound!==false;
@@ -2672,6 +2900,19 @@ function getNextTargetWeight(orig,trackName,w,r){
       recW=round(w+Math.max(inc,Math.min(inc*2,trend.ratePerWeek*0.5)));
     }else if(gotTop||isCompound){
       recW=round(w+inc);
+    }
+  }
+  /* Real ceiling: small, individually-reasonable increments can still compound into numbers
+     no real lifter would hit over many sessions \u2014 confirmed by simulation (83% growth in 20
+     sessions with no cap). Caps growth to at most 10% over roughly a month's worth of
+     sessions, matching realistic natural strength-gain rates, regardless of how aggressive
+     the raw trend math looks session to session. */
+  const hist=getExHistory(trackName);
+  if(hist.length>=6){
+    const refW=parseFloat(hist[Math.max(0,hist.length-8)].best.w);
+    if(refW>0){
+      const maxRealistic=round(refW*1.10);
+      if(recW>maxRealistic)recW=maxRealistic;
     }
   }
   return{recW,isCompound,gotTop,targetR};
@@ -3071,16 +3312,41 @@ runMigration();
 (()=>{const bw=lsG('bar_weights')||{};if(!bw.smith){bw.smith='15';lsS('bar_weights',bw);}})();
 checkStorage();
 checkUpdate();
+let _staleDraftPending=null;
+function resolveStaleDraftSave(){
+  if(!_staleDraftPending)return;
+  const{dl,state,date}=_staleDraftPending;
+  WS[dl]=state;
+  const _idx=SEQ.indexOf(dl);
+  const seqIdx=dl==='Free session'?'free':(_idx>=0?_idx:0);
+  if(dl==='Free session'){
+    adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:state.ex.map(e=>({n:e.origName,...(findExDef(e.origName)||{}),priority:'must'}))};
+    adHocSeqIdx=null;
+  }else{
+    adHocDay=DAYS[_idx];adHocSeqIdx=_idx;
+  }
+  saveSession(dl,seqIdx,date);
+  _staleDraftPending=null;
+}
+function discardStaleDraft(){
+  Data.draft.clearAll();
+  _staleDraftPending=null;
+  renderToday();
+}
 if(!Data.session.get()){
   const d=Data.draft.findAny();
   if(d&&d.dl&&d.state){
-    WS[d.dl]=d.state;
-    if(d.dl==='Free session'){
-      adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:d.state.ex.map(e=>({n:e.origName,...(findExDef(e.origName)||{}),priority:'must'}))};
-      adHocSeqIdx=null;
+    if(d.date&&d.date!==todayKey()){
+      _staleDraftPending={dl:d.dl,state:d.state,date:d.date};
     }else{
-      const _idx=SEQ.indexOf(d.dl);
-      if(_idx>=0){adHocDay=DAYS[_idx];adHocSeqIdx=_idx;}
+      WS[d.dl]=d.state;
+      if(d.dl==='Free session'){
+        adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:d.state.ex.map(e=>({n:e.origName,...(findExDef(e.origName)||{}),priority:'must'}))};
+        adHocSeqIdx=null;
+      }else{
+        const _idx=SEQ.indexOf(d.dl);
+        if(_idx>=0){adHocDay=DAYS[_idx];adHocSeqIdx=_idx;}
+      }
     }
   }
 }
