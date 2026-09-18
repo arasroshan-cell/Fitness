@@ -1,8 +1,8 @@
 # ROSHAN FITNESS TRACKER — MASTER REFERENCE
 **Single source of truth. Read this before every build session.**
-**Last updated:** 2026-09-17
+**Last updated:** 2026-09-18
 **Supersedes:** the v2.2a version of this document (2026-07-12), ROADMAP_MASTER.md, AUDIT_FULL.md, EVALUATION_v2_2a_COMPLETE.md, HANDOVER_v5_0.md
-**Paired with:** index.html (v5.5, 3782 lines, 161 functions), tests.js (297 assertions, all passing at last check)
+**Paired with:** index.html (v5.5, 3782 lines, 161 functions), tests.js (300 assertions, all passing at last check)
 
 ---
 
@@ -32,7 +32,7 @@
 | Foods in DB | 83 (74 base + 8 Tamil/Telugu additions + 1 Aldi granola) | FOODS array parse |
 | fibreRisk foods | 3 | Chickpeas masala, Rajma masala, Soya chunks masala fry |
 | oilInclusive foods | 28 | FOODS array parse |
-| tests.js | EXISTS, 297/297 passing | last full run this session |
+| tests.js | EXISTS, 300/300 passing | last full run this session |
 | plateRole system | IMPLEMENTED — every food tagged base/curry/side/none | Section 6 |
 | Rest timer | IMPLEMENTED — 150s compound / 75s isolation, ±30s adjustable | Section 5 |
 | RIR/RPE capture + coaching effect | IMPLEMENTED — top-set only | Section 5 |
@@ -86,8 +86,8 @@
 
 | ID | Item | Status |
 |---|---|---|
-| OI1 | Nordic curl equipment setup (bodyweight/partner-held, GHD, or band-assisted?) | **OPEN — asked, not yet answered.** `plateRole`/wlabel for this exercise still shows "Stack weight," known likely wrong, not fixed because guessing would repeat the exact bug class Section 7 describes. |
-| OI2 | TKE (terminal knee extension) equipment (band or cable?) | **OPEN — same as OI1.** |
+| OI1 | Nordic curl equipment setup (bodyweight/partner-held, GHD, or band-assisted?) | **RESOLVED 2026-09-18.** Roshan confirmed GHD machine. `SUB_TYPE_OVERRIDE` entry added: `inputType:'bodyweight'`, wlabel `'Bodyweight (add kg held at chest if weighted)'`, GHD-specific footplate/pad setup cue. No longer inherits Seated leg curl's "Stack weight". |
+| OI2 | TKE (terminal knee extension) equipment (band or cable?) | **RESOLVED 2026-09-18.** Roshan confirmed he does not currently perform this exercise. Removed entirely from `SUBS['Leg extension (machine)']` rather than left with a guessed label — `findExDef('TKE — terminal knee extension')` now returns `null`. |
 | OI3 | Adaptive nutrition target thresholds | Roshan said he does not yet understand what can impact this feature and how. A confirm step was added before any kcal target actually changes (2026-09-17), but the underlying explanation has not been walked through with him in depth. Worth a dedicated conversation, not just a UI safeguard. |
 | OI4 | Rest timer default durations (150s compound / 75s isolation) | Implemented with ±30s in-session adjustment per Roshan's request. The defaults themselves are reasonable convention, not something Roshan specifically confirmed — revisit if they feel wrong in practice. |
 | OI5 | Weekly check-in summary | Not built. Flagged repeatedly as needing its own conversation before scoping. |
@@ -179,9 +179,11 @@ NOT catch a new, differently-wrong inheritance on a future substitute.** When ad
 substitute exercise, check its resolved `wlabel` and `nt` by eye against what equipment it
 actually uses, do not just trust the existing test to catch it.
 
-Two known remaining cases are deliberately left unfixed, not missed: Nordic curl and TKE both
-still show "Stack weight," likely wrong, but the correct fix depends on how Roshan actually
-performs each (see Section 3, OI1/OI2).
+The two cases flagged here as deliberately left unfixed — Nordic curl and TKE — were resolved
+2026-09-18 once Roshan confirmed his actual setup for each (see Section 3, OI1/OI2). No known
+remaining cases of this failure mode as of that date; the permanent programmatic test still only
+catches the specific "rope / DB weight (one hand)" signature, so a future substitute still needs
+an eyeball check, not just a test run.
 
 ---
 

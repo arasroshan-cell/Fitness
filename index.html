@@ -315,7 +315,6 @@ const SUBS={
   'Barbell curl':['DB curl','EZ bar curl','Cable curl','Reverse EZ bar curl'],
   'Hammer curls':['Cable hammer curl','Cross-body curl'],
   'Leg press':['Step-ups (bodyweight)','Wall sit (hold 60s)','Pendulum/hack squat machine (light weight only \u2014 stop on any pain)'],
-  'Leg extension (machine)':['TKE \u2014 terminal knee extension'],
   'Seated leg curl':['Lying leg curl (if ok)','Nordic curl'],
   'Calf raises':['Seated calf raise','Single-leg calf raise'],
   'Plank':['Dead bug','Bear crawl hold','Pallof press'],
@@ -350,7 +349,8 @@ const SUB_TYPE_OVERRIDE={
   'Skull crushers':{wlabel:'Total kg incl. bar (EZ bar or Smith bar \u2014 your call)',nt:'Elbows stay pointed at the ceiling and still \u2014 only the forearms move through the stretch'},
   'T-bar row':{wlabel:'Total kg loaded (plates on the bar, or landmine attachment)'},
   'DB kickback':{nt:'Elbow pinned high and still against your side \u2014 only the forearm moves'},
-  'Machine tricep dip':{nt:'Full lockout at the bottom of the press'}
+  'Machine tricep dip':{nt:'Full lockout at the bottom of the press'},
+  'Nordic curl':{inputType:'bodyweight',wlabel:'Bodyweight (add kg held at chest if weighted)',noweight:true,nt:'GHD footplate locks your feet, hips right at the pad edge \u2014 lower under control and catch yourself with your hands at the bottom, don\u2019t free-fall'}
 };
 function findExDef(name){
   for(const d of DAYS){for(const e of d.ex){

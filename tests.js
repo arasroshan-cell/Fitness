@@ -894,14 +894,12 @@ try {
     const kb = app.findExDef('DB kickback'), md = app.findExDef('Machine tricep dip');
     return !kb.nt.includes('Straight bar or rope') && !md.nt.includes('Straight bar or rope');
   })());
-  T('Permanent audit: every substitute exercise across the whole SUBS table is checked programmatically for this exact bug class (inheriting an equipment-specific wlabel or cue from a differently-equipped original) \u2014 the two remaining cases (Nordic curl, TKE) are genuinely ambiguous equipment setups flagged for Roshan to confirm, not silently guessed at', (() => {
-    const knownAmbiguous = ['Nordic curl', 'TKE \u2014 terminal knee extension'];
+  T('Permanent audit: every substitute exercise across the whole SUBS table is checked programmatically for this exact bug class (inheriting an equipment-specific wlabel or cue from a differently-equipped original)', (() => {
     const problems = [];
     for (const [origName, subs] of Object.entries(app.SUBS)) {
       const realDef = (n) => app.DAYS.flatMap(d => d.ex).find(x => x.n === n);
       for (const subName of subs) {
         if (realDef(subName)) continue;
-        if (knownAmbiguous.includes(subName)) continue;
         const resolved = app.findExDef(subName);
         const hasOverride = !!app.SUB_TYPE_OVERRIDE[subName];
         const inferred = app.inferSubWlabel(subName);
@@ -911,6 +909,16 @@ try {
     }
     return problems.length === 0;
   })());
+
+  /* ---------- OI1/OI2 resolved with Boss (2026-09-18): Nordic curl confirmed as GHD machine, TKE confirmed as not currently performed ---------- */
+  T('OI1 resolved: Nordic curl no longer inherits Seated leg curl\u2019s "Stack weight" \u2014 Boss confirmed he does this on a GHD machine, so it now resolves as bodyweight with a GHD-specific setup cue', (() => {
+    const d = app.findExDef('Nordic curl');
+    return d.inputType === 'bodyweight' && d.wlabel !== 'Stack weight' && d.wlabel.includes('Bodyweight') && d.nt.includes('GHD footplate') && d.noweight === true;
+  })());
+  T('OI2 resolved: TKE (terminal knee extension) removed as a substitute for Leg extension (machine) \u2014 Boss confirmed he does not currently perform this exercise, so it is removed rather than left with a guessed equipment label', (() => {
+    return !('Leg extension (machine)' in app.SUBS) || !app.SUBS['Leg extension (machine)'].includes('TKE \u2014 terminal knee extension');
+  })());
+  T('OI2 resolved: TKE no longer resolvable via findExDef now that it has no SUBS entry', app.findExDef('TKE \u2014 terminal knee extension') === null);
 
   /* ---------- Boss's plate-role and UX corrections, this session ---------- */
   T('Correction: Rajma masala is rajma-chawal, a whole main dish per Boss \u2014 not a Plate side component', (() => {
