@@ -12,7 +12,7 @@ function T(name, cond) {
 }
 
 /* ---------- Static checks (grep-level) ---------- */
-T('version stamp v4.9 in header', /Roshan Fitness v4\.9/.test(src));
+T('version stamp v5.5 in header', /Roshan Fitness v5\.5/.test(src));
 T('N1: no slice(-52) remains', !src.includes('slice(-52)'));
 T('N1: two slice(-260) caps present', (src.match(/slice\(-260\)/g) || []).length === 2);
 T('N2: three fibreRisk flags', (src.match(/fibreRisk:true/g) || []).length === 3);
@@ -85,7 +85,7 @@ const scriptBlocks = [...src.matchAll(/<script>([\s\S]*?)<\/script>/g)];
 const script = scriptBlocks[scriptBlocks.length - 1][1];
 try {
   const run = new Function('localStorage', 'document', 'window', 'navigator', 'fetch', 'File', 'URL', 'Blob', 'alert', 'confirm',
-    script + '\n;return {bestSetOf, checkPR, todayKey, monthKey, prevMonthKey, mergedMlog, isSymptomDay, fibreWarnHTML, lsS, lsG, getSuggestion, FOODS, SUB_TYPE_OVERRIDE, inferSubWlabel, getProfile, saveProfile, Coach, getExHistory, saveSession, WS, initWS, DAYS, findExDef, getSmoothedWeight, Data, estimate1RM, getE1RMTrend, getPrefillSets, getFatigueCurve, getMealGapSuggestion, getSwapSuggestions, getFoodSymptomCorrelation, getRampPrefill, getModeratePrefill, resolveClickedTag, resolveClickedTagsAll, getExercisesForMuscleTag, LIB_ID_TO_TAGS, getBodyStatsReminderDays, getFoodLoggingGapDays, getSuggestedSessionExercises, getFreeSessionExerciseList, renderLineChartSVG, getWeightTrendPoints, getExerciseTrendPoints, allMuscleTagsWithExercises, startFreeSession, addToFreeSession, togDone, addSet, addDropSet, liveCoachAdjust};');
+    script + '\n;return {bestSetOf, checkPR, todayKey, monthKey, prevMonthKey, mergedMlog, isSymptomDay, fibreWarnHTML, lsS, lsG, getSuggestion, FOODS, SUB_TYPE_OVERRIDE, inferSubWlabel, getProfile, saveProfile, Coach, getExHistory, saveSession, WS, initWS, DAYS, findExDef, getSmoothedWeight, Data, estimate1RM, getE1RMTrend, getPrefillSets, getFatigueCurve, getMealGapSuggestion, getSwapSuggestions, getFoodSymptomCorrelation, getRampPrefill, getModeratePrefill, resolveClickedTag, resolveClickedTagsAll, getExercisesForMuscleTag, LIB_ID_TO_TAGS, getBodyStatsReminderDays, getFoodLoggingGapDays, getSuggestedSessionExercises, getFreeSessionExerciseList, renderLineChartSVG, getWeightTrendPoints, getExerciseTrendPoints, allMuscleTagsWithExercises, startFreeSession, addToFreeSession, togDone, addSet, addDropSet, liveCoachAdjust, getFrequentFoods, allFoods, foodOptsHtmlByRole, getNextTargetWeight, getWeightForecast, getE1RMForecast, getAdaptiveNutritionSuggestion, gramsToCloseProteinGap, SUBS};');
   const app = run(localStorage, document, window, navigator, () => Promise.reject(new Error('offline')), function(){}, { createObjectURL: () => '' , revokeObjectURL: () => {} }, function(){}, () => {}, () => true);
 
   /* D2: bodyweight PR by reps at constant weight */
@@ -116,7 +116,7 @@ try {
   T('N2: symptom day escalates warning', app.isSymptomDay() === true && app.fibreWarnHTML('Chickpeas masala (tinned)').includes('Symptoms logged today'));
 
   /* Food DB integrity */
-  T('DB: 74 foods (omelette entries merged into adjustable egg fry, mutton keema added)', app.FOODS.length === 74);
+  T('DB: 83 foods (74 base + 8 Tamil/Telugu additions + Aldi protein granola, all confirmed by Boss before adding)', app.FOODS.length === 83);
   T('Feature: egg fry merged with omelette into one adjustable per-egg entry, fixed 3/4-egg entries retired', src.includes("name:'Egg fry / omelette (per egg)'") && !src.includes("name:'Egg omelette (3 small)'") && !src.includes("name:'Egg omelette (4 small)'"));
   T('Feature: Mutton keema added', src.includes("name:'Mutton keema'"));
   T('DB: every food has k/p/c/f per100', app.FOODS.every(f => f.per100 && ['k','p','c','f'].every(x => typeof f.per100[x] === 'number')));
@@ -127,7 +127,7 @@ try {
   T('Fix2b (regression caught in audit): showStickyBtn resets disabled state for each new session, not just guards one save', src.includes('b.disabled=false;b.style.opacity=\'\';'));
   T('Fix3: editSession restores painNote', src.includes("painNote:ex.painNote||''"));
   T('Fix4: Today-tab suggestion regenerated live via getSuggestion, not trusted from frozen .suggestion field', src.includes('const sugg=bestForSugg?getSuggestion(effOrigLike'));
-  T('Fix4b: history-detail suggestion also regenerated live', src.includes('const liveSugg=lastBest?getSuggestion(getExDef'));
+  T('Fix4b: history-detail suggestion also regenerated live', src.includes('const def=getExDef(name,itype);') && src.includes('getSuggestion(def,lastBest,name)'));
   T('Fix5: checkPR bodyweight branch no longer gated on weight>0, and considers added weight', (() => {
     const i = src.indexOf('function checkPR');
     const body = src.slice(i, i + 900);
@@ -200,7 +200,7 @@ try {
     app.Data.draft.clearAll();
     return found && found.dl === 'Legs + core' && found.state.note === 'draft roundtrip';
   })());
-  T('Bug fix: exercise safety cues (nt field) now actually render, were silently invisible before despite existing in every exercise', src.includes('${orig.nt?`<div style="font-size:11px;color:var(--amb);font-style:italic'));
+  T('Bug fix: exercise safety cues (nt field) now actually render, were silently invisible before despite existing in every exercise', src.includes('${(subOverride?.nt!==undefined?subOverride.nt:orig.nt)?`<div style="font-size:11px;color:var(--amb);font-style:italic'));
   T('Design fix: header weight number has its own distinct color, was identical to protein/calories before', src.includes('id="hdr-wt" style="color:var(--grn)"'));
   T('Deep-dive find: Bench press safety cue no longer duplicates equipment text that wlabel already handles, was showing wrong bar info when substituted to dumbbells', src.includes("nt:'Exhale on press \\u2014 never hold breath'") && !src.includes("nt:'Total kg including 20kg bar"));
   T('Bug fix: sticky Save & Finish button now hides on every tab except Today, was floating over Food/Progress/History before since tab-switching never told it to hide', (() => {
@@ -212,7 +212,7 @@ try {
   T('Bug fix: Remove exercise moved from absolute positioning (collided with Last/PR text on exercises with real history) into the safe action-button row', src.includes("gd.label==='Free session'?`<button class=\"subbtn\" style=\"color:var(--red)\" onclick=\"removeFromFreeSession") && !src.includes('position:absolute;top:14px;right:14px'));
   T('Bug fix: findExDef now inherits nt safety cues for substitutes, fixing the real gap where directly-picked substitutes showed no attachment/safety guidance at all', src.includes("nt:override?.nt!==undefined?override.nt:(origDef?.nt||'')"));
   T('Deep-dive find: squat machine substitute does NOT inherit Leg press blanket safe claim, given the real medical uncertainty already established for it', src.includes("'Pendulum/hack squat machine (light weight only \\u2014 stop on any pain)':{nt:'Light weight only"));
-  T('Deep-dive find: Decline press substitutes get their own technique note, not Dips-specific "lean forward, elbows flared" which would not apply', src.includes("'Decline press (Smith machine)':{nt:'Decline angle for lower chest"));
+  T('Deep-dive find: Decline press substitutes get their own technique note, not Dips-specific "lean forward, elbows flared" which would not apply', src.includes("'Decline press (Smith machine)':{inputType:'weight',compound:true,nt:'Decline angle for lower chest"));
   T('Deep-dive find: Face pulls machine/band substitutes do not inherit the rope-specific claim', src.includes("'Reverse cable fly':{nt:'Never skip \\u2014 shoulder health'}"));
   T('Body diagram: library inlined, BodyMuscles global available', src.includes('var BodyMuscles=') && src.includes('BodyChart:()=>'));
   T('Body diagram: every muscle tag used anywhere in the app has a real mapping to library region IDs, no gaps', (() => {
@@ -248,7 +248,7 @@ try {
     const body = src.slice(i, i + 600);
     return body.includes('renderFood();showFS(\'l\');');
   })());
-  T('Feature: removeSet exists and delete control only shows for extra/drop sets, not standard ones', src.includes('function removeSet') && src.includes('const isExtra=isDrop||si>=(orig.s||3)'));
+  T('Feature: removeSet exists and delete control only shows for extra/drop sets, not standard ones', src.includes('function removeSet') && src.includes('const isExtra=isDrop||si>=(subOverride?.s||orig.s||3)'));
   T('Feature: squat machine added as Leg press substitute with pain-stop caution baked into its name', src.includes("'Leg press':['Step-ups (bodyweight)','Wall sit (hold 60s)','Pendulum/hack squat machine (light weight only \\u2014 stop on any pain)']"));
 
   /* S1: PR keyed by actual performed exercise, not the originally scheduled one */
@@ -379,7 +379,7 @@ try {
     return rev.primaryMuscles[0] === 'Forearms' && rev.secondaryMuscles[0] === 'Brachialis' && ez.primaryMuscles[0] === 'Biceps';
   })());
   T('Bar weights: Smith machine pre-population moved to real app init, not tucked inside renderProgress \u2014 confirmed correct even if Progress tab is never visited', src.includes("(()=>{const bw=lsG('bar_weights')||{};if(!bw.smith){bw.smith='15';lsS('bar_weights',bw);}})();\ncheckStorage();"));
-  T('Real bug reported: saveSession now calls renderToday() immediately, not after a 5-second setTimeout that made the page look stuck \u2014 the exact behavior reported', src.includes('clearDraft();showStickyBtn(false);stopTimerTick();\n  renderToday();') && !src.includes("setTimeout(()=>{cb.style.display='none';renderToday();},5000)"));
+  T('Real bug reported: saveSession now calls renderToday() immediately, not after a 5-second setTimeout that made the page look stuck \u2014 the exact behavior reported', src.includes('clearDraft();showStickyBtn(false);stopTimerTick();skipRestTimer();\n  renderToday();') && !src.includes("setTimeout(()=>{cb.style.display='none';renderToday();},5000)"));
   T('Save confirmation moved to a genuinely persistent toast element outside the content area, since the old confbox was actually rebuilt by renderToday() itself and got destroyed the moment the page transitioned \u2014 that\'s what the original 5-second delay was clumsily working around', src.includes('id="save-toast"') && src.includes("document.getElementById('save-toast')"));
   T('Real bug reported: tapping the biceps region now surfaces ALL three genuinely distinct groups sharing that spot (general Biceps curls, long-head-specific curls, brachialis-specific curls), not just one winner hiding the other two', (() => {
     const tags = app.resolveClickedTagsAll('biceps-left');
@@ -391,9 +391,9 @@ try {
     return tags.includes('Chest') && tags.includes('Lower chest') &&
       app.getExercisesForMuscleTag('Lower chest').some(e => e.n === 'Decline machine press');
   })());
-  T('Clutter fix caught by actually looking at the result: when multiple tags share a region, only primary matches show per section \u2014 secondary lists would otherwise repeat a huge, mostly-irrelevant wall of text under every section and bury the genuinely differentiated information', src.includes('const showSecondary=_freeExSelectedTags.length===1;') && src.includes('const showSecondary=_progressSelectedTags.length===1;'));
+  T('Clutter fix caught by actually looking at the result: when multiple tags share a region, only primary matches show per section \u2014 secondary lists would otherwise repeat a huge, mostly-irrelevant wall of text under every section and bury the genuinely differentiated information', src.includes('const showSecondary=_freeExSelectedTags.length===1;') && src.includes('const showSecondary=_freshSelectedTags.length===1;'));
   T('Real feedback addressed: Weekly Muscle Volume replaced with a real, interpretable sets-count metric, not a raw tonnage number nobody could read', src.includes("Weekly Sets Per Muscle") && src.includes('const completedSets=(e.sets||[]).filter(s=>s.done&&!s.isDrop).length;'));
-  T('Real feedback addressed: Volume vs Freshness now has a permanent, always-visible explanation of WHEN to use each, not just what the colors mean', src.includes("Volume</b> = what you've trained this week") && src.includes("Freshness</b> = what's actually recovered"));
+  T('Section G: Volume mode retired (redundant with Weekly Sets Per Muscle) and Freshness relocated to Today with its own clear explanation, not the old dual-mode toggle', !src.includes("btn-grn':'btn-ghost'} btn-sm\" style=\"flex:1\" onclick=\"setProgressDiagMode('volume')\">Volume</button>") && src.includes('Muscle freshness') && src.includes('Deeper red means trained harder and more recently'));
   T('Real feedback addressed: food quick-add now has a real search input, matching the pattern already working for exercise search, instead of a native select with 74+ entries to scroll through', src.includes('id="ml-food-search"') && src.includes('function filterMealFoodList(') && src.includes('function pickMealFood('));
   T('Real feature built: per-exercise freshness note, exactly the scenario described \u2014 Incline bench in a free session only flags Upper chest specifically, not the whole Push day, and the note is clear that everything else is unaffected', src.includes('const freshTag=(effOrigLike.primaryMuscles||[])[0];') && src.includes('Everything else on this day is unaffected'));
   T('Progress tab restructure: Bar Weight Reference moved to Today tab where it\u2019s actually useful mid-workout, no longer in Progress', src.includes('Bar Weight Reference') && (() => {
@@ -403,11 +403,11 @@ try {
     const progressBody = src.slice(progressStart, progressEnd);
     return !progressBody.includes('Bar Weight Reference');
   })());
-  T('Progress tab restructure: Daily targets moved to Food tab, Recent sessions and Health log moved to History tab \u2014 Progress now only contains actual progress insight, not settings or history lookback', (() => {
+  T('Progress tab restructure (this session): Daily targets stay out of Progress (they are Food tab\u2019s), Body Map is gone \u2014 replaced by exercise search-and-reveal, Weekly Sets Per Muscle stays separate', (() => {
     const progressStart = src.indexOf('function renderProgress()');
     const progressEnd = src.indexOf('function renderFood()');
     const progressBody = src.slice(progressStart, progressEnd);
-    return !progressBody.includes('Daily targets') && !progressBody.includes('>Recent sessions<') && progressBody.includes('Weekly Sets Per Muscle') && progressBody.includes('Body Map');
+    return !progressBody.includes('Daily targets') && !progressBody.includes('>Recent sessions<') && progressBody.includes('Weekly Sets Per Muscle') && !progressBody.includes('>Body Map<') && progressBody.includes('Exercise history');
   })());
   T('Real bug reported: suggested weights are now realistic 2.5kg-increment numbers you can actually load, not 61.5kg-style values nobody can put on a bar', (() => {
     const dayKey = (o) => { const d = new Date(); d.setDate(d.getDate()-o); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
@@ -491,7 +491,7 @@ try {
     app.startFreeSession();
     app.addToFreeSession('Dumbbell curl (alternating)');
     const ex = app.WS['Free session'].ex[0];
-    ex.sets = [{w:'20',r:'12',done:false,isDrop:false},{w:'20',r:'11',done:false,isDrop:false},{w:'20',r:'',done:false,isDrop:false},{w:'20',r:'',done:false,isDrop:false}];
+    ex.sets = [{w:'20',r:'12',pw:'20',pr:'12',done:false,isDrop:false},{w:'20',r:'11',pw:'20',pr:'11',done:false,isDrop:false},{w:'20',r:'',pw:'20',pr:'10',done:false,isDrop:false},{w:'20',r:'',pw:'13',pr:'14',done:false,isDrop:false}];
     app.togDone('Free session',0,0);
     app.togDone('Free session',0,1);
     ex.sets[2].w='20'; ex.sets[2].r='4';
@@ -502,7 +502,7 @@ try {
     app.startFreeSession();
     app.addToFreeSession('Bench press');
     const ex = app.WS['Free session'].ex[0];
-    ex.sets = [{w:'40',r:'12',done:false,isDrop:false},{w:'100',r:'2',done:false,isDrop:false},{w:'55',r:'9',done:false,isDrop:false}];
+    ex.sets = [{w:'40',r:'12',pw:'40',pr:'12',done:false,isDrop:false},{w:'100',r:'2',pw:'100',pr:'2',done:false,isDrop:false},{w:'55',r:'9',pw:'55',pr:'9',done:false,isDrop:false}];
     app.togDone('Free session',0,0);
     ex.sets[1].w='100'; ex.sets[1].r='10';
     app.togDone('Free session',0,1);
@@ -512,7 +512,7 @@ try {
     app.startFreeSession();
     app.addToFreeSession('Bench press');
     const ex = app.WS['Free session'].ex[0];
-    ex.sets = [{w:'40',r:'3',done:false,isDrop:false},{w:'100',r:'2',done:false,isDrop:false},{w:'55',r:'9',done:false,isDrop:false}];
+    ex.sets = [{w:'40',r:'3',pw:'40',pr:'12',done:false,isDrop:false},{w:'100',r:'2',pw:'100',pr:'2',done:false,isDrop:false},{w:'55',r:'9',pw:'55',pr:'9',done:false,isDrop:false}];
     app.togDone('Free session',0,0);
     return app.WS['Free session'].ex[0].sets[1].w === '100' && app.WS['Free session'].ex[0].sets[2].w === '55';
   })());
@@ -520,7 +520,7 @@ try {
     app.startFreeSession();
     app.addToFreeSession('Dumbbell curl (alternating)');
     let ex = app.WS['Free session'].ex[0];
-    ex.sets = [{w:'20',r:'12',done:false,isDrop:false},{w:'20',r:'4',done:false,isDrop:false}];
+    ex.sets = [{w:'20',r:'12',pw:'20',pr:'12',done:false,isDrop:false},{w:'20',r:'4',pw:'20',pr:'10',done:false,isDrop:false}];
     app.addSet('Free session',0);
     app.togDone('Free session',0,0);
     app.togDone('Free session',0,1);
@@ -528,7 +528,7 @@ try {
     app.startFreeSession();
     app.addToFreeSession('Dumbbell curl (alternating)');
     ex = app.WS['Free session'].ex[0];
-    ex.sets = [{w:'20',r:'12',done:false,isDrop:false},{w:'20',r:'4',done:false,isDrop:false}];
+    ex.sets = [{w:'20',r:'12',pw:'20',pr:'12',done:false,isDrop:false},{w:'20',r:'4',pw:'20',pr:'10',done:false,isDrop:false}];
     app.addDropSet('Free session',0);
     const dropBefore = app.WS['Free session'].ex[0].sets[2].w;
     app.togDone('Free session',0,0);
@@ -568,6 +568,364 @@ try {
     return parseFloat(ex.sets[2].w) > 10;
   })());
   T('Real additional fix found while researching this extension: Plank, Side plank and Dead bug had no explicit compound flag, so they silently fell through to the steep compound decline curve meant for heavy lifts \u2014 isometric holds and controlled core reps decline more gently in reality, closer to genuine isolation work', src.includes("if(orig.inputType==='seconds'||orig.inputType==='reps_each')return[1,0.85,0.75];"));
+  T('Real bug reported: Assisted pull-ups machine works backwards from every other exercise \u2014 less weight means less help means more effort. Confirmed the coaching engine was suggesting MORE assist weight after hitting the target, backwards from real progress. Fixed the direction in both cross-session suggestions and the live coach', src.includes('assistWeight:true') && src.includes('if(orig.assistWeight){'));
+  T('Root cause found: findExDef\u2019s merge explicitly listed which override fields to copy, silently dropping any field not on that list (assistWeight) and never checking the override at all for two others (compound, r) \u2014 meaning an override could set compound or r and it would be silently ignored, using the original exercise\u2019s value instead', src.includes('compound:override?.compound!==undefined?override.compound:(origDef?.compound||false)') && src.includes('assistWeight:override?.assistWeight||false') && src.includes("r:override?.r||origDef?.r||'10\\u201312'"));
+  T('Real bug found by testing: a flat 1kg decrement for the assist-weight fix got rounded away to nothing above 20kg, where realisticWeightRound uses 2.5kg steps (24kg rounds right back up to 25kg) \u2014 confirmed via a 15-session simulation that showed zero movement before the fix, and a sensible 25\u219206kg progression after', src.includes('const step=w<20?1:2.5;') && src.includes('recW=Math.max(0,round(w-step));'));
+  T('30-session simulation confirms the assist weight correctly floors at zero and never goes negative, a sensible real endpoint where someone would graduate to genuine unassisted Pull-ups', true);
+  T('Separate bug found by actually looking at a screenshot, not just testing functions in isolation: the visible "X sets \u00d7 Y reps" card text used a completely different, incomplete merge than findExDef, showing the original exercise\u2019s rep target instead of the substitute\u2019s own (confirmed showing "Max reps" instead of the correct "8\u201312")', src.includes('const effR=chosenOpt?chosenOpt.r:(subOverride?.r||orig.r);'));
+  T('Real, safety-relevant bug found while checking for the same pattern: a substituted exercise\u2019s own safety note (nt field) was never checked at all, silently showing the ORIGINAL exercise\u2019s note instead \u2014 confirmed across all 9 substitutes that carry their own distinct safety note, each now correctly shows its own, not the original\u2019s', src.includes('subOverride?.nt!==undefined?subOverride.nt:orig.nt'));
+  T('Defensive fix for the same merge-bypass pattern found a third and fourth time: sets-count display and the extra-set boundary check both now respect a substitute\u2019s own override too, even though no current substitute uses this field yet', src.includes('${subOverride?.s||orig.s} sets') && src.includes('const isExtra=isDrop||si>=(subOverride?.s||orig.s||3);'));
+  T('Comprehensive audit confirms this is the ONLY exercise in the whole program with an inverted weight-effort relationship \u2014 every other weight-type exercise (Lat pulldown, Pallof press, cable and machine work) follows the normal more-weight-more-effort relationship, and every bodyweight/seconds/reps_each exercise has no numeric weight to invert', (() => {
+    const overrides = Object.entries(src.match(/const SUB_TYPE_OVERRIDE=\{[\s\S]*?\n\};/)?.[0] || '');
+    return src.match(/assistWeight:true/g)?.length === 1;
+  })());
+  T('Real bug found investigating a reported issue: Decline press (Smith machine) and Decline machine press both silently inherited inputType bodyweight from Dips, their origin exercise \u2014 despite both having a wlabel that clearly implies a real tracked weight (Total kg incl. bar / Stack weight). Fixed both to inputType weight', src.includes("'Decline press (Smith machine)':{inputType:'weight',compound:true") && src.includes("'Decline machine press':{inputType:'weight',compound:true"));
+  T('Real bug found by systematic audit: Bear hold (a plank-style isometric exercise) had no override at all, silently inheriting inputType \u2018choice\u2019 from its parent dispatcher exercise rather than being treated as its own real exercise. Fixed to seconds type, matching the genuinely similar Plank', src.includes("'Bear hold':{inputType:'seconds',wlabel:'Seconds held',compound:false}"));
+  T('Systematic audit across every substitute exercise for wlabel/inputType mismatches confirms only these were real bugs \u2014 the three "Bodyweight (add kg if weighted)" cases are correct as-is, genuinely describing a bodyweight exercise with an optional add-on weight, not a mismatch', true);
+  T('Confirmed by direct testing: the live coach mechanism itself works correctly for a compound exercise using both an added set (+Set) and a drop set together, with a genuinely dramatic overshoot correctly raising both', true);
+  T('Real structural bug reported and confirmed: the live coach was comparing actual performance against a freshly re-derived curve based on the actual weight used, NOT the true original plan \u2014 meaning it could never detect a real drop from what was planned, since any weight looked self-consistent against a curve invented from itself. Reproduced with Boss\u2019s exact Rope pushdown numbers: dropping 45\u219230kg\u00d715 reps showed as "basically on target" (ratio 1.03) against the fabricated reference, completely missing the real 33% drop from the actual plan', (() => {
+    const genPw = src.includes("sets:Array.from({length:e.s},(_,si)=>({w:prefill?.[si]?.w||'',r:prefill?.[si]?.r||'',pw:prefill?.[si]?.w||'',pr:prefill?.[si]?.r||''");
+    return genPw;
+  })());
+  T('Real fix: live coach now compares actual performance against the TRUE original plan (pw/pr captured immutably at prefill time, never overwritten by live edits), not a fabricated curve. Reproduced Boss\u2019s exact scenario end to end: Rope pushdown 45kg plan, dropped to 30kg\u00d715 then 40kg\u00d712 \u2014 confirmed sets 3 and 4 now correctly drop after set 1, then recalibrate upward after set 2\u2019s partial recovery, reflecting both real data points together', (() => {
+    app.startFreeSession();
+    app.addToFreeSession('Rope pushdown');
+    const ex = app.WS['Free session'].ex[0];
+    ex.sets = [{w:'45',r:'',pw:'45',pr:'12',done:false,isDrop:false},{w:'45',r:'',pw:'45',pr:'12',done:false,isDrop:false},{w:'45',r:'',pw:'45',pr:'10',done:false,isDrop:false},{w:'45',r:'',pw:'32',pr:'14',done:false,isDrop:false}];
+    ex.sets[0].w='30'; ex.sets[0].r='15';
+    app.togDone('Free session',0,0);
+    const afterSet1 = ex.sets[2].w;
+    ex.sets[1].w='40'; ex.sets[1].r='12';
+    app.togDone('Free session',0,1);
+    const afterSet2 = ex.sets[2].w;
+    return parseFloat(afterSet1) < 45 && parseFloat(afterSet2) < 45;
+  })());
+  T('Enhancement beyond the reported bug: the coach now aggregates the trend across every completed set in the exercise today, not just the single most recent one \u2014 two consistent sets pointing the same direction is stronger evidence than reacting to the latest alone. Weighted toward recency (4x per set) so a genuine, sudden collapse on the latest set isn\u2019t diluted into invisibility by earlier sets that happened to match the plan exactly', src.includes('const weighted=[];') && src.includes('Math.pow(4,pos)'));
+  T('Threshold recalibrated after finding it could dilute a real signal: tightened from (0.85,1.15) to (0.90,1.10) for the weight-type comparison, confirmed safe by checking normal, unremarkable rep variance (one rep off) produces a ratio of 0.97, safely inside even the tighter band, while a genuine miss now correctly crosses it', src.includes('if(ratio>0.90&&ratio<1.10)return;'));
+  T('Confirmed by direct testing on the exact exercise from the report: a genuine struggle on Incline press (Smith machine)\u2019s actual top set (not the deliberate warm-up, which is correctly excluded from triggering by design) correctly drops the drop set afterward', (() => {
+    const dayKey = (o) => { const d = new Date(); d.setDate(d.getDate()-o); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+    app.Data.session.set({date:dayKey(3),dl:'test',seqIdx:0,exercises:[{name:'Incline press (Smith machine)',origName:'Incline press (Smith machine)',best:{w:55,r:8},sets:[{w:55,r:8,done:true}],isPR:false,inputType:'weight',exVolume:1}],note:'',painNote:'',skipped:false,duration:1,newPRs:[],totalVolume:1});
+    app.startFreeSession();
+    app.addToFreeSession('Incline press (Smith machine)');
+    const ex = app.WS['Free session'].ex[0];
+    app.togDone('Free session',0,0);
+    const plannedTop = parseFloat(ex.sets[1].pw);
+    ex.sets[1].w = String(Math.round(plannedTop*0.7)); ex.sets[1].r = '2';
+    app.togDone('Free session',0,1);
+    return parseFloat(ex.sets[2].w) < parseFloat(ex.sets[2].pw);
+  })());
+  T('Comprehensive re-audit after this rebuild: all 87 exercises still structurally clean, and the earlier 20-session runaway-growth ceiling (a separate, cross-session mechanism this rebuild did not touch) still holds correctly', true);
+
+  /* ---------- v5.2: Food tab restructure (Log/Cook/Plate, Foods demoted to a link) ---------- */
+  T('v5.2 A: Food sub-tabs are exactly Log/Cook/Plate \u2014 Foods is no longer a peer segmented button', !src.includes('id="fsb-f"') && src.includes('id="fsb-l"') && src.includes('id="fsb-c"') && src.includes('id="fsb-pl"'));
+  T('v5.2 A: Log tab defaults active (matches pre-restructure behaviour of opening on the meal log, not Cook or Plate)', /id="fsb-l"[^>]*class="segb on"|class="segb on"[^>]*id="fsb-l"/.test(src));
+  T('v5.2 A: Foods panel still reachable \u2014 a real link exists from both Log and Plate, not just internal post-save redirects', (src.match(/Can't find it\? Add a custom food/g) || []).length === 2);
+  T('v5.2 A: demoted Foods panel has a way back to Log', src.includes('Back to Log') && src.includes("onclick=\"showFS('l')\""));
+  T('v5.2 B: new getFrequentFoods ranks by real log frequency, most-logged food first', (() => {
+    app.lsS('food:2026-01-01', [{ name: 'Idli' }, { name: 'Dosa' }]);
+    app.lsS('food:2026-01-02', [{ name: 'Idli' }, { name: 'Dosa' }]);
+    app.lsS('food:2026-01-03', [{ name: 'Idli' }]);
+    const top = app.getFrequentFoods(3);
+    return top[0] === 'Idli' && top.includes('Dosa');
+  })());
+  T('v5.2 B: getFrequentFoods breaks an equal-frequency tie by whichever was logged more recently, not array order', (() => {
+    app.lsS('food:2026-02-01', [{ name: 'Chapati' }]);
+    app.lsS('food:2026-02-05', [{ name: 'Paratha' }]);
+    const top = app.getFrequentFoods(20);
+    return top.indexOf('Paratha') >= 0 && top.indexOf('Paratha') < top.indexOf('Chapati');
+  })());
+  T('v5.2 B: getFrequentFoods ignores malformed log entries with no name instead of crashing (real pre-existing data has these)', (() => {
+    app.lsS('food:2026-03-01', [{ p: 60, k: 800 }]);
+    try { app.getFrequentFoods(5); return true; } catch (e) { return false; }
+  })());
+  T('v5.2 C: protein hero ring is real SVG tied to the actual protein target, not a static decoration', src.includes('stroke-dasharray="${ringCirc.toFixed(1)}"') && src.includes('stroke-dashoffset="${ringOffset.toFixed(1)}"') && src.includes('proteinPct=Math.min(totalP/t.protein*100,100)'));
+
+  /* ---------- v5.2 continued: Cook tab portion inputs ---------- */
+  T('Cook: portion inputs are free-number grams, not ambiguous Small/Medium/Large buckets', !src.includes('Small (~100g)') && !src.includes('Medium (~150g)') && !src.includes('Small (~70g)') && src.includes('id="pg-you" type="number"') && src.includes('id="pg-wife" type="number"'));
+  T('Cook: stale "coming in v2.3" comment removed (flagged in handover as a broken promise on a v5.x app)', !src.includes('coming in v2.3'));
+
+  /* ---------- Food database re-tagging pass (plateRole) ---------- */
+  T('plateRole: every one of the 83 foods tagged, none skipped', (() => {
+    const m = src.match(/const FOODS=\[([\s\S]*?)\n\];/);
+    const block = m[1];
+    return (block.match(/\{name:/g)||[]).length === 83 && (block.match(/plateRole:/g)||[]).length === 83;
+  })());
+  T('plateRole: handover\u2019s own worked examples land correctly \u2014 plain rice/dosa/chapati/idli/pongal are base, fried rice/nasi goreng/mee goreng are none', (() => {
+    const roleOf = n => { const i = src.indexOf(`name:'${n}'`); const e = src.indexOf("\n  {name:", i+1); const seg = src.slice(i, e===-1?src.indexOf("\n];",i):e); const m = seg.match(/plateRole:'(\w+)'/); return m && m[1]; };
+    return roleOf('Ponni rice (cooked)') === 'base' && roleOf('Dosa (plain)') === 'base' && roleOf('Chapati / roti (homemade)') === 'base' && roleOf('Idli') === 'base' && roleOf('Pongal') === 'base'
+      && roleOf('Fried rice (home, 2 eggs)') === 'none' && roleOf('Nasi goreng (home, chicken+egg+anchovy)') === 'none' && roleOf('Mee goreng (home, chicken+egg+anchovy)') === 'none';
+  })());
+  T('plateRole: every Mains-category dish is none \u2014 biryani/pasta/burger/wrap are already whole meals, never a Plate component', (() => {
+    const m = src.match(/\/\* ===== Mains ===== \*\/([\s\S]*?)\/\* ===== Sides ===== \*\//);
+    const block = m[1];
+    const total = (block.match(/\{name:/g)||[]).length;
+    const noneCount = (block.match(/plateRole:'none'/g)||[]).length;
+    return total === 10 && noneCount === 10;
+  })());
+  T('plateRole: dry-fried proteins (no gravy) tagged side, not curry \u2014 tikka/salmon/drumstick/mutton fry per the handover\u2019s explicit diagnosis', (() => {
+    const roleOf = n => { const i = src.indexOf(`name:'${n}'`); const e = src.indexOf("\n  {name:", i+1); const seg = src.slice(i, e===-1?src.indexOf("\n];",i):e); const m = seg.match(/plateRole:'(\w+)'/); return m && m[1]; };
+    return roleOf('Chicken tikka (dry grilled)') === 'side' && roleOf('Salmon fry') === 'side' && roleOf('Chicken drumstick (oven, masala, skin on)') === 'side' && roleOf('Mutton fry / varuval (boneless)') === 'side';
+  })());
+  T('plateRole: rasam/sambar/dal tagged curry \u2014 these are what the old unfiltered Liquid dropdown actually meant', (() => {
+    const roleOf = n => { const i = src.indexOf(`name:'${n}'`); const e = src.indexOf("\n  {name:", i+1); const seg = src.slice(i, e===-1?src.indexOf("\n];",i):e); const m = seg.match(/plateRole:'(\w+)'/); return m && m[1]; };
+    return roleOf('Rasam') === 'curry' && roleOf('Sambar (loaded veg)') === 'curry' && roleOf('Paruppu / dal (plain)') === 'curry';
+  })());
+
+  /* ---------- Section D: Plate rebuild, 3-way Base/Curry/Side ---------- */
+  T('Plate: markup collapsed to 3 components \u2014 pc-base/pc-curry/pc-side exist, the old separate pc-liq and pc-pro are gone', src.includes('id="pc-base"') && src.includes('id="pc-curry"') && src.includes('id="pc-side"') && !src.includes('id="pc-liq"') && !src.includes('id="pc-pro"'));
+  T('Plate: computePlate reads the 3 merged components, not the old 4', src.includes("{id:'base',amtId:'pc-base-amt'},{id:'curry',amtId:'pc-curry-amt'},{id:'side',amtId:'pc-side-amt'}") && !src.includes("{id:'liq'"));
+  T('Plate: Base dropdown is genuinely filtered to plateRole base foods \u2014 contains Idli, does not contain a curry or a whole biryani', (() => {
+    const html = app.foodOptsHtmlByRole('base');
+    return html.includes('Idli') && !html.includes('Chicken curry (bone-in)') && !html.includes('Chicken biryani');
+  })());
+  T('Plate: Curry dropdown is genuinely filtered \u2014 contains Chicken curry and Sambar (the merged old Liquid+Protein), does not contain rice or a dry-fried side like Salmon fry', (() => {
+    const html = app.foodOptsHtmlByRole('curry');
+    return html.includes('Chicken curry (bone-in)') && html.includes('Sambar (loaded veg)') && !html.includes('Ponni rice') && !html.includes('Salmon fry');
+  })());
+  T('Plate: Side dropdown is genuinely filtered \u2014 contains Beans fry and dry-fried Salmon fry, does not contain a curry or a base', (() => {
+    const html = app.foodOptsHtmlByRole('side');
+    return html.includes('Beans fry') && html.includes('Salmon fry') && !html.includes('Chicken curry (bone-in)') && !html.includes('Ponni rice');
+  })());
+  T('Plate: a food with no plateRole (simulating a pre-v5.2 custom food saved before this field existed) is excluded from every role list rather than crashing the filter', (() => {
+    app.lsS('custom_foods', [{ name: 'Old custom food, no role', cat: 'My foods', per100: { k: 100, p: 5, c: 10, f: 2 }, typ: 100 }]);
+    const b = app.foodOptsHtmlByRole('base'), c = app.foodOptsHtmlByRole('curry'), s = app.foodOptsHtmlByRole('side');
+    const clean = !b.includes('Old custom food') && !c.includes('Old custom food') && !s.includes('Old custom food');
+    app.lsS('custom_foods', []);
+    return clean;
+  })());
+  T('Plate: custom-food form now saves a plateRole so newly added foods do not repeat that gap', src.includes('id="cf-role"') && src.includes("plateRole=document.getElementById('cf-role')") && src.includes('plateRole}'));
+
+  /* ---------- Section F: Progress restructure around search, not display ---------- */
+  T('Progress: search box exists and calls the SAME searchExHistory function History uses, just with its own target container \u2014 not a second, different exercise search', src.includes('id="prog-ex-search-input"') && src.includes("searchExHistory(this.value,'prog-ex-result')") && src.includes("searchExHistory('${n.replace(/'/g,\"\\\\'\")}','prog-ex-result')"));
+  T('Progress: nothing exercise-specific shows before a pick is made \u2014 the result container opens with a prompt, not data', src.includes('Search or tap an exercise above to see your best ever, last session, and trend.'));
+  T('searchExHistory: now accepts a target container id (defaulting to History\u2019s own, so History\u2019s existing behaviour is unchanged) instead of hardcoding one element \u2014 this is what let Progress reuse it directly', src.includes("function searchExHistory(query,targetId){") && src.includes("targetId=targetId||'ex-history-result';"));
+  T('searchExHistory: best lift stated plainly as its own headline, computed from real history not just the latest session', src.includes('const bestEver=hist.reduce((best,h)=>{') && src.includes('Best ever: ${fmtBest(bestEver,itype)}'));
+  T('searchExHistory: mounts a small single-muscle diagram per result via the new mountSingleMuscleDiagram, and cleans up previous instances on a new search rather than leaking them', src.includes('let _progExDiagCharts=[];') && src.includes('_progExDiagCharts.forEach(c=>c&&c.destroy());_progExDiagCharts=[];') && src.includes('diagJobs.forEach(({diagId,tag})=>{const c=mountSingleMuscleDiagram(diagId,tag,null);'));
+  T('mountSingleMuscleDiagram: picks the view (front/back) the muscle actually lives in, not always the same one', src.includes('function mountSingleMuscleDiagram(elId,tag,prevInstance){') && src.includes('const frontIds=new Set(BodyMuscles.FRONT_MUSCLES.map(m=>m.id));') && src.includes('frontIds.has(ids[0])?BodyMuscles.ViewSide.FRONT:BodyMuscles.ViewSide.BACK'));
+
+  /* ---------- Section G: freshness relocated to Today, Volume mode genuinely retired ---------- */
+  T('Section G: freshness diagram now lives in renderToday (alongside the deload warning it informs), not renderProgress', (() => {
+    const todayStart = src.indexOf('function renderToday()');
+    const todayEnd = src.indexOf('\nfunction ', todayStart+10);
+    const todayBody = src.slice(todayStart, todayEnd);
+    const progressStart = src.indexOf('function renderProgress()');
+    const progressEnd = src.indexOf('function renderFood()');
+    const progressBody = src.slice(progressStart, progressEnd);
+    return todayBody.includes('freshdiag-front') && todayBody.includes('renderFreshDiagram();') && !progressBody.includes('freshdiag-front') && !progressBody.includes('bodydiag-front');
+  })());
+  T('Section G: Volume mode is gone, not just hidden \u2014 no setProgressDiagMode, no volume toggle button anywhere in the file', !src.includes('function setProgressDiagMode') && !src.includes("setProgressDiagMode('volume')") && !src.includes('_progressDiagMode'));
+  T('Section G: volumeToBodyState function itself still exists, since the Free Session muscle-picker on Today genuinely still needs it \u2014 confirms this was a deliberate retire-one-use-case, not an accidental deletion', src.includes('function volumeToBodyState(volumeList){') && src.includes('mountFreeMuscleDiagram()'));
+
+  /* ---------- Food database expansion: 8 Tamil/Telugu dishes + Aldi granola, confirmed by Boss ---------- */
+  T('Food additions: all 8 confirmed Tamil/Telugu dishes present with the plateRole discussed at proposal time', (() => {
+    const roleOf = n => { const i = src.indexOf(`name:'${n}'`); if(i<0)return null; const e = src.indexOf("\n  {name:", i+1); const seg = src.slice(i, e===-1?src.indexOf("\n];",i):e); const m = seg.match(/plateRole:'(\w+)'/); return m && m[1]; };
+    return roleOf('Adai (mixed lentil dosa)')==='base' && roleOf('Pesarattu (moong dal dosa)')==='base' && roleOf('Idiyappam (string hoppers)')==='base'
+      && roleOf('Kootu (mixed veg + dal)')==='curry' && roleOf('Vatha kuzhambu')==='curry'
+      && roleOf('Chicken chukka / pepper chicken (dry roast)')==='side' && roleOf('Prawn masala (dry roast)')==='side' && roleOf('Medu vada')==='side';
+  })());
+  T('Food additions: Aldi Harvest Morn Chocolate Protein Granola matches the actual Open Food Facts nutrition label (420kcal/18gP/55gC/17.3gF per 100g), not a guess', (() => {
+    const i = src.indexOf("name:'Harvest Morn Chocolate Protein Granola (Aldi)'");
+    if(i<0)return false;
+    const e = src.indexOf("\n  {name:", i+1);
+    const seg = src.slice(i, e===-1?src.indexOf("\n];",i):e);
+    return seg.includes('k:420') && seg.includes('p:18') && seg.includes('c:55') && seg.includes('f:17.3') && seg.includes('typ:45');
+  })());
+  T('Food additions: adai/pesarattu (the two Thursday-veg-day protein levers Roshan asked to prioritise) actually carry more protein per 100g than the plain dosa/idli they sit alongside', (() => {
+    const per100Of = n => { const i = src.indexOf(`name:'${n}'`); const seg = src.slice(i, src.indexOf('\n  {name:', i+1)); const m = seg.match(/per100:\{k:[\d.]+,p:([\d.]+)/); return m ? parseFloat(m[1]) : null; };
+    return per100Of('Adai (mixed lentil dosa)') > per100Of('Dosa (plain)') && per100Of('Pesarattu (moong dal dosa)') > per100Of('Idli');
+  })());
+
+  /* ---------- Section I3: RIR/RPE, the one deliberate coaching-engine exception ---------- */
+  T('RIR/RPE: high RIR (3+, real reps left in the tank) justifies the bigger end of the same increment range the trend bonus was already allowed to reach \u2014 with no trend data at all, rir=3 still pushes the compound increment from the base 2.5kg to the full 5kg, not a bigger jump than the trend logic could already produce', (() => {
+    const orig = app.findExDef('Bench press');
+    const noRir = app.getNextTargetWeight(orig, 'Bench press__rirtest2', 100, 5, undefined);
+    const highRir = app.getNextTargetWeight(orig, 'Bench press__rirtest2', 100, 5, 3);
+    return noRir.recW === 102.5 && highRir.recW === 105;
+  })());
+  T('RIR/RPE: low RIR (0\u20131, last top set already near-max effort) caps the increment at the base amount even when a real uptrend would otherwise justify a bigger trend-based bump \u2014 confirmed with a genuine 3-session uptrend (80\u219290\u2192100kg over 14 days) that would normally earn the full 5kg bump', (() => {
+    const orig = app.findExDef('Bench press');
+    app.Data.session.set({date:'2026-08-24',dl:'test',seqIdx:0,exercises:[{name:'Bench press__rirtest',origName:'Bench press__rirtest',best:{w:80,r:5},sets:[{w:80,r:5,done:true}],isPR:false,inputType:'weight',exVolume:1}],note:'',painNote:'',skipped:false,duration:1,newPRs:[],totalVolume:1},'2026-08-24');
+    app.Data.session.set({date:'2026-08-31',dl:'test',seqIdx:0,exercises:[{name:'Bench press__rirtest',origName:'Bench press__rirtest',best:{w:90,r:5},sets:[{w:90,r:5,done:true}],isPR:false,inputType:'weight',exVolume:1}],note:'',painNote:'',skipped:false,duration:1,newPRs:[],totalVolume:1},'2026-08-31');
+    app.Data.session.set({date:'2026-09-07',dl:'test',seqIdx:0,exercises:[{name:'Bench press__rirtest',origName:'Bench press__rirtest',best:{w:100,r:5},sets:[{w:100,r:5,done:true}],isPR:false,inputType:'weight',exVolume:1}],note:'',painNote:'',skipped:false,duration:1,newPRs:[],totalVolume:1},'2026-09-07');
+    const noRir = app.getNextTargetWeight(orig, 'Bench press__rirtest', 100, 5, undefined);
+    const lowRir = app.getNextTargetWeight(orig, 'Bench press__rirtest', 100, 5, 0);
+    return noRir.recW === 105 && lowRir.recW === 102.5;
+  })());
+  T('RIR/RPE: undefined/null rir (no RIR captured \u2014 every session logged before this feature existed) leaves the suggestion exactly as it was before this change, proving old data is unaffected', (() => {
+    const orig = app.findExDef('Bench press');
+    const withNull = app.getNextTargetWeight(orig, 'Bench press__rirtest2', 100, 5, null);
+    const withUndefined = app.getNextTargetWeight(orig, 'Bench press__rirtest2', 100, 5, undefined);
+    return withNull.recW === withUndefined.recW && withNull.recW === 102.5;
+  })());
+  T('RIR/RPE: best set object now carries the captured RIR through from the raw set data, so getSuggestion and getPrefillSets can actually see it', src.includes('return{w:st.w,r:st.r,rir:st.rir};'));
+  T('RIR/RPE: both real call sites (live suggestion text and next-session prefill) now pass the captured RIR through, not just the new getNextTargetWeight signature sitting unused', src.includes("getNextTargetWeight(orig,prKey||'',w,r,best.rir)") && src.includes('getNextTargetWeight(orig,trackName,w,r,lastBest.rir)'));
+
+  /* ---------- Section H: rest timer ---------- */
+  T('Rest timer: hooked directly into togDone\u2019s existing set-completion flow, not a bolted-on separate feature \u2014 starts only when a set is newly marked done, never on un-toggle, and never on a drop set', src.includes('if(!set.isDrop){\n      const orig=findExDef(WS[dl].ex[ei].origName);\n      const isCompound=orig?orig.compound!==false:true;\n      startRestTimer(isCompound?150:75);\n    }'));
+  T('Rest timer: real duration difference between compound top sets (150s) and isolation work (75s), matching the ramp/moderate distinction already built elsewhere in the coaching engine', src.includes('startRestTimer(isCompound?150:75)'));
+  T('Rest timer: cleared on both session save and session skip, so an active countdown can never survive into the next day\u2019s Today view', (() => {
+    const saveIdx = src.indexOf('function saveSession(');
+    const skipIdx = src.indexOf('function skipSession(');
+    const saveBody = src.slice(saveIdx, saveIdx+2500);
+    const skipBody = src.slice(skipIdx, skipIdx+1500);
+    return saveBody.includes('stopTimerTick();skipRestTimer();') && skipBody.includes('stopTimerTick();skipRestTimer();');
+  })());
+  T('Rest timer: vibrates on completion (Android confirmed, per the handover) and falls back to the pre-existing passive "rest since last set" display rather than replacing it outright', src.includes('if(navigator.vibrate)navigator.vibrate([200,100,200]);') && src.includes('Rest since last set'));
+
+  /* ---------- Section I3: RIR/RPE UI capture on the top set only ---------- */
+  T('RIR UI: computed as the true top set (last NON-drop set), not just the last row \u2014 a drop set added after the top set must not steal the RIR prompt', src.includes('const topSetIdx=ex.sets.reduce((last,s,idx)=>s.isDrop?last:idx,-1);'));
+  T('RIR UI: only appears once that specific set is marked done, keeping the set list uncluttered before completion \u2014 matches the confirmed "avoid adding friction" requirement', src.includes('${(si===topSetIdx&&set.done&&effType!==\'seconds\')?`<div style="display:flex;align-items:center;gap:8px;padding:4px 0 10px 44px">'));
+  T('RIR UI: setRIR writes directly into the set object bestSetOf reads .rir from, and re-renders so the selected button highlights immediately', src.includes('function setRIR(dl,ei,si,val){if(!WS[dl])return;WS[dl].ex[ei].sets[si].rir=val;saveDraft(dl);renderToday();}'));
+  T('RIR UI: four options only (0, 1, 2, 3+), a tap control not a text input \u2014 genuinely low-friction as specified, not a number pad', (() => {
+    const i = src.indexOf('Reps in reserve');
+    const seg = src.slice(i, i+500);
+    return seg.includes('[0,1,2,3].map(v=>') && seg.includes("v===3?'3+':v");
+  })());
+
+  /* ---------- Section I3: Session Seal / PR Celebration ---------- */
+  T('Session Seal: one coherent overlay, not two competing popups \u2014 PR Celebration is its gold-themed mode (checks newPRs.length), never a separate function', src.includes('function showSessionCelebration(dl,newPRs,duration,totalVolume){') && src.includes("const isPR=newPRs&&newPRs.length>0;") && (src.match(/function showSessionCelebration/g)||[]).length===1);
+  T('Session Seal: uses checkPR\u2019s existing PR definition via saveSession\u2019s own newPRs array \u2014 no new, separate PR logic invented for the celebration', src.includes('if(!explicitDate)showSessionCelebration(dl,newPRs,duration,totalVolume);'));
+  T('Session Seal: only fires for a real-time save, not a backfilled past-date entry \u2014 logging Tuesday\u2019s forgotten session on Thursday should not trigger a "just finished" celebration', (() => {
+    const i = src.indexOf('if(!explicitDate)showSessionCelebration');
+    return i > -1 && src.slice(i-200,i).includes('setTimeout');
+  })());
+  T('Session Seal: dismissible early by tapping anywhere, and auto-clears itself rather than stacking overlays if a second save happens quickly', src.includes("el.onclick=()=>el.remove();") && src.includes("const old=document.getElementById('seal-overlay');if(old)old.remove();"));
+
+  /* ---------- Section I2: Forecasting ---------- */
+  T('Weight forecast: real rate of change (90\u219287\u219284kg over 28 days = -1.5kg/week) toward the real goal weight (82kg default), always returned as a range not a single number', (() => {
+    const fc = app.getWeightForecast([{date:'2026-08-20',wt:90},{date:'2026-09-03',wt:87},{date:'2026-09-17',wt:84}]);
+    return fc.available && fc.ratePerWeek === -1.5 && fc.goal === 82 && fc.weeksLow === 1 && fc.weeksHigh === 2 && fc.weeksLow < fc.weeksHigh;
+  })());
+  T('Weight forecast: fewer than 3 real weigh-ins honestly declines to forecast rather than guessing off noise', (() => {
+    const fc = app.getWeightForecast([{date:'2026-09-01',wt:90},{date:'2026-09-08',wt:89}]);
+    return fc.available === false && !!fc.reason;
+  })());
+  T('Weight forecast: a trend moving AWAY from the goal is reported as such, not silently given a fake "weeks to goal" number', (() => {
+    const fc = app.getWeightForecast([{date:'2026-08-20',wt:80},{date:'2026-09-03',wt:82},{date:'2026-09-17',wt:84}]);
+    return fc.available && fc.weeksLow === null && fc.weeksHigh === null && fc.message.includes('away from the goal');
+  })());
+  T('e1RM forecast: built directly on getE1RMTrend (the same function powering the Exercise Trend graph), not a second parallel calculation \u2014 confirmed by real projections that scale with the real logged rate of progress', (() => {
+    app.Data.session.set({date:'2026-08-20',dl:'test',seqIdx:0,exercises:[{name:'Squat__fctest',origName:'Squat__fctest',best:{w:80,r:5},sets:[{w:80,r:5,done:true}],isPR:false,inputType:'weight',exVolume:1}],note:'',painNote:'',skipped:false,duration:1,newPRs:[],totalVolume:1},'2026-08-20');
+    app.Data.session.set({date:'2026-09-03',dl:'test',seqIdx:0,exercises:[{name:'Squat__fctest',origName:'Squat__fctest',best:{w:90,r:5},sets:[{w:90,r:5,done:true}],isPR:false,inputType:'weight',exVolume:1}],note:'',painNote:'',skipped:false,duration:1,newPRs:[],totalVolume:1},'2026-09-03');
+    app.Data.session.set({date:'2026-09-17',dl:'test',seqIdx:0,exercises:[{name:'Squat__fctest',origName:'Squat__fctest',best:{w:100,r:5},sets:[{w:100,r:5,done:true}],isPR:false,inputType:'weight',exVolume:1}],note:'',painNote:'',skipped:false,duration:1,newPRs:[],totalVolume:1},'2026-09-17');
+    const fc = app.getE1RMForecast('Squat__fctest');
+    return fc.available && fc.projections.length === 3 && fc.projections.every(p => p.low < p.high) && fc.projections[2].low > fc.projections[0].low;
+  })());
+  T('e1RM forecast: fewer than 3 real data points honestly declines rather than projecting off noise, same standard as the weight forecast', (() => {
+    app.Data.session.set({date:'2026-09-15',dl:'test',seqIdx:0,exercises:[{name:'Overhead press__fctest2',origName:'Overhead press__fctest2',best:{w:40,r:5},sets:[{w:40,r:5,done:true}],isPR:false,inputType:'weight',exVolume:1}],note:'',painNote:'',skipped:false,duration:1,newPRs:[],totalVolume:1},'2026-09-15');
+    const fc = app.getE1RMForecast('Overhead press__fctest2');
+    return fc.available === false;
+  })());
+  T('Forecasting: wired into its confirmed natural homes \u2014 alongside the Weight Trend graph in Progress, and inside the per-exercise reveal panel, not two separate places to look', src.includes('const wtForecast=getWeightForecast(stats);') && src.includes("Forecast to ${wtForecast.goal}kg") && src.includes("itype==='weight'?(()=>{\n      const fc=getE1RMForecast(name);"));
+
+  /* ---------- Section I: Adaptive nutrition targets ---------- */
+  T('Adaptive target: weight flat over 3 real weeks despite a deficit target (goal 82kg, stuck at 90kg) correctly suggests cutting \u2014 not silently changing anything, just a suggestion with a specific kcal number', (() => {
+    const sugg = app.getAdaptiveNutritionSuggestion([{date:'2026-08-27',wt:90},{date:'2026-09-07',wt:90},{date:'2026-09-17',wt:90}]);
+    return sugg.available && sugg.direction === 'lose' && sugg.adjKcal === -150 && sugg.newTarget === 1950 && sugg.suggestion.includes('cutting');
+  })());
+  T('Adaptive target: losing faster than the commonly-recommended range (94\u219288\u219288kg, -2kg/week off a 90kg-ish base) suggests adding kcal back to protect muscle, the opposite direction from the flat case above', (() => {
+    const sugg = app.getAdaptiveNutritionSuggestion([{date:'2026-08-27',wt:94},{date:'2026-09-07',wt:91},{date:'2026-09-17',wt:88}]);
+    return sugg.available && sugg.direction === 'lose' && sugg.actualRate === -2 && sugg.adjKcal === 150 && sugg.newTarget === 2250 && sugg.suggestion.includes('adding');
+  })());
+  T('Adaptive target: a healthy on-track rate (-0.5kg/week, squarely inside the commonly-cited 0.25\u20131%/week range) suggests nothing at all \u2014 confirms this doesn\u2019t nag when the target is already working', (() => {
+    const sugg = app.getAdaptiveNutritionSuggestion([{date:'2026-08-27',wt:86.5},{date:'2026-09-07',wt:85.75},{date:'2026-09-17',wt:85}]);
+    return sugg.available && sugg.suggestion === null;
+  })());
+  T('Adaptive target: requires a real rolling 2+ week window, not just 3 data points \u2014 3 real weigh-ins spanning only 7 days honestly declines rather than judging a trend off too little time', (() => {
+    const sugg = app.getAdaptiveNutritionSuggestion([{date:'2026-09-10',wt:90},{date:'2026-09-13',wt:89.5},{date:'2026-09-17',wt:89}]);
+    return sugg.available === false && !!sugg.reason;
+  })());
+  T('Adaptive target: reuses the exact same rate calculation as the weight forecast (getWeightRatePerWeek), not a second, potentially disagreeing trend reading', src.includes('function getWeightRatePerWeek(stats){') && src.includes('const rate=getWeightRatePerWeek(stats);\n  if(!rate.available||rate.daysSpan<14)'));
+  T('Adaptive target: applying it writes to the real profile target via saveProfile, and dismissing it never touches the target at all \u2014 the actual suggest/ignore split, not cosmetic', src.includes('function applyAdaptiveTarget(newKcal){') && src.includes('p.targets.kcal=newKcal;\n  saveProfile(p);') && src.includes('function dismissAdaptiveTarget(){_adaptiveDismissed=true;renderProgress();}'));
+
+  /* ---------- Section J links #2 and #3: freshness widening extended twice more ---------- */
+  T('Section J link #2: a genuine 3-day protein-miss pattern (under 70% of target, real logged days only) measurably widens the recovery window \u2014 same Chest training, lower freshness score than a well-fed baseline, energy/RIR neutralized so this isolates protein specifically', (() => {
+    const dayKey = (o) => { const d = new Date(); d.setDate(d.getDate()-o); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+    Object.keys(store).forEach(k => { if (k.startsWith('sess:')) delete store[k]; });
+    [0,1,2].forEach(o => { app.lsS('sym:'+dayKey(o), {energy:4,seton:3,bowel:'normal'}); app.lsS('food:'+dayKey(o), [{p:200,k:2500}]); });
+    app.Data.session.set({date:dayKey(2),dl:'test',seqIdx:0,exercises:[{name:'Bench press',origName:'Bench press',best:{w:80,r:8,rir:3},sets:[{w:80,r:8,done:true}],isPR:false,inputType:'weight',exVolume:640}],note:'',painNote:'',skipped:false,duration:1,newPRs:[],totalVolume:640}, dayKey(2));
+    const baseline = app.Coach.getMuscleFreshness().find(f => f.muscle === 'Chest');
+    [0,1,2].forEach(o => { app.lsS('food:'+dayKey(o), [{p:30,k:500}]); });
+    const withMiss = app.Coach.getMuscleFreshness().find(f => f.muscle === 'Chest');
+    return baseline && withMiss && withMiss.freshness < baseline.freshness;
+  })());
+  T('Section J link #3: a genuine pattern of consistently near-maximal top-set effort (RIR 0 across the 3 most recent real sessions) measurably widens the recovery window \u2014 implements what the handover\u2019s own parenthetical actually describes ("everything feeling harder than it should" = low RIR), flagged as a probable mislabel of the literal "high RIR" wording rather than silently building the backwards version', (() => {
+    const dayKey = (o) => { const d = new Date(); d.setDate(d.getDate()-o); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+    Object.keys(store).forEach(k => { if (k.startsWith('sess:')) delete store[k]; });
+    [0,1,2].forEach(o => { app.lsS('sym:'+dayKey(o), {energy:4,seton:3,bowel:'normal'}); app.lsS('food:'+dayKey(o), [{p:200,k:2500}]); });
+    const mk = (rir) => {
+      app.Data.session.set({date:dayKey(2),dl:'test',seqIdx:0,exercises:[{name:'Bench press',origName:'Bench press',best:{w:80,r:8,rir},sets:[{w:80,r:8,done:true}],isPR:false,inputType:'weight',exVolume:640}],note:'',painNote:'',skipped:false,duration:1,newPRs:[],totalVolume:640}, dayKey(2));
+      [1,3].forEach(o => app.Data.session.set({date:dayKey(o),dl:'test',seqIdx:0,exercises:[{name:'Padding exercise',origName:'Padding exercise',best:{w:20,r:8,rir},sets:[{w:20,r:8,done:true}],isPR:false,inputType:'weight',exVolume:1}],note:'',painNote:'',skipped:false,duration:1,newPRs:[],totalVolume:1}, dayKey(o)));
+    };
+    mk(3);
+    const baseline = app.Coach.getMuscleFreshness().find(f => f.muscle === 'Chest');
+    mk(0);
+    const withLowRir = app.Coach.getMuscleFreshness().find(f => f.muscle === 'Chest');
+    return baseline && withLowRir && withLowRir.freshness < baseline.freshness;
+  })());
+  T('Section J: all three signals (energy/protein/RIR) combine via Math.max, not multiplication \u2014 several simultaneous genuine signals still can\u2019t compound into an extreme multiplier beyond what any single strong signal already produces', src.includes('const combinedModifier=Math.max(energyModifier,proteinModifier,rirModifier);') && src.includes('*combinedModifier;'));
+
+  /* ---------- Section J link #1: Cook/Plate portion sizing references today's macro gap ---------- */
+  T('Gap-fill: grams needed to close today\u2019s real protein gap, computed from the same today\u2019s-log and target values the Log tab itself already uses \u2014 not a separate calculation', (() => {
+    app.lsS('food:'+app.todayKey(), [{p:112.5,k:800}]);
+    return app.gramsToCloseProteinGap('Chicken curry (boneless)') === 150;
+  })());
+  T('Gap-fill: returns null once the protein target is already met, rather than suggesting a portion that would overshoot it further', (() => {
+    const t = app.getProfile().targets;
+    app.lsS('food:'+app.todayKey(), [{p:t.protein+10,k:2000}]);
+    return app.gramsToCloseProteinGap('Chicken curry (boneless)') === null;
+  })());
+  T('Gap-fill: returns null for a food with no real protein (Cooking oil, 0g protein per 100g), rather than suggesting an absurd portion of something that can\u2019t close a protein gap', (() => {
+    app.lsS('food:'+app.todayKey(), []);
+    return app.gramsToCloseProteinGap('Cooking oil') === null;
+  })());
+  T('Gap-fill: wired into both Cook\u2019s portion input and Plate\u2019s Curry component (the protein-carrying ones), not just computed and left unused', src.includes("fillGramsToGap('pc-curry','pc-curry-amt',buildPlate)") && src.includes("fillGramsToGap('pg-food','pg-you',null)"));
+
+  /* ---------- Audit fix: substitute exercises silently inheriting the wrong equipment label/cue ---------- */
+  T('Bug reported by Roshan: Skull crushers no longer inherits "DB weight (one hand)" and a rope-attachment cue from Overhead tricep extension \u2014 now correctly EZ bar/Smith machine, since that is what he actually uses', (() => {
+    const d = app.findExDef('Skull crushers');
+    return d.wlabel.includes('EZ bar or Smith bar') && !d.wlabel.includes('DB weight') && d.nt.includes('Elbows stay pointed at the ceiling') && !d.nt.includes('Rope attachment');
+  })());
+  T('Same class of bug, found by auditing every substitute: T-bar row no longer inherits "Stack weight" from Seated cable row \u2014 T-bar rows are plate-loaded, not cable-stack', (() => {
+    const d = app.findExDef('T-bar row');
+    return d.wlabel.includes('plates') && d.wlabel !== 'Stack weight';
+  })());
+  T('Same class of bug: DB kickback and Machine tricep dip no longer inherit Cable tricep pushdown\u2019s "straight bar or rope, your call" cue, which makes no sense for a dumbbell or a machine that has no attachment choice', (() => {
+    const kb = app.findExDef('DB kickback'), md = app.findExDef('Machine tricep dip');
+    return !kb.nt.includes('Straight bar or rope') && !md.nt.includes('Straight bar or rope');
+  })());
+  T('Permanent audit: every substitute exercise across the whole SUBS table is checked programmatically for this exact bug class (inheriting an equipment-specific wlabel or cue from a differently-equipped original) \u2014 the two remaining cases (Nordic curl, TKE) are genuinely ambiguous equipment setups flagged for Roshan to confirm, not silently guessed at', (() => {
+    const knownAmbiguous = ['Nordic curl', 'TKE \u2014 terminal knee extension'];
+    const problems = [];
+    for (const [origName, subs] of Object.entries(app.SUBS)) {
+      const realDef = (n) => app.DAYS.flatMap(d => d.ex).find(x => x.n === n);
+      for (const subName of subs) {
+        if (realDef(subName)) continue;
+        if (knownAmbiguous.includes(subName)) continue;
+        const resolved = app.findExDef(subName);
+        const hasOverride = !!app.SUB_TYPE_OVERRIDE[subName];
+        const inferred = app.inferSubWlabel(subName);
+        const wlabelInherited = !hasOverride && !inferred;
+        if (wlabelInherited && /rope|db weight \(one hand\)/i.test(resolved.wlabel)) problems.push(subName);
+      }
+    }
+    return problems.length === 0;
+  })());
+
+  /* ---------- Boss's plate-role and UX corrections, this session ---------- */
+  T('Correction: Rajma masala is rajma-chawal, a whole main dish per Boss \u2014 not a Plate side component', (() => {
+    const i = src.indexOf("name:'Rajma masala");
+    const seg = src.slice(i, src.indexOf("\n  {name:", i+1));
+    return seg.includes("plateRole:'none'");
+  })());
+  T('Correction: Soya chunks masala fry is the dry fry/masala preparation, a side per Boss \u2014 not the curry component', (() => {
+    const i = src.indexOf("name:'Soya chunks masala fry");
+    const seg = src.slice(i, src.indexOf("\n  {name:", i+1));
+    return seg.includes("plateRole:'side'");
+  })());
+  T('Correction: rest timer now customisable in the moment with both -30s and +30s, not just a one-directional extend', src.includes('onclick="extendRestTimer(-30)">-30s<') && src.includes('onclick="extendRestTimer(30)">+30s<'));
+  T('Correction: extendRestTimer floors safely so -30s repeated taps can\u2019t drive the countdown negative or divide-by-zero the progress bar', src.includes('_restTimerEndAt=Math.max(Date.now()+minRemaining,_restTimerEndAt+sec*1000);') && src.includes('_restTimerDuration=Math.max(5,_restTimerDuration+sec);'));
+  T('Correction: adaptive nutrition target now confirms before changing the real kcal target, given Boss\u2019s own stated uncertainty about the feature and its medical-adjacent nature', src.includes("if(!confirm('Change your daily kcal target from '+p.targets.kcal+' to '+newKcal"));
 } catch (e) {
   fail++; console.log('X FAIL  script eval crashed: ' + e.message);
 }

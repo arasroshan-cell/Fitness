@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v4.9</title>
+<title>Roshan Fitness v5.5</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -130,6 +130,12 @@ textarea.genin{resize:none}
 .sticky-save:active{transform:scale(.97)}
 /* CONFBOX + SKIP */
 .confbox{background:var(--gbg);color:var(--grn);border:1px solid var(--gbr);border-radius:14px;padding:14px;font-size:15px;font-weight:700;text-align:center;display:none;margin-top:10px}
+@keyframes sealFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes sealPop{0%{transform:scale(.7);opacity:0}60%{transform:scale(1.05);opacity:1}100%{transform:scale(1)}}
+@keyframes sealDraw{to{stroke-dashoffset:0}}
+@keyframes prShine{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.seal-overlay{position:fixed;inset:0;background:rgba(10,14,20,.75);backdrop-filter:blur(3px);z-index:2000;display:flex;align-items:center;justify-content:center;animation:sealFadeIn .25s ease;cursor:pointer}
+.seal-card{background:var(--c1);border:1px solid var(--c3);border-radius:20px;padding:28px 24px;max-width:320px;width:88%;text-align:center;animation:sealPop .4s cubic-bezier(.34,1.56,.64,1)}
 .skipsheet{background:var(--c2);border-radius:16px;padding:16px;margin-top:10px;border:1px solid var(--c3);display:none}
 .skipopt{display:block;width:100%;padding:15px;margin-bottom:8px;border:1px solid var(--c3);border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;background:var(--c1);color:var(--txt);font-family:"IBM Plex Sans",sans-serif;text-align:left}
 .skipopt:last-child{margin-bottom:0}
@@ -214,7 +220,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-08-22">v4.9</div>
+    <div class="vtag" title="build 2026-09-17">v5.5</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -325,21 +331,26 @@ const SUBS={
    Applied whenever the active exercise name matches a key here, regardless of which
    original slot it is substituting for. */
 const SUB_TYPE_OVERRIDE={
+  'Bear hold':{inputType:'seconds',wlabel:'Seconds held',compound:false},
   'Lat pulldown':{inputType:'weight',wlabel:'Stack weight'},
-  'Assisted pull-ups (machine)':{inputType:'weight',wlabel:'Assist stack weight (lighter assist = harder)'},
+  'Assisted pull-ups (machine)':{inputType:'weight',wlabel:'Assist stack weight (lighter assist = harder)',r:'8\u201312',compound:false,assistWeight:true},
   'Pull-ups':{inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',noweight:true},
   'Step-ups (bodyweight)':{inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',noweight:true},
   'Wall sit (hold 60s)':{inputType:'seconds',wlabel:'Seconds held',noweight:true},
   'Pallof press':{inputType:'weight',wlabel:'Stack weight'},
   'Pendulum/hack squat machine (light weight only \u2014 stop on any pain)':{nt:'Light weight only \u2014 stop immediately on any pain, cleared for this specifically, not a blanket safe claim'},
-  'Decline press (Smith machine)':{nt:'Decline angle for lower chest \u2014 exhale on press, never hold breath'},
-  'Decline machine press':{nt:'Decline angle for lower chest \u2014 exhale on press, never hold breath'},
+  'Decline press (Smith machine)':{inputType:'weight',compound:true,nt:'Decline angle for lower chest \u2014 exhale on press, never hold breath'},
+  'Decline machine press':{inputType:'weight',compound:true,nt:'Decline angle for lower chest \u2014 exhale on press, never hold breath'},
   'Reverse cable fly':{nt:'Never skip \u2014 shoulder health'},
   'Reverse EZ bar curl':{primaryMuscles:['Forearms'],secondaryMuscles:['Brachialis'],nt:'Pronated grip \u2014 lighter than your normal curl weight, this hits differently'},
   'Rear delt machine fly':{nt:'Never skip \u2014 shoulder health'},
   'Band pull-apart':{nt:'Never skip \u2014 shoulder health'},
   '45\u00b0 back extension':{inputType:'bodyweight',wlabel:'Bodyweight (add plate to chest if weighted)',noweight:true,nt:'Slow and controlled \u2014 don\u2019t overarch at the top, exhale as you rise'},
-  'Bird dog':{inputType:'bodyweight',wlabel:'Bodyweight',noweight:true,nt:'Opposite arm and leg, controlled \u2014 same safe pattern as Dead bug'}
+  'Bird dog':{inputType:'bodyweight',wlabel:'Bodyweight',noweight:true,nt:'Opposite arm and leg, controlled \u2014 same safe pattern as Dead bug'},
+  'Skull crushers':{wlabel:'Total kg incl. bar (EZ bar or Smith bar \u2014 your call)',nt:'Elbows stay pointed at the ceiling and still \u2014 only the forearms move through the stretch'},
+  'T-bar row':{wlabel:'Total kg loaded (plates on the bar, or landmine attachment)'},
+  'DB kickback':{nt:'Elbow pinned high and still against your side \u2014 only the forearm moves'},
+  'Machine tricep dip':{nt:'Full lockout at the bottom of the press'}
 };
 function findExDef(name){
   for(const d of DAYS){for(const e of d.ex){
@@ -351,11 +362,13 @@ function findExDef(name){
       const origDef=DAYS.flatMap(d=>d.ex).find(x=>x.n===origName);
       const override=SUB_TYPE_OVERRIDE[name];
       return{
-        n:name,s:origDef?.s||3,r:origDef?.r||'10\u201312',
+        n:name,s:override?.s||origDef?.s||3,r:override?.r||origDef?.r||'10\u201312',
         inputType:override?.inputType||origDef?.inputType||'weight',
         wlabel:override?.wlabel||inferSubWlabel(name)||origDef?.wlabel||'kg',
         nt:override?.nt!==undefined?override.nt:(origDef?.nt||''),
-        noweight:override?.noweight||false,compound:origDef?.compound||false,
+        noweight:override?.noweight||false,
+        compound:override?.compound!==undefined?override.compound:(origDef?.compound||false),
+        assistWeight:override?.assistWeight||false,
         primaryMuscles:override?.primaryMuscles||origDef?.primaryMuscles||[],
         secondaryMuscles:override?.secondaryMuscles||origDef?.secondaryMuscles||[],
         subOf:origName
@@ -379,87 +392,96 @@ function inferSubWlabel(name){
 }
 const FOODS=[
   /* ===== Protein ===== */
-  {name:'Chettinad chicken (bone-in)',cat:'Protein',per100:{k:186,p:15.5,c:6,f:12},typ:200,lbl:'desiccated coconut + coconut oil',oilInclusive:true},
-  {name:'Chettinad chicken (boneless)',cat:'Protein',per100:{k:204,p:21,c:6,f:11},typ:175,lbl:'desiccated coconut + coconut oil',oilInclusive:true},
-  {name:'Chicken curry (bone-in)',cat:'Protein',per100:{k:135,p:18,c:3,f:6},typ:200},
-  {name:'Chicken curry (boneless)',cat:'Protein',per100:{k:165,p:25,c:4,f:6},typ:150},
-  {name:'Chicken drumstick (oven, masala, skin on)',cat:'Protein',per100:{k:215,p:24,c:1.5,f:11},typ:90,unit:'piece',lbl:'per piece (~90g cooked)',oilInclusive:true},
-  {name:'Chicken thigh (bone-in, oven, masala)',cat:'Protein',per100:{k:210,p:20,c:1,f:14},typ:95,unit:'piece',lbl:'per thigh (~95g cooked)',oilInclusive:true},
-  {name:'Chicken tikka (dry grilled)',cat:'Protein',per100:{k:165,p:28,c:2,f:5},typ:150,lbl:'high protein, low carb'},
-  {name:'Egg sandwich (3 eggs)',cat:'Protein',per100:{k:210,p:11.5,c:13,f:12.5},typ:250,unit:'piece',lbl:'per sandwich (3 eggs, 2 slices, mayo+cheese, ~250g, ~530 kcal / 29g P)'},
-  {name:'Fish curry (white fish)',cat:'Protein',per100:{k:120,p:20,c:3,f:4},typ:150},
-  {name:'Gongura chicken curry (bone-in)',cat:'Protein',per100:{k:140,p:18,c:3,f:7},typ:200,lbl:'sorrel leaf masala, bone-in weight, oil inclusive',oilInclusive:true},
-  {name:'Gongura chicken curry (boneless)',cat:'Protein',per100:{k:170,p:24,c:4,f:7},typ:150,lbl:'sorrel leaf masala, coconut oil inclusive',oilInclusive:true},
-  {name:'Mutton curry',cat:'Protein',per100:{k:195,p:20,c:3,f:12},typ:150},
-  {name:'Mutton curry (mixed bone-in/boneless)',cat:'Protein',per100:{k:195,p:20,c:3,f:12},typ:150,lbl:'500g bone-in + 1kg boneless per batch, cooked together for flavour + yield'},
-  {name:'Mutton fry / varuval (boneless)',cat:'Protein',per100:{k:250,p:27,c:3,f:14},typ:150,lbl:'460g raw \u2192 300g cooked, 2 meals, oil inclusive',oilInclusive:true},
-  {name:'Mutton keema',cat:'Protein',per100:{k:210,p:19,c:4,f:14},typ:150,lbl:'sourced from Tesco halal mince spec, adjusted for draining + curry base \u2014 tell me if it needs adjusting once made'},
-  {name:'Pomfret fry',cat:'Protein',per100:{k:165,p:22,c:2,f:8},typ:70,unit:'piece',lbl:'per piece (~70g)',oilInclusive:true},
-  {name:'Prawn curry',cat:'Protein',per100:{k:100,p:18,c:2,f:3},typ:150},
-  {name:'Salmon fry',cat:'Protein',per100:{k:220,p:25,c:1,f:13},typ:105,unit:'piece',lbl:'per fillet (~105g cooked, Tesco/Aldi 4-pack)',oilInclusive:true},
-  {name:'Thai red curry (chicken)',cat:'Protein',per100:{k:140,p:12,c:5,f:9},typ:200},
-  {name:'Tofu masala / fry',cat:'Protein',per100:{k:110,p:8,c:5,f:6},typ:150,oilInclusive:true},
+  {name:'Chettinad chicken (bone-in)',cat:'Protein',per100:{k:186,p:15.5,c:6,f:12},typ:200,lbl:'desiccated coconut + coconut oil',oilInclusive:true,plateRole:'curry'},
+  {name:'Chettinad chicken (boneless)',cat:'Protein',per100:{k:204,p:21,c:6,f:11},typ:175,lbl:'desiccated coconut + coconut oil',oilInclusive:true,plateRole:'curry'},
+  {name:'Chicken chukka / pepper chicken (dry roast)',cat:'Protein',per100:{k:230,p:26,c:4,f:12},typ:150,lbl:'dry preparation, distinct from Chettinad/curry \u2014 standard reference \u00b115%',oilInclusive:true,plateRole:'side'},
+  {name:'Chicken curry (bone-in)',cat:'Protein',per100:{k:135,p:18,c:3,f:6},typ:200,plateRole:'curry'},
+  {name:'Chicken curry (boneless)',cat:'Protein',per100:{k:165,p:25,c:4,f:6},typ:150,plateRole:'curry'},
+  {name:'Chicken drumstick (oven, masala, skin on)',cat:'Protein',per100:{k:215,p:24,c:1.5,f:11},typ:90,unit:'piece',lbl:'per piece (~90g cooked)',oilInclusive:true,plateRole:'side'},
+  {name:'Chicken thigh (bone-in, oven, masala)',cat:'Protein',per100:{k:210,p:20,c:1,f:14},typ:95,unit:'piece',lbl:'per thigh (~95g cooked)',oilInclusive:true,plateRole:'side'},
+  {name:'Chicken tikka (dry grilled)',cat:'Protein',per100:{k:165,p:28,c:2,f:5},typ:150,lbl:'high protein, low carb',plateRole:'side'},
+  {name:'Egg sandwich (3 eggs)',cat:'Protein',per100:{k:210,p:11.5,c:13,f:12.5},typ:250,unit:'piece',lbl:'per sandwich (3 eggs, 2 slices, mayo+cheese, ~250g, ~530 kcal / 29g P)',plateRole:'none'},
+  {name:'Fish curry (white fish)',cat:'Protein',per100:{k:120,p:20,c:3,f:4},typ:150,plateRole:'curry'},
+  {name:'Gongura chicken curry (bone-in)',cat:'Protein',per100:{k:140,p:18,c:3,f:7},typ:200,lbl:'sorrel leaf masala, bone-in weight, oil inclusive',oilInclusive:true,plateRole:'curry'},
+  {name:'Gongura chicken curry (boneless)',cat:'Protein',per100:{k:170,p:24,c:4,f:7},typ:150,lbl:'sorrel leaf masala, coconut oil inclusive',oilInclusive:true,plateRole:'curry'},
+  {name:'Mutton curry',cat:'Protein',per100:{k:195,p:20,c:3,f:12},typ:150,plateRole:'curry'},
+  {name:'Mutton curry (mixed bone-in/boneless)',cat:'Protein',per100:{k:195,p:20,c:3,f:12},typ:150,lbl:'500g bone-in + 1kg boneless per batch, cooked together for flavour + yield',plateRole:'curry'},
+  {name:'Mutton fry / varuval (boneless)',cat:'Protein',per100:{k:250,p:27,c:3,f:14},typ:150,lbl:'460g raw \u2192 300g cooked, 2 meals, oil inclusive',oilInclusive:true,plateRole:'side'},
+  {name:'Mutton keema',cat:'Protein',per100:{k:210,p:19,c:4,f:14},typ:150,lbl:'sourced from Tesco halal mince spec, adjusted for draining + curry base \u2014 tell me if it needs adjusting once made',plateRole:'curry'},
+  {name:'Pomfret fry',cat:'Protein',per100:{k:165,p:22,c:2,f:8},typ:70,unit:'piece',lbl:'per piece (~70g)',oilInclusive:true,plateRole:'side'},
+  {name:'Prawn curry',cat:'Protein',per100:{k:100,p:18,c:2,f:3},typ:150,plateRole:'curry'},
+  {name:'Prawn masala (dry roast)',cat:'Protein',per100:{k:150,p:20,c:4,f:6},typ:150,lbl:'dry roast, standard reference \u00b115%',oilInclusive:true,plateRole:'side'},
+  {name:'Salmon fry',cat:'Protein',per100:{k:220,p:25,c:1,f:13},typ:105,unit:'piece',lbl:'per fillet (~105g cooked, Tesco/Aldi 4-pack)',oilInclusive:true,plateRole:'side'},
+  {name:'Thai red curry (chicken)',cat:'Protein',per100:{k:140,p:12,c:5,f:9},typ:200,plateRole:'curry'},
+  {name:'Tofu masala / fry',cat:'Protein',per100:{k:110,p:8,c:5,f:6},typ:150,oilInclusive:true,plateRole:'curry'},
   /* ===== Carbs ===== */
-  {name:'Bagel (plain, supermarket)',cat:'Carbs',per100:{k:260,p:9,c:51,f:1.5},typ:100,unit:'piece',lbl:'per bagel (Tesco / Aldi ~100g)'},
-  {name:'Chapati / roti (homemade)',cat:'Carbs',per100:{k:255,p:7.5,c:45,f:5.5},typ:40,unit:'piece',lbl:'per chapati (~40g)'},
-  {name:'Dosa (plain)',cat:'Carbs',per100:{k:229,p:4,c:30,f:10.7},typ:75,unit:'piece',lbl:'per dosa (oil-inclusive)',oilInclusive:true},
-  {name:'Fried rice (home, 2 eggs)',cat:'Carbs',per100:{k:175,p:5,c:28,f:6},typ:150},
-  {name:'Idli',cat:'Carbs',per100:{k:130,p:4,c:26,f:0.5},typ:30,unit:'piece',lbl:'per idli'},
-  {name:'Pongal',cat:'Carbs',per100:{k:140,p:4,c:25,f:3},typ:150},
-  {name:'Ponni rice (cooked)',cat:'Carbs',per100:{k:120,p:2.5,c:26,f:0.3},typ:150,lbl:'cooked weight \u2014 ~55g dry rice makes ~150g cooked'},
-  {name:'Sandwich (oven patty + egg)',cat:'Carbs',per100:{k:220,p:14,c:20,f:8},typ:200,unit:'piece',lbl:'per sandwich'},
-  {name:'Sona Masoori rice (cooked)',cat:'Carbs',per100:{k:115,p:2.3,c:25,f:0.3},typ:150,lbl:'cooked weight \u2014 ~55g dry rice makes ~150g cooked'},
-  {name:'Uttapam (plain, homemade)',cat:'Carbs',per100:{k:185,p:5,c:30,f:5.5},typ:100,unit:'piece',lbl:'per piece (~100g)'},
-  {name:'White rice generic (cooked)',cat:'Carbs',per100:{k:130,p:2.7,c:28,f:0.3},typ:150,lbl:'cooked weight \u2014 ~55g dry rice makes ~150g cooked'},
+  {name:'Adai (mixed lentil dosa)',cat:'Carbs',per100:{k:185,p:9,c:26,f:5.5},typ:100,unit:'piece',lbl:'per adai (~100g), oil-inclusive \u2014 standard reference \u00b120%, protein varies a lot with lentil ratio',oilInclusive:true,plateRole:'base'},
+  {name:'Bagel (plain, supermarket)',cat:'Carbs',per100:{k:260,p:9,c:51,f:1.5},typ:100,unit:'piece',lbl:'per bagel (Tesco / Aldi ~100g)',plateRole:'none'},
+  {name:'Chapati / roti (homemade)',cat:'Carbs',per100:{k:255,p:7.5,c:45,f:5.5},typ:40,unit:'piece',lbl:'per chapati (~40g)',plateRole:'base'},
+  {name:'Dosa (plain)',cat:'Carbs',per100:{k:229,p:4,c:30,f:10.7},typ:75,unit:'piece',lbl:'per dosa (oil-inclusive)',oilInclusive:true,plateRole:'base'},
+  {name:'Fried rice (home, 2 eggs)',cat:'Carbs',per100:{k:175,p:5,c:28,f:6},typ:150,plateRole:'none'},
+  {name:'Idiyappam (string hoppers)',cat:'Carbs',per100:{k:110,p:2.5,c:24,f:0.5},typ:70,unit:'piece',lbl:'steamed, per piece (~70g), no oil \u2014 standard reference \u00b115%',plateRole:'base'},
+  {name:'Idli',cat:'Carbs',per100:{k:130,p:4,c:26,f:0.5},typ:30,unit:'piece',lbl:'per idli',plateRole:'base'},
+  {name:'Pesarattu (moong dal dosa)',cat:'Carbs',per100:{k:165,p:8,c:24,f:4},typ:90,unit:'piece',lbl:'per pesarattu (~90g), oil-inclusive \u2014 standard reference \u00b120%',oilInclusive:true,plateRole:'base'},
+  {name:'Pongal',cat:'Carbs',per100:{k:140,p:4,c:25,f:3},typ:150,plateRole:'base'},
+  {name:'Ponni rice (cooked)',cat:'Carbs',per100:{k:120,p:2.5,c:26,f:0.3},typ:150,lbl:'cooked weight \u2014 ~55g dry rice makes ~150g cooked',plateRole:'base'},
+  {name:'Sandwich (oven patty + egg)',cat:'Carbs',per100:{k:220,p:14,c:20,f:8},typ:200,unit:'piece',lbl:'per sandwich',plateRole:'none'},
+  {name:'Sona Masoori rice (cooked)',cat:'Carbs',per100:{k:115,p:2.3,c:25,f:0.3},typ:150,lbl:'cooked weight \u2014 ~55g dry rice makes ~150g cooked',plateRole:'base'},
+  {name:'Uttapam (plain, homemade)',cat:'Carbs',per100:{k:185,p:5,c:30,f:5.5},typ:100,unit:'piece',lbl:'per piece (~100g)',plateRole:'base'},
+  {name:'White rice generic (cooked)',cat:'Carbs',per100:{k:130,p:2.7,c:28,f:0.3},typ:150,lbl:'cooked weight \u2014 ~55g dry rice makes ~150g cooked',plateRole:'base'},
   /* ===== Mains ===== */
-  {name:'Chicken biryani (Hyderabadi, bone-in)',cat:'Mains',per100:{k:175,p:7,c:25,f:7},typ:400,lbl:'estimate ~400g plate'},
-  {name:'Chicken biryani (Hyderabadi, boneless)',cat:'Mains',per100:{k:190,p:9,c:24,f:7.5},typ:400,lbl:'estimate ~400g plate'},
-  {name:'Chicken burger (supermarket patty + bun)',cat:'Mains',per100:{k:230,p:16,c:20,f:9},typ:200,unit:'piece',lbl:'per burger (~200g)'},
-  {name:'Chicken pasta (cream / white sauce)',cat:'Mains',per100:{k:175,p:10,c:13,f:8},typ:400,lbl:'your 60% of 2-person batch (~400g)'},
-  {name:'Chicken pasta (tomato sauce)',cat:'Mains',per100:{k:125,p:11,c:14,f:3},typ:400,lbl:'your 60% of 2-person batch (~400g)'},
-  {name:'Chicken shawarma wrap (takeaway)',cat:'Mains',per100:{k:215,p:14,c:22,f:8},typ:350,unit:'piece',lbl:'per wrap (ESTIMATE \u2014 varies by shop)'},
-  {name:'Mee goreng (home, chicken+egg+anchovy)',cat:'Mains',per100:{k:167,p:10,c:12,f:7.5},typ:450,lbl:'3 tbsp oil, bigger share of 2-person batch',oilInclusive:true},
-  {name:'Mutton biryani (Hyderabadi, bone-in)',cat:'Mains',per100:{k:210,p:9,c:22,f:11},typ:400,lbl:'estimate ~400g plate'},
-  {name:'Nasi goreng (home, chicken+egg+anchovy)',cat:'Mains',per100:{k:169,p:9.5,c:14,f:7},typ:450,lbl:'3 tbsp oil, bigger share of 2-person batch',oilInclusive:true},
-  {name:'Nasi lemak (basic, egg & sambal)',cat:'Mains',per100:{k:192,p:5.5,c:24,f:8.5},typ:300,lbl:'estimate ~300g plate'},
+  {name:'Chicken biryani (Hyderabadi, bone-in)',cat:'Mains',per100:{k:175,p:7,c:25,f:7},typ:400,lbl:'estimate ~400g plate',plateRole:'none'},
+  {name:'Chicken biryani (Hyderabadi, boneless)',cat:'Mains',per100:{k:190,p:9,c:24,f:7.5},typ:400,lbl:'estimate ~400g plate',plateRole:'none'},
+  {name:'Chicken burger (supermarket patty + bun)',cat:'Mains',per100:{k:230,p:16,c:20,f:9},typ:200,unit:'piece',lbl:'per burger (~200g)',plateRole:'none'},
+  {name:'Chicken pasta (cream / white sauce)',cat:'Mains',per100:{k:175,p:10,c:13,f:8},typ:400,lbl:'your 60% of 2-person batch (~400g)',plateRole:'none'},
+  {name:'Chicken pasta (tomato sauce)',cat:'Mains',per100:{k:125,p:11,c:14,f:3},typ:400,lbl:'your 60% of 2-person batch (~400g)',plateRole:'none'},
+  {name:'Chicken shawarma wrap (takeaway)',cat:'Mains',per100:{k:215,p:14,c:22,f:8},typ:350,unit:'piece',lbl:'per wrap (ESTIMATE \u2014 varies by shop)',plateRole:'none'},
+  {name:'Mee goreng (home, chicken+egg+anchovy)',cat:'Mains',per100:{k:167,p:10,c:12,f:7.5},typ:450,lbl:'3 tbsp oil, bigger share of 2-person batch',oilInclusive:true,plateRole:'none'},
+  {name:'Mutton biryani (Hyderabadi, bone-in)',cat:'Mains',per100:{k:210,p:9,c:22,f:11},typ:400,lbl:'estimate ~400g plate',plateRole:'none'},
+  {name:'Nasi goreng (home, chicken+egg+anchovy)',cat:'Mains',per100:{k:169,p:9.5,c:14,f:7},typ:450,lbl:'3 tbsp oil, bigger share of 2-person batch',oilInclusive:true,plateRole:'none'},
+  {name:'Nasi lemak (basic, egg & sambal)',cat:'Mains',per100:{k:192,p:5.5,c:24,f:8.5},typ:300,lbl:'estimate ~300g plate',plateRole:'none'},
   /* ===== Sides ===== */
-  {name:'Beans fry (kothavarai)',cat:'Sides',per100:{k:71,p:1.5,c:3.6,f:6.3},typ:100,lbl:'oil-inclusive',oilInclusive:true},
-  {name:'Chickpeas masala (tinned)',cat:'Sides',per100:{k:175,p:7,c:22,f:6.5},typ:150,lbl:'1 tin drained, 2 tsp oil inclusive. Pair with protein',oilInclusive:true,fibreRisk:true},
-  {name:'Coconut rice (thengai sadam)',cat:'Sides',per100:{k:150,p:2.7,c:22,f:4.7},typ:200,lbl:'rice + desiccated coconut + coconut oil tempering',oilInclusive:true},
-  {name:'Curd / plain yogurt',cat:'Sides',per100:{k:61,p:3.5,c:5,f:3.3},typ:150},
-  {name:'Curd rice (thayir sadam)',cat:'Sides',per100:{k:120,p:4,c:22,f:2.5},typ:200,lbl:'Crohn\u2019s rest-day staple. Rice + curd + small tempering'},
-  {name:'Greek yogurt (Tesco Finest, full-fat)',cat:'Sides',per100:{k:132,p:6.5,c:3.3,f:10.3},typ:150},
-  {name:'Paruppu / dal (plain)',cat:'Sides',per100:{k:95,p:6,c:14,f:1.5},typ:150},
-  {name:'Poriyal (generic dry veg fry)',cat:'Sides',per100:{k:85,p:2,c:12,f:3.5},typ:100,lbl:'cabbage / carrot / raw banana / beans. Oil inclusive',oilInclusive:true},
-  {name:'Potato fry',cat:'Sides',per100:{k:175,p:2,c:18,f:11.2},typ:100,lbl:'oil-inclusive',oilInclusive:true},
-  {name:'Puli kuzhambu (veg)',cat:'Sides',per100:{k:80,p:1.5,c:9,f:4.5},typ:150,lbl:'tamarind gravy with brinjal/drumstick, gingelly oil inclusive',oilInclusive:true},
-  {name:'Rajma masala (tinned, thick gravy)',cat:'Sides',per100:{k:120,p:6,c:17,f:3.5},typ:200,lbl:'carb-dominant \u2014 pair with protein source',fibreRisk:true},
-  {name:'Rasam',cat:'Sides',per100:{k:20,p:0.8,c:3,f:0.5},typ:200,unit:'ml'},
-  {name:'Sambar (loaded veg)',cat:'Sides',per100:{k:45,p:2.5,c:6,f:1},typ:200},
-  {name:'Soya chunks masala fry',cat:'Sides',per100:{k:200,p:17,c:22,f:6.5},typ:150,lbl:'50g dry \u2192 150g cooked, 1.5 tsp oil inclusive',oilInclusive:true,fibreRisk:true},
-  {name:'Spinach paruppu',cat:'Sides',per100:{k:85,p:5.5,c:11,f:2},typ:150},
+  {name:'Beans fry (kothavarai)',cat:'Sides',per100:{k:71,p:1.5,c:3.6,f:6.3},typ:100,lbl:'oil-inclusive',oilInclusive:true,plateRole:'side'},
+  {name:'Chickpeas masala (tinned)',cat:'Sides',per100:{k:175,p:7,c:22,f:6.5},typ:150,lbl:'1 tin drained, 2 tsp oil inclusive. Pair with protein',oilInclusive:true,fibreRisk:true,plateRole:'side'},
+  {name:'Coconut rice (thengai sadam)',cat:'Sides',per100:{k:150,p:2.7,c:22,f:4.7},typ:200,lbl:'rice + desiccated coconut + coconut oil tempering',oilInclusive:true,plateRole:'base'},
+  {name:'Curd / plain yogurt',cat:'Sides',per100:{k:61,p:3.5,c:5,f:3.3},typ:150,plateRole:'side'},
+  {name:'Curd rice (thayir sadam)',cat:'Sides',per100:{k:120,p:4,c:22,f:2.5},typ:200,lbl:'Crohn\u2019s rest-day staple. Rice + curd + small tempering',plateRole:'none'},
+  {name:'Greek yogurt (Tesco Finest, full-fat)',cat:'Sides',per100:{k:132,p:6.5,c:3.3,f:10.3},typ:150,plateRole:'side'},
+  {name:'Kootu (mixed veg + dal)',cat:'Sides',per100:{k:90,p:5,c:11,f:3},typ:150,lbl:'standard reference \u00b115%',plateRole:'curry'},
+  {name:'Medu vada',cat:'Sides',per100:{k:300,p:8,c:28,f:18},typ:40,unit:'piece',lbl:'deep-fried, per vada (~40g) \u2014 rough estimate \u00b125%, oil absorption varies a lot',oilInclusive:true,plateRole:'side'},
+  {name:'Paruppu / dal (plain)',cat:'Sides',per100:{k:95,p:6,c:14,f:1.5},typ:150,plateRole:'curry'},
+  {name:'Poriyal (generic dry veg fry)',cat:'Sides',per100:{k:85,p:2,c:12,f:3.5},typ:100,lbl:'cabbage / carrot / raw banana / beans. Oil inclusive',oilInclusive:true,plateRole:'side'},
+  {name:'Potato fry',cat:'Sides',per100:{k:175,p:2,c:18,f:11.2},typ:100,lbl:'oil-inclusive',oilInclusive:true,plateRole:'side'},
+  {name:'Puli kuzhambu (veg)',cat:'Sides',per100:{k:80,p:1.5,c:9,f:4.5},typ:150,lbl:'tamarind gravy with brinjal/drumstick, gingelly oil inclusive',oilInclusive:true,plateRole:'curry'},
+  {name:'Rajma masala (tinned, thick gravy)',cat:'Sides',per100:{k:120,p:6,c:17,f:3.5},typ:200,lbl:'carb-dominant \u2014 pair with protein source',fibreRisk:true,plateRole:'none'},
+  {name:'Rasam',cat:'Sides',per100:{k:20,p:0.8,c:3,f:0.5},typ:200,unit:'ml',plateRole:'curry'},
+  {name:'Sambar (loaded veg)',cat:'Sides',per100:{k:45,p:2.5,c:6,f:1},typ:200,plateRole:'curry'},
+  {name:'Soya chunks masala fry',cat:'Sides',per100:{k:200,p:17,c:22,f:6.5},typ:150,lbl:'50g dry \u2192 150g cooked, 1.5 tsp oil inclusive',oilInclusive:true,fibreRisk:true,plateRole:'side'},
+  {name:'Spinach paruppu',cat:'Sides',per100:{k:85,p:5.5,c:11,f:2},typ:150,plateRole:'curry'},
+  {name:'Vatha kuzhambu',cat:'Sides',per100:{k:95,p:2,c:9,f:6},typ:150,lbl:'tamarind gravy, gingelly oil inclusive \u2014 standard reference \u00b115%, oil amount varies by household',oilInclusive:true,plateRole:'curry'},
   /* ===== Greens ===== */
-  {name:'Drumstick leaves (murungai)',cat:'Greens',per100:{k:64,p:9.4,c:8,f:1.4},typ:50,lbl:'per 50g handful'},
-  {name:'Methi leaves (fenugreek)',cat:'Greens',per100:{k:49,p:4.4,c:6,f:0.9},typ:50},
-  {name:'Spinach (fresh)',cat:'Greens',per100:{k:23,p:2.9,c:3.6,f:0.4},typ:100},
+  {name:'Drumstick leaves (murungai)',cat:'Greens',per100:{k:64,p:9.4,c:8,f:1.4},typ:50,lbl:'per 50g handful',plateRole:'side'},
+  {name:'Methi leaves (fenugreek)',cat:'Greens',per100:{k:49,p:4.4,c:6,f:0.9},typ:50,plateRole:'side'},
+  {name:'Spinach (fresh)',cat:'Greens',per100:{k:23,p:2.9,c:3.6,f:0.4},typ:100,plateRole:'side'},
   /* ===== Eggs ===== */
-  {name:'Egg (boiled, medium)',cat:'Eggs',per100:{k:155,p:13,c:1,f:11},typ:58,unit:'piece',lbl:'per egg'},
-  {name:'Egg (boiled, small)',cat:'Eggs',per100:{k:155,p:13,c:1,f:11},typ:45,unit:'piece',lbl:'per small egg'},
-  {name:'Egg dosa (home, small)',cat:'Eggs',per100:{k:227,p:8,c:14,f:14.7},typ:95,unit:'piece',lbl:'per egg dosa (oil-inclusive)',oilInclusive:true},
-  {name:'Egg fry / omelette (per egg)',cat:'Eggs',per100:{k:190,p:12,c:1,f:15},typ:55,unit:'piece',lbl:'per egg, fried or in omelette (oil-inclusive) \u2014 log 2 or 3 for a full omelette',oilInclusive:true},
+  {name:'Egg (boiled, medium)',cat:'Eggs',per100:{k:155,p:13,c:1,f:11},typ:58,unit:'piece',lbl:'per egg',plateRole:'side'},
+  {name:'Egg (boiled, small)',cat:'Eggs',per100:{k:155,p:13,c:1,f:11},typ:45,unit:'piece',lbl:'per small egg',plateRole:'side'},
+  {name:'Egg dosa (home, small)',cat:'Eggs',per100:{k:227,p:8,c:14,f:14.7},typ:95,unit:'piece',lbl:'per egg dosa (oil-inclusive)',oilInclusive:true,plateRole:'base'},
+  {name:'Egg fry / omelette (per egg)',cat:'Eggs',per100:{k:190,p:12,c:1,f:15},typ:55,unit:'piece',lbl:'per egg, fried or in omelette (oil-inclusive) \u2014 log 2 or 3 for a full omelette',oilInclusive:true,plateRole:'side'},
   /* ===== Cooling ===== */
-  {name:'Coconut water',cat:'Cooling',per100:{k:21,p:0.7,c:5,f:0.2},typ:330,unit:'ml',lbl:'per glass (330ml)'},
-  {name:'Cucumber (raw)',cat:'Cooling',per100:{k:15,p:0.7,c:3,f:0.1},typ:100},
-  {name:'Mixed berries',cat:'Cooling',per100:{k:50,p:1,c:11,f:0.4},typ:100},
-  {name:'Neer moru (spiced buttermilk)',cat:'Cooling',per100:{k:40,p:3,c:4,f:1.5},typ:200,unit:'ml',lbl:'per glass (200ml)'},
-  {name:'Watermelon',cat:'Cooling',per100:{k:30,p:0.6,c:7,f:0.2},typ:200},
+  {name:'Coconut water',cat:'Cooling',per100:{k:21,p:0.7,c:5,f:0.2},typ:330,unit:'ml',lbl:'per glass (330ml)',plateRole:'none'},
+  {name:'Cucumber (raw)',cat:'Cooling',per100:{k:15,p:0.7,c:3,f:0.1},typ:100,plateRole:'none'},
+  {name:'Mixed berries',cat:'Cooling',per100:{k:50,p:1,c:11,f:0.4},typ:100,plateRole:'none'},
+  {name:'Neer moru (spiced buttermilk)',cat:'Cooling',per100:{k:40,p:3,c:4,f:1.5},typ:200,unit:'ml',lbl:'per glass (200ml)',plateRole:'none'},
+  {name:'Watermelon',cat:'Cooling',per100:{k:30,p:0.6,c:7,f:0.2},typ:200,plateRole:'none'},
   /* ===== Extras ===== */
-  {name:'Boost (1 cup, with whole milk)',cat:'Extras',per100:{k:91.4,p:3.93,c:10.47,f:3.83},typ:271,unit:'piece',lbl:'250ml whole milk + 3 tsp powder'},
-  {name:'Bulk Soya Protein Isolate (Chocolate)',cat:'Extras',per100:{k:390,p:87,c:5,f:3},typ:30,unit:'scoop',lbl:'per scoop (30g = 26g protein)'},
-  {name:'Cooking oil',cat:'Extras',per100:{k:884,p:0,c:0,f:100},typ:5,unit:'tsp',lbl:'per tsp (5ml) \u2014 only if NOT already in dish'},
-  {name:'Cowbelle protein milkshake (Aldi)',cat:'Extras',per100:{k:110,p:7.6,c:12,f:2.5},typ:330,unit:'piece',lbl:'per carton (330ml = 25g protein)'},
-  {name:'Ghee',cat:'Extras',per100:{k:900,p:0,c:0,f:100},typ:5,unit:'tsp',lbl:'per tsp \u2014 only if NOT already in dish'},
-  {name:'Serious Gainz protein powder',cat:'Extras',per100:{k:375,p:22,c:65.1,f:2.85},typ:41.7,unit:'scoop',lbl:'per scoop (~41.7g) \u2014 you usually take 1.5. Swap to whey isolate when tub finishes: 3\u00d7 protein per kcal'},
+  {name:'Boost (1 cup, with whole milk)',cat:'Extras',per100:{k:91.4,p:3.93,c:10.47,f:3.83},typ:271,unit:'piece',lbl:'250ml whole milk + 3 tsp powder',plateRole:'none'},
+  {name:'Bulk Soya Protein Isolate (Chocolate)',cat:'Extras',per100:{k:390,p:87,c:5,f:3},typ:30,unit:'scoop',lbl:'per scoop (30g = 26g protein)',plateRole:'none'},
+  {name:'Cooking oil',cat:'Extras',per100:{k:884,p:0,c:0,f:100},typ:5,unit:'tsp',lbl:'per tsp (5ml) \u2014 only if NOT already in dish',plateRole:'none'},
+  {name:'Cowbelle protein milkshake (Aldi)',cat:'Extras',per100:{k:110,p:7.6,c:12,f:2.5},typ:330,unit:'piece',lbl:'per carton (330ml = 25g protein)',plateRole:'none'},
+  {name:'Harvest Morn Chocolate Protein Granola (Aldi)',cat:'Extras',per100:{k:420,p:18,c:55,f:17.3},typ:45,lbl:'label-verified (Open Food Facts nutrition table, Aldi 400g pack) \u2014 45g suggested serving, scoop to taste',plateRole:'none'},
+  {name:'Ghee',cat:'Extras',per100:{k:900,p:0,c:0,f:100},typ:5,unit:'tsp',lbl:'per tsp \u2014 only if NOT already in dish',plateRole:'none'},
+  {name:'Serious Gainz protein powder',cat:'Extras',per100:{k:375,p:22,c:65.1,f:2.85},typ:41.7,unit:'scoop',lbl:'per scoop (~41.7g) \u2014 you usually take 1.5. Swap to whey isolate when tub finishes: 3\u00d7 protein per kcal',plateRole:'none'},
 ];
 const DNAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const MEAL_TYPES=['Breakfast','Lunch','Dinner','Snack'];
@@ -483,6 +505,16 @@ function getProfile(){
   return lsG('user_profile')||{targets:{protein:150,kcal:2100,carbs:230,fat:65},weight:85,goalWeight:82,goalBF:15,trainingDaysPerWeek:4,crohnsPhase:'pre-biologic',biologicStartDate:null};
 }
 function saveProfile(p){lsS('user_profile',p);}
+let _adaptiveDismissed=false;
+function applyAdaptiveTarget(newKcal){
+  const p=getProfile();
+  if(!confirm('Change your daily kcal target from '+p.targets.kcal+' to '+newKcal+'? This updates the real target used everywhere in the app, not just a one-off.'))return;
+  p.targets.kcal=newKcal;
+  saveProfile(p);
+  _adaptiveDismissed=true;
+  renderProgress();
+}
+function dismissAdaptiveTarget(){_adaptiveDismissed=true;renderProgress();}
 function saveTargets(){
   const prof=getProfile();
   const gv=id=>parseFloat(document.getElementById(id)?.value);
@@ -625,37 +657,33 @@ function mountBodyDiagram(frontElId,backElId,bodyState,onMuscleClick,prevInstanc
   const back=new BodyMuscles.BodyChart(bEl,{view:BodyMuscles.ViewSide.BACK,bodyState,onMuscleClick});
   return{front,back};
 }
-let _progressCharts={front:null,back:null},_progressDiagMode='volume',_progressSelectedTags=[];
-let _weightGraphPeriod='week',_exerciseGraphPeriod='week',_exerciseGraphPick=null;
+let _freshCharts={front:null,back:null},_freshSelectedTags=[];
+let _weightGraphPeriod='week';
 function setWeightGraphPeriod(p){_weightGraphPeriod=p;renderProgress();}
-function setExerciseGraphPeriod(p){_exerciseGraphPeriod=p;renderProgress();}
-function setExerciseGraphPick(n){_exerciseGraphPick=n;renderProgress();}
-function setProgressDiagMode(mode){
-  _progressDiagMode=mode;
-  _progressSelectedTags=[];
-  renderProgress();
-}
-function renderBodyDiagram(){
-  const state=_progressDiagMode==='freshness'
-    ?freshnessToBodyState(Coach.getMuscleFreshness())
-    :volumeToBodyState(Coach.getWeeklyMuscleVolume());
-  _progressSelectedTags.forEach(tag=>{
+/* Freshness diagram \u2014 relocated here from Progress (Section G). Volume mode was retired
+   entirely: it answered the exact same question ("how much have I trained each muscle this
+   week") as Weekly Sets Per Muscle, in worse form. Freshness answers a different, forward-
+   looking question ("what's actually recovered right now"), which is why it lives on Today,
+   next to the deload warning and per-exercise nudges, not on Progress looking backward. */
+function renderFreshDiagram(){
+  const state=freshnessToBodyState(Coach.getMuscleFreshness());
+  _freshSelectedTags.forEach(tag=>{
     (MUSCLE_TAG_TO_LIB_IDS[tag]||[]).forEach(id=>{
       state[id]={...(state[id]||{intensity:1}),selected:true};
     });
   });
-  _progressCharts=mountBodyDiagram('bodydiag-front','bodydiag-back',state,(id)=>{
+  _freshCharts=mountBodyDiagram('freshdiag-front','freshdiag-back',state,(id)=>{
     const resolved=resolveClickedTagsAll(id);
     if(!resolved.length)return;
-    _progressSelectedTags=resolved;
-    renderProgress();
-  },_progressCharts);
+    _freshSelectedTags=resolved;
+    renderToday();
+  },_freshCharts);
 }
-function renderProgressMuscleExList(){
-  if(!_progressSelectedTags.length)return `<div class="cs" style="text-align:center;padding:10px 0">Tap a region above to see exercises for it.</div>`;
-  const showSecondary=_progressSelectedTags.length===1;
+function renderFreshMuscleExList(){
+  if(!_freshSelectedTags.length)return `<div class="cs" style="text-align:center;padding:10px 0">Tap a region above to see exercises for it.</div>`;
+  const showSecondary=_freshSelectedTags.length===1;
   const row=e=>`<div style="padding:8px 0;border-bottom:1px solid var(--c3);font-size:13px;color:var(--txt)">${e.n}${e.subOf?`<span style="color:var(--dim);font-size:11px"> &middot; sub for ${e.subOf}</span>`:''}</div>`;
-  const sections=_progressSelectedTags.map(tag=>{
+  const sections=_freshSelectedTags.map(tag=>{
     const matches=getExercisesForMuscleTag(tag);
     const primary=matches.filter(e=>(e.primaryMuscles||[]).includes(tag));
     const secondary=showSecondary?matches.filter(e=>!(e.primaryMuscles||[]).includes(tag)):[];
@@ -664,7 +692,7 @@ function renderProgressMuscleExList(){
       (secondary.length?`<div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:8px 0 4px">Also works this, secondarily</div>`+secondary.map(row).join(''):'')+
       `<button class="btn btn-grn btn-sm" style="width:100%;margin-top:8px" onclick="startFreeSessionTargeting('${tag.replace(/'/g,"\\'")}')">Start free session targeting ${tag} &#x203A;</button>`;
   });
-  return (_progressSelectedTags.length>1?`<div class="cs" style="margin-top:10px">This spot covers more than one muscle in the diagram \u2014 showing what actually targets each, not secondary mentions, to keep this readable.</div>`:'')+sections.join('');
+  return (_freshSelectedTags.length>1?`<div class="cs" style="margin-top:10px">This spot covers more than one muscle in the diagram \u2014 showing what actually targets each, not secondary mentions, to keep this readable.</div>`:'')+sections.join('');
 }
 function startFreeSessionTargeting(tag){
   startFreeSession();
@@ -720,6 +748,22 @@ function mountMiniExerciseDiagram(orig){
     (MUSCLE_TAG_TO_LIB_IDS[tag]||[]).forEach(id=>{if(!state[id])state[id]={intensity:3,selected:false};});
   });
   _miniExCharts=mountBodyDiagram('miniex-front','miniex-back',state,()=>{},_miniExCharts);
+}
+/* Single-view mini diagram: one small BodyChart (front OR back, whichever view actually
+   holds the given muscle tag), highlighting only that muscle. Used by the Progress tab's
+   exercise search-and-reveal panel, which needs one illustration per selected exercise \u2014
+   not the full interactive front+back tap-to-explore diagram that lives on Today instead. */
+function mountSingleMuscleDiagram(elId,tag,prevInstance){
+  if(prevInstance)prevInstance.destroy();
+  const el=document.getElementById(elId);
+  if(!el||typeof BodyMuscles==='undefined'||!tag)return null;
+  const ids=MUSCLE_TAG_TO_LIB_IDS[tag]||[];
+  if(!ids.length)return null;
+  const frontIds=new Set(BodyMuscles.FRONT_MUSCLES.map(m=>m.id));
+  const view=frontIds.has(ids[0])?BodyMuscles.ViewSide.FRONT:BodyMuscles.ViewSide.BACK;
+  const state={};
+  ids.forEach(id=>{state[id]={intensity:8,selected:true};});
+  return new BodyMuscles.BodyChart(el,{view,bodyState:state,onMuscleClick:()=>{}});
 }
 
 /* ===== DATA LAYER (first slice \u2014 PR/session/draft access only, existing call sites not yet migrated) =====
@@ -864,6 +908,83 @@ function getSmoothedWeight(stats){
   const avg=last3.reduce((s,e)=>s+parseFloat(e.wt),0)/last3.length;
   return{value:avg,smoothed:last3.length>1,entriesUsed:last3.length};
 }
+/* Shared real weight-trend rate, used by both the forecast above and the adaptive nutrition
+   target check below \u2014 one calculation, two consumers, not two separate trend readings that
+   could quietly disagree with each other. */
+function getWeightRatePerWeek(stats){
+  const withWt=(stats||[]).filter(s=>s.wt).map(s=>({date:s.date,wt:parseFloat(s.wt)})).sort((a,b)=>a.date.localeCompare(b.date));
+  if(withWt.length<3)return{available:false,reason:'Need at least 3 weigh-ins to estimate a real trend.'};
+  const recent=withWt.slice(-6);
+  const first=recent[0],last=recent[recent.length-1];
+  const daysSpan=Math.max(1,(new Date(last.date)-new Date(first.date))/86400000);
+  const ratePerWeek=((last.wt-first.wt)/daysSpan)*7;
+  return{available:true,ratePerWeek,currentWt:last.wt,daysSpan,entriesUsed:recent.length};
+}
+/* Body weight forecast (Section I2). Recalculated every time a new weigh-in lands, since it
+   reads straight from bstats \u2014 the same array getSmoothedWeight already reads, no separate
+   dataset. Non-negotiable per the handover: always a range, never a confident single number
+   or date, because bodies don't progress in a straight line and a clean single answer would
+   be dishonest about how sure this actually is. */
+function getWeightForecast(stats){
+  const rate=getWeightRatePerWeek(stats);
+  if(!rate.available)return{available:false,reason:rate.reason};
+  const ratePerWeek=rate.ratePerWeek,last={wt:rate.currentWt};
+  const goal=getProfile().goalWeight||82;
+  const gap=goal-last.wt;
+  if(Math.abs(ratePerWeek)<0.05){
+    return{available:true,ratePerWeek:0,currentWt:last.wt,goal,weeksLow:null,weeksHigh:null,message:'Weight has been essentially flat recently \u2014 not enough real movement yet to forecast a timeline.'};
+  }
+  if((gap>0&&ratePerWeek<0)||(gap<0&&ratePerWeek>0)||Math.abs(gap)<0.3){
+    return{available:true,ratePerWeek:Math.round(ratePerWeek*100)/100,currentWt:last.wt,goal,weeksLow:null,weeksHigh:null,message:Math.abs(gap)<0.3?'Already essentially at the goal weight.':'Current trend is moving away from the goal, not toward it.'};
+  }
+  const weeksToGoal=gap/ratePerWeek;
+  return{
+    available:true,
+    ratePerWeek:Math.round(ratePerWeek*100)/100,
+    currentWt:last.wt,goal,
+    weeksLow:Math.max(1,Math.round(weeksToGoal*0.7)),
+    weeksHigh:Math.round(weeksToGoal*1.4)
+  };
+}
+/* Adaptive nutrition targets (Section I) \u2014 confirmed direction from the Fat Loss Fix Guide
+   review. Compares the real weight trend (same shared helper as the forecast) against what
+   the current kcal target implies over a rolling 2+ week window, using the commonly-cited
+   0.25\u20131% bodyweight/week range as the reference band for a deliberate cut or gain. Returns
+   a SUGGESTION only \u2014 the actual target is never changed here, matching the same accept/
+   ignore pattern already established for the live coach's numeric prefills. */
+function getAdaptiveNutritionSuggestion(stats){
+  const rate=getWeightRatePerWeek(stats);
+  if(!rate.available||rate.daysSpan<14)return{available:false,reason:'Need at least 2 weeks of real weigh-ins to compare trend against target.'};
+  const goal=getProfile().goalWeight||82;
+  const current=rate.currentWt;
+  const gap=goal-current;
+  const direction=Math.abs(gap)<0.5?'maintain':(gap<0?'lose':'gain');
+  const expectedLow=current*0.0025,expectedHigh=current*0.01;
+  const actualRate=rate.ratePerWeek;
+  const t=getProfile().targets;
+  if(direction==='maintain'){
+    if(Math.abs(actualRate)>expectedLow){
+      const adjKcal=actualRate<0?150:-150;
+      return{available:true,direction,actualRate:Math.round(actualRate*100)/100,adjKcal,newTarget:t.kcal+adjKcal,
+        suggestion:actualRate<0?`Weight has been drifting down while the target is meant to hold steady \u2014 consider adding roughly ${Math.abs(adjKcal)} kcal.`:`Weight has been drifting up while the target is meant to hold steady \u2014 consider cutting roughly ${Math.abs(adjKcal)} kcal.`};
+    }
+    return{available:true,direction,actualRate:Math.round(actualRate*100)/100,suggestion:null};
+  }
+  const wantLoss=direction==='lose';
+  const actualMagnitude=Math.abs(actualRate);
+  const movingRightWay=(wantLoss&&actualRate<0)||(!wantLoss&&actualRate>0);
+  if(!movingRightWay||actualMagnitude<expectedLow*0.5){
+    const adjKcal=wantLoss?-150:150;
+    return{available:true,direction,actualRate:Math.round(actualRate*100)/100,adjKcal,newTarget:t.kcal+adjKcal,
+      suggestion:wantLoss?`Weight hasn\u2019t meaningfully moved down over the last 2+ weeks despite the current deficit target \u2014 consider cutting roughly ${Math.abs(adjKcal)} kcal.`:`Weight hasn\u2019t meaningfully moved up over the last 2+ weeks despite the current surplus target \u2014 consider adding roughly ${Math.abs(adjKcal)} kcal.`};
+  }
+  if(actualMagnitude>expectedHigh*1.5){
+    const adjKcal=wantLoss?150:-150;
+    return{available:true,direction,actualRate:Math.round(actualRate*100)/100,adjKcal,newTarget:t.kcal+adjKcal,
+      suggestion:wantLoss?`Losing faster than the commonly-recommended range \u2014 consider adding roughly ${Math.abs(adjKcal)} kcal back to protect muscle and recovery.`:`Gaining faster than the commonly-recommended range \u2014 consider cutting roughly ${Math.abs(adjKcal)} kcal to keep it lean.`};
+  }
+  return{available:true,direction,actualRate:Math.round(actualRate*100)/100,suggestion:null};
+}
 function updateHeader(){
   const log=lsG('food:'+todayKey())||[];
   const t=getProfile().targets;
@@ -916,7 +1037,7 @@ function initWS(dl,def){
         const prefill=getPrefillSets(e,pSubs[e.n]||e.n,e.s);
         return{
           name:pSubs[e.n]||e.n,origName:e.n,chosenType:null,
-          sets:Array.from({length:e.s},(_,si)=>({w:prefill?.[si]?.w||'',r:prefill?.[si]?.r||'',done:false,isDrop:false}))
+          sets:Array.from({length:e.s},(_,si)=>({w:prefill?.[si]?.w||'',r:prefill?.[si]?.r||'',pw:prefill?.[si]?.w||'',pr:prefill?.[si]?.r||'',done:false,isDrop:false}))
         };
       }),
       subOpen:null,note:'',painNote:'',startAt:null,lastSetAt:null
@@ -931,12 +1052,17 @@ function initWS(dl,def){
     const prefill=getPrefillSets(e,pSubs[e.n]||e.n,e.s);
     return{
       name:pSubs[e.n]||e.n,origName:e.n,chosenType:null,
-      sets:Array.from({length:e.s},(_,si)=>({w:prefill?.[si]?.w||'',r:prefill?.[si]?.r||'',done:false,isDrop:false}))
+      sets:Array.from({length:e.s},(_,si)=>({w:prefill?.[si]?.w||'',r:prefill?.[si]?.r||'',pw:prefill?.[si]?.w||'',pr:prefill?.[si]?.r||'',done:false,isDrop:false}))
     };
   })());
   if(WS[dl].painNote===undefined)WS[dl].painNote='';
 }
 function updSet(dl,ei,si,f,v){if(!WS[dl])return;WS[dl].ex[ei].sets[si][f]=v;if(WS[dl].infoOpen===ei)WS[dl].infoOpen=null;saveDraft(dl);}
+/* Top-set-only RIR/RPE capture (Section I3). Deliberately a tap-to-pick 0/1/2/3+ control,
+   not a text input, to keep this genuinely low-friction \u2014 the confirmed requirement was to
+   avoid adding friction to a card that's already been decluttered multiple times. Feeds
+   straight into bestSetOf \u2192 getNextTargetWeight, tested separately and thoroughly there. */
+function setRIR(dl,ei,si,val){if(!WS[dl])return;WS[dl].ex[ei].sets[si].rir=val;saveDraft(dl);renderToday();}
 function togDone(dl,ei,si){
   if(!WS[dl])return;
   const set=WS[dl].ex[ei].sets[si];
@@ -945,6 +1071,11 @@ function togDone(dl,ei,si){
     WS[dl].lastSetAt=Date.now();
     if(!WS[dl].startAt)WS[dl].startAt=Date.now();
     liveCoachAdjust(dl,ei,si);
+    if(!set.isDrop){
+      const orig=findExDef(WS[dl].ex[ei].origName);
+      const isCompound=orig?orig.compound!==false:true;
+      startRestTimer(isCompound?150:75);
+    }
   }
   if(WS[dl].infoOpen===ei)WS[dl].infoOpen=null;
   saveDraft(dl);renderToday();
@@ -968,42 +1099,60 @@ function liveCoachAdjust(dl,ei,si){
   if(orig.inputType==='weight'){
     const isCompound=orig.compound!==false;
     if(isCompound&&si===0)return;
-    const actualW=parseFloat(completed.w),actualR=parseInt(completed.r);
-    if(!actualW||!actualR)return;
-    const numSets=ex.sets.filter(s=>!s.isDrop).length;
-    const referencePrefill=isCompound?getRampPrefill(actualW,numSets):getModeratePrefill(actualW,numSets);
-    const expectedR=parseInt(referencePrefill[si]?.r)||actualR;
-    const expected=estimate1RM(actualW,expectedR);
-    const actual=estimate1RM(actualW,actualR);
-    if(!expected||!actual||!expected.value)return;
-    const ratio=actual.value/expected.value;
-    if(ratio>0.85&&ratio<1.15)return;
+    /* Aggregate the real-vs-planned ratio across every genuine working set completed so far
+       today, not just the one that just got marked done \u2014 two or more sets consistently
+       pointing the same direction is real evidence the plan no longer matches today's actual
+       capacity. Weighted toward recency (each set counts 4x more than the one before it) so
+       a genuine, sudden collapse on the latest set isn't diluted into invisibility by earlier
+       sets that happened to match the plan exactly. */
+    const weighted=[];
+    ex.sets.forEach((s,i)=>{
+      if(i>si||s.isDrop||!s.done)return;
+      if(isCompound&&i===0)return;
+      const aw=parseFloat(s.w),ar=parseInt(s.r),pw=parseFloat(s.pw),pr=parseInt(s.pr);
+      if(!aw||!ar||!pw||!pr)return;
+      const expected=estimate1RM(pw,pr),actual=estimate1RM(aw,ar);
+      if(expected?.value)weighted.push({ratio:actual.value/expected.value,i});
+    });
+    if(!weighted.length)return;
+    let sumW=0,sumWR=0;
+    weighted.forEach((w,pos)=>{const wt=Math.pow(4,pos);sumW+=wt;sumWR+=wt*w.ratio;});
+    const ratio=sumWR/sumW;
+    if(ratio>0.90&&ratio<1.10)return;
     ex.sets.forEach((s,i)=>{
       if(i<=si||s.done)return;
-      const base=s.w?parseFloat(s.w):actualW;
-      s.w=String(realisticWeightRound(base*ratio));
+      const base=parseFloat(s.pw)||parseFloat(s.w)||parseFloat(completed.w);
+      const effectiveRatio=orig.assistWeight?1/ratio:ratio;
+      s.w=String(Math.max(0,realisticWeightRound(base*effectiveRatio)));
     });
     return;
   }
 
-  /* Bodyweight, seconds and reps_each: no weight to combine via e1RM, so the comparison is
-     direct \u2014 actual value at this set position against what the fatigue curve (the same one
-     driving the pre-workout prefill) expected there. Since seconds/reps_each never get a
-     pre-workout prefill at all, the first completed set becomes the live baseline for the
-     rest of that session, rather than something derived from history. */
+  /* Bodyweight, seconds and reps_each: same principle, aggregated across completed sets
+     rather than reacting to the single latest one, compared against each set's own real
+     planned value where one exists (seconds/reps_each never get a pre-workout prefill, so
+     the very first completed set becomes the effective plan for the rest of the session). */
   if(!['bodyweight','seconds','reps_each'].includes(orig.inputType))return;
   if(si===0)return;
   const valueField=orig.inputType==='bodyweight'?'r':'w';
-  const actualVal=orig.inputType==='bodyweight'?parseInt(completed.r):parseFloat(completed.w);
-  if(!actualVal)return;
   const curve=getFatigueCurve(orig);
   const curveAt=i=>curve[i]!==undefined?curve[i]:curve[curve.length-1];
   const firstVal=orig.inputType==='bodyweight'?parseInt(ex.sets[0].r):parseFloat(ex.sets[0].w);
-  const expectedVal=firstVal?firstVal*curveAt(si):actualVal/curveAt(si);
-  if(!expectedVal)return;
-  const ratio=actualVal/expectedVal;
+  if(!firstVal)return;
+  const ratios=[];
+  ex.sets.forEach((s,i)=>{
+    if(i>si||i===0||s.isDrop||!s.done)return;
+    const actualVal=orig.inputType==='bodyweight'?parseInt(s.r):parseFloat(s.w);
+    if(!actualVal)return;
+    const expectedVal=firstVal*curveAt(i);
+    if(expectedVal)ratios.push(actualVal/expectedVal);
+  });
+  if(!ratios.length)return;
+  let sumW=0,sumWR=0;
+  ratios.forEach((r,pos)=>{const wt=Math.pow(4,pos);sumW+=wt;sumWR+=wt*r;});
+  const ratio=sumWR/sumW;
   if(ratio>0.8&&ratio<1.2)return;
-  const baseline=actualVal/curveAt(si);
+  const baseline=firstVal*ratio;
   ex.sets.forEach((s,i)=>{
     if(i<=si||s.done)return;
     const projected=Math.max(1,Math.round(baseline*curveAt(i)));
@@ -1012,7 +1161,7 @@ function liveCoachAdjust(dl,ei,si){
 }
 function addSet(dl,ei){
   if(!WS[dl])return;
-  WS[dl].ex[ei].sets.push({w:'',r:'',done:false,isDrop:false});
+  WS[dl].ex[ei].sets.push({w:'',r:'',pw:'',pr:'',done:false,isDrop:false});
   saveDraft(dl);renderToday();
 }
 function removeSet(dl,ei,si){
@@ -1024,7 +1173,7 @@ function addDropSet(dl,ei){
   if(!WS[dl])return;
   const last=WS[dl].ex[ei].sets[WS[dl].ex[ei].sets.length-1];
   const dw=last.w?String(Math.round(parseFloat(last.w)*0.8/5)*5):'';
-  WS[dl].ex[ei].sets.push({w:dw,r:'',done:false,isDrop:true,dropHint:'20% drop &#x2014; aim 10&#x2013;12 reps'});
+  WS[dl].ex[ei].sets.push({w:dw,r:'',pw:dw,pr:'',done:false,isDrop:true,dropHint:'20% drop &#x2014; aim 10&#x2013;12 reps'});
   saveDraft(dl);renderToday();
 }
 function chooseExType(dl,ei,choice){
@@ -1166,6 +1315,48 @@ const Coach={
     const energyModifier=recentEnergy.length>=2
       ?(recentEnergy.reduce((s,e)=>s+e,0)/recentEnergy.length<=2.5?1.25:1)
       :1;
+    /* Section J link #2: a sustained pattern of missing the protein target is the same class
+       of signal as low logged Energy \u2014 genuine, multi-day evidence of reduced recovery
+       capacity, extending the exact same mechanism rather than inventing a new one. Only
+       counts days that actually have a real food log, so an unlogged day is never mistaken
+       for a missed target. */
+    const t=getProfile().targets;
+    const recentProtein=[];
+    for(let d=0;d<3;d++){
+      const dt=new Date(today);dt.setDate(dt.getDate()-d);
+      const key=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+      const log=lsG('food:'+key);
+      if(log&&log.length)recentProtein.push(log.reduce((s,i)=>s+(i.p||0),0));
+    }
+    const proteinModifier=recentProtein.length>=2
+      ?(recentProtein.every(p=>p<t.protein*0.7)?1.25:1)
+      :1;
+    /* Section J link #3: a sustained pattern of consistently LOW top-set RIR (near-maximal
+       effort session after session, i.e. genuinely "feeling harder than it should") is the
+       same class of signal as low Energy or missed protein. Note: the handover's own text
+       describes this as "high RIR (everything feeling harder than it should)", but those two
+       things are opposites on the actual RIR scale \u2014 low RIR means near failure/harder, high
+       RIR means reps left in the tank/easier. Implementing what the parenthetical explanation
+       actually describes (consistently near-maximal effort), not the possibly-mislabeled term,
+       since widening recovery windows because sessions felt EASY would be backwards. Worth
+       confirming with Roshan directly rather than silently picking a side. */
+    const recentSessions=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(!k||!k.startsWith('sess:'))continue;
+      const sess=lsG(k);
+      if(sess&&!sess.skipped&&sess.exercises)recentSessions.push(sess);
+    }
+    recentSessions.sort((a,b)=>b.date.localeCompare(a.date));
+    const recentRir=[];
+    recentSessions.slice(0,3).forEach(s=>s.exercises.forEach(e=>{if(e.best&&e.best.rir!==undefined&&e.best.rir!==null)recentRir.push(e.best.rir);}));
+    const rirModifier=recentRir.length>=3
+      ?(recentRir.reduce((s,v)=>s+v,0)/recentRir.length<=1?1.25:1)
+      :1;
+    /* Combined via max, not multiplied: any one genuine signal is enough to widen recovery
+       windows, but multiple simultaneous signals shouldn't compound into an extreme multiplier
+       from what is still fundamentally the same underlying idea (reduced recovery capacity). */
+    const combinedModifier=Math.max(energyModifier,proteinModifier,rirModifier);
     return Object.entries(history).map(([muscle,entries])=>{
       entries.sort((a,b)=>a.date.localeCompare(b.date));
       /* Accumulated fatigue: sums how much residual fatigue EVERY recent hit is still
@@ -1182,7 +1373,7 @@ const Coach={
       recentEntries.forEach(e=>{
         const daysSince=Math.max(0,Math.floor((today-new Date(e.date))/86400000));
         const ratio=avgContribution>0?e.contribution/avgContribution:1;
-        const window=Math.min(6,Math.max(1.5,3*ratio))*energyModifier;
+        const window=Math.min(6,Math.max(1.5,3*ratio))*combinedModifier;
         totalResidual+=Math.max(0,1-daysSince/window);
       });
       const freshness=Math.min(1,Math.max(0,1-totalResidual));
@@ -1230,7 +1421,7 @@ function getSuggestion(orig,best,prKey){
   const pr=prKey?Data.pr.get(prKey):null;
   if(pr&&w<parseFloat(pr.w))return 'Work back to PR: '+parseFloat(pr.w).toFixed(1)+'kg (was '+w+'kg today)';
   if(orig.compound!==false){
-    const{recW}=getNextTargetWeight(orig,prKey||'',w,r);
+    const{recW}=getNextTargetWeight(orig,prKey||'',w,r,best.rir);
     return recW>w?'Last top set: '+w+'kg \u00d7 '+r+' \u2014 try '+recW.toFixed(1)+'kg for today\u2019s top set':'Last top set: '+w+'kg \u00d7 '+r+' \u2014 hold '+w+'kg, aim for a clean rep';
   }
   const inc=1.0;
@@ -1276,7 +1467,7 @@ function bestSetOf(workingSets,inputType){
   const metric=st=>repsFirst?parseInt(st.r||0):parseFloat(st.w||0);
   return workingSets.reduce((b,st)=>{
     const valid=singleField?(st.w&&parseFloat(st.w)>0):repsFirst?(st.r&&parseInt(st.r)>0):(st.w&&st.r&&parseFloat(st.w)>0);
-    if(valid&&(!b||metric(st)>metric(b)))return{w:st.w,r:st.r};
+    if(valid&&(!b||metric(st)>metric(b)))return{w:st.w,r:st.r,rir:st.rir};
     return b;
   },null);
 }
@@ -1317,7 +1508,7 @@ function saveSession(dl,seqIdx,explicitDate){
   const mlog=lsG('mlog:'+saveMonth)||{};
   mlog[saveDate]={type:'done',dl,seqIdx:isFree?undefined:seqIdx};
   lsS('mlog:'+saveMonth,mlog);
-  clearDraft();showStickyBtn(false);stopTimerTick();
+  clearDraft();showStickyBtn(false);stopTimerTick();skipRestTimer();
   renderToday();
   const toast=document.getElementById('save-toast');
   if(toast){
@@ -1327,8 +1518,36 @@ function saveSession(dl,seqIdx,explicitDate){
     toast.style.display='block';
     setTimeout(()=>{toast.style.display='none';},3000);
   }
+  if(!explicitDate)showSessionCelebration(dl,newPRs,duration,totalVolume);
 }
 
+/* Session Seal (always) / PR Celebration (its gold-themed mode) \u2014 Section I3. One coherent
+   overlay rather than two competing popups: every saved session gets the seal treatment,
+   and a genuine PR (using the exact PR definition already built into checkPR, via newPRs
+   from saveSession \u2014 no new PR logic invented here) upgrades it to gold with a PR list. */
+function showSessionCelebration(dl,newPRs,duration,totalVolume){
+  const isPR=newPRs&&newPRs.length>0;
+  const color=isPR?'var(--gold)':'var(--cyan)';
+  const old=document.getElementById('seal-overlay');if(old)old.remove();
+  const el=document.createElement('div');
+  el.id='seal-overlay';el.className='seal-overlay';
+  el.onclick=()=>el.remove();
+  el.innerHTML=`<div class="seal-card">
+    <svg width="90" height="90" viewBox="0 0 90 90" style="margin-bottom:12px">
+      <circle cx="45" cy="45" r="40" fill="none" stroke="${color}" stroke-width="4" stroke-dasharray="251" stroke-dashoffset="251" style="animation:sealDraw .6s ease forwards"/>
+      <path d="M28 46 L40 58 L64 32" fill="none" stroke="${color}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="50" stroke-dashoffset="50" style="animation:sealDraw .4s ease .5s forwards"/>
+    </svg>
+    <div style="font-size:18px;font-weight:800;font-family:'Barlow',sans-serif;color:var(--txt);margin-bottom:4px">${dl} sealed</div>
+    <div style="font-size:13px;color:var(--mut);margin-bottom:${isPR?'14':'4'}px">${duration?duration+' min':''}${duration&&totalVolume?' &middot; ':''}${totalVolume?Math.round(totalVolume).toLocaleString()+' total volume':''}</div>
+    ${isPR?`<div style="border-top:1px solid var(--c3);padding-top:12px;margin-top:4px">
+      <div style="font-size:12px;color:var(--gold);font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">&#x2605; New PR</div>
+      ${newPRs.map((n,i)=>`<div style="font-size:14px;color:var(--txt);font-weight:600;margin-bottom:4px;animation:prShine .3s ease ${(0.7+i*0.1).toFixed(1)}s both">${n}</div>`).join('')}
+    </div>`:''}
+    <div style="font-size:11px;color:var(--dim);margin-top:14px">Tap anywhere to dismiss</div>
+  </div>`;
+  document.body.appendChild(el);
+  setTimeout(()=>{if(document.getElementById('seal-overlay'))el.remove();},isPR?4500:3000);
+}
 /* ===== EDIT / SKIP / UNSKIP ===== */
 function editSession(){
   if(!confirm('Unlock today\'s session for editing? Current save will be removed.'))return;
@@ -1379,7 +1598,7 @@ function skipSession(reason){
   const mlog=lsG('mlog:'+monthKey())||{};
   mlog[todayKey()]={type:'skip',reason,dl};
   lsS('mlog:'+monthKey(),mlog);
-  clearDraft();showStickyBtn(false);stopTimerTick();
+  clearDraft();showStickyBtn(false);stopTimerTick();skipRestTimer();
   const ss=document.getElementById('skipsheet');if(ss)ss.style.display='none';
   renderToday();
 }
@@ -1470,7 +1689,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v4.9';
+const APP_VERSION='v5.5';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -1503,6 +1722,42 @@ function adjWater(n){
 
 /* ===== TIMER ===== */
 let timerInterval=null;
+/* Rest timer (Section H) \u2014 auto-starts on set completion via togDone, real duration
+   difference between compound top sets (150s) and isolation work (75s), matching the
+   ramp/moderate distinction already built elsewhere. Runs its own 1s tick only while a
+   countdown is actually active, separate from the existing 5s session-timer tick, so it
+   doesn't touch that mechanism's timing. Falls back to the pre-existing passive "rest since
+   last set" elapsed counter once the countdown naturally reaches zero \u2014 nothing about that
+   older display is removed, this only adds an active phase in front of it. */
+let _restTimerEndAt=null,_restTimerDuration=null,_restTickInterval=null;
+function startRestTimer(seconds){
+  clearInterval(_restTickInterval);
+  _restTimerEndAt=Date.now()+seconds*1000;
+  _restTimerDuration=seconds;
+  _restTickInterval=setInterval(tickRestTimer,1000);
+}
+function tickRestTimer(){
+  if(!_restTimerEndAt)return;
+  const remaining=Math.max(0,Math.round((_restTimerEndAt-Date.now())/1000));
+  const numEl=document.getElementById('rest-countdown-num');
+  const barEl=document.getElementById('rest-countdown-bar');
+  if(remaining<=0){
+    clearInterval(_restTickInterval);_restTickInterval=null;_restTimerEndAt=null;_restTimerDuration=null;
+    if(navigator.vibrate)navigator.vibrate([200,100,200]);
+    renderToday();
+    return;
+  }
+  if(numEl)numEl.textContent=Math.floor(remaining/60)+':'+String(remaining%60).padStart(2,'0');
+  if(barEl)barEl.style.width=Math.round((remaining/_restTimerDuration)*100)+'%';
+}
+function skipRestTimer(){clearInterval(_restTickInterval);_restTickInterval=null;_restTimerEndAt=null;_restTimerDuration=null;renderToday();}
+function extendRestTimer(sec){
+  if(!_restTimerEndAt)return;
+  const minRemaining=5000;
+  _restTimerEndAt=Math.max(Date.now()+minRemaining,_restTimerEndAt+sec*1000);
+  _restTimerDuration=Math.max(5,_restTimerDuration+sec);
+  tickRestTimer();
+}
 function getElapsed(ts){if(!ts)return null;const s=Math.floor((Date.now()-ts)/1000);return Math.floor(s/60)+'m '+String(s%60).padStart(2,'0')+'s';}
 function startTimerTick(){
   stopTimerTick();
@@ -1594,6 +1849,19 @@ function renderToday(){
       <div class="cs">${deload.fatiguedCount} of ${deload.totalMuscles} recently-trained muscles are still running meaningfully harder than normal (${deload.ratioPercent}%) \u2014 ${deload.fatiguedMuscles.join(', ')}. Worth considering a lighter session or Suggested Session, which already accounts for this.</div>
     </div>`;
   }
+
+  html+=`<div class="card" style="margin-bottom:10px"><div class="cl">Muscle freshness</div><div class="ct" style="margin-bottom:8px">What's ready right now</div>
+    <div class="cs" style="margin-bottom:10px">Deeper red means trained harder and more recently, relative to that muscle\u2019s own normal \u2014 fading toward grey as it recovers. Check this before picking today's session, not after.</div>
+    <select class="foodsel" style="margin-bottom:10px" onchange="if(this.value){_freshSelectedTags=[this.value];renderToday();}">
+      <option value="">Hard to tap precisely? Pick by name...</option>
+      ${allMuscleTagsWithExercises().map(t=>`<option value="${t}" ${_freshSelectedTags[0]===t?'selected':''}>${t}</option>`).join('')}
+    </select>
+    <div style="display:flex;gap:12px;justify-content:center">
+      <div id="freshdiag-front" style="width:45%"></div>
+      <div id="freshdiag-back" style="width:45%"></div>
+    </div>
+    <div id="freshdiag-exlist">${renderFreshMuscleExList()}</div>
+  </div>`;
 
   html+=`<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
     <button class="btn btn-ghost btn-sm" onclick="gastroExport()">&#x1F4CB; Gastro summary</button>
@@ -1737,7 +2005,21 @@ function renderToday(){
       </div>`;
     }
 
-    if(restElapsed){
+    const restActive=_restTimerEndAt&&_restTimerEndAt>Date.now();
+    if(restActive){
+      const remaining=Math.max(0,Math.round((_restTimerEndAt-Date.now())/1000));
+      html+=`<div class="rest-timer" style="flex-direction:column;align-items:stretch">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div><div class="cl">Rest</div><div id="rest-countdown-num" class="rest-num">${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}</div></div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" onclick="extendRestTimer(-30)">-30s</button>
+            <button class="btn btn-ghost btn-sm" onclick="extendRestTimer(30)">+30s</button>
+            <button class="btn btn-ghost btn-sm" onclick="skipRestTimer()">Skip</button>
+          </div>
+        </div>
+        <div class="prog-bar"><div id="rest-countdown-bar" class="prog-fill" style="width:${Math.round(remaining/_restTimerDuration*100)}%;background:var(--cyan)"></div></div>
+      </div>`;
+    }else if(restElapsed){
       html+=`<div class="rest-timer">
         <div style="flex:1"><div class="cl">Rest since last set</div><div id="rest-num" class="rest-num">${restElapsed}</div>
         <div style="font-size:11px;color:var(--cyan);font-weight:600;margin-top:2px">Compounds: 2\u20133 min &middot; Isolation: 60\u201390s</div></div>
@@ -1764,7 +2046,7 @@ function renderToday(){
       const subOverride=(!chosenOpt&&ex.name!==ex.origName)?SUB_TYPE_OVERRIDE[ex.name]:null;
       const subWlabel=subOverride?.wlabel||((!chosenOpt&&ex.name!==ex.origName)?inferSubWlabel(ex.name):null);
       const effType=chosenOpt?chosenOpt.inputType:(subOverride?subOverride.inputType:(orig.inputType||'weight'));
-      const effR=chosenOpt?chosenOpt.r:orig.r;
+      const effR=chosenOpt?chosenOpt.r:(subOverride?.r||orig.r);
       const fmtBest=(b)=>!b?'':(effType==='seconds'?b.w+'s':effType==='reps_each'?b.w+' each side':b.w+'kg \u00d7 '+b.r);
       const histFall=(!lx?.best)?(getExHistory(trackName).slice(-1)[0]||null):null;
       const lstr=lx?.best?'Last: '+fmtBest(lx.best):histFall?'Last ('+histFall.date.slice(5)+'): '+fmtBest(histFall.best):'First time';
@@ -1804,8 +2086,8 @@ function renderToday(){
             </div>
             ${isSubbed?`<div class="subbed">SUB for ${ex.origName}</div>`:''}
             <div style="font-size:12px;color:var(--mut);margin-top:3px">${contextParts.join(' &middot; ')}</div>
-            <div style="font-size:12px;color:var(--txt);margin-top:2px">${orig.s} sets &times; ${effR||orig.r}${(subWlabel||orig.wlabel)?` &middot; ${subWlabel||orig.wlabel}`:''}</div>
-            ${orig.nt?`<div style="font-size:11px;color:var(--amb);font-style:italic;margin-top:3px">${orig.nt}</div>`:''}
+            <div style="font-size:12px;color:var(--txt);margin-top:2px">${subOverride?.s||orig.s} sets &times; ${effR||orig.r}${(subWlabel||orig.wlabel)?` &middot; ${subWlabel||orig.wlabel}`:''}</div>
+            ${(subOverride?.nt!==undefined?subOverride.nt:orig.nt)?`<div style="font-size:11px;color:var(--amb);font-style:italic;margin-top:3px">${subOverride?.nt!==undefined?subOverride.nt:orig.nt}</div>`:''}
             ${freshNote?`<div style="font-size:11px;color:var(--cyan);margin-top:4px;padding:6px 8px;background:var(--c2);border-radius:8px">&#x21BB; ${freshNote}</div>`:''}
           </div>
         </div>
@@ -1815,9 +2097,10 @@ function renderToday(){
         h+=`<div class="choice-pick">${orig.choiceOptions.map(o=>`<button class="choice-btn" onclick="chooseExType('${gd.label}',${ei},'${o.name}')">${o.name}<div style="font-size:11px;margin-top:4px;color:var(--mut)">${o.r}</div></button>`).join('')}</div>`;
       }
       if(!isChoice||ex.chosenType){
+        const topSetIdx=ex.sets.reduce((last,s,idx)=>s.isDrop?last:idx,-1);
         ex.sets.forEach((set,si)=>{
           const isDrop=set.isDrop;
-          const isExtra=isDrop||si>=(orig.s||3);
+          const isExtra=isDrop||si>=(subOverride?.s||orig.s||3);
           h+=`<div class="srow${set.done?' setdone':''}${isDrop?' droprow':''}"${si===ex.sets.length-1&&!subOpen?' style="border-bottom:none"':''}>
             <div class="snum">${isDrop?`S${si+1}<span class="dbadge">DROP</span>`:`S${si+1}`}${isExtra?`<button class="setdel" onclick="removeSet('${gd.label}',${ei},${si})" title="Remove this set">&#x2715;</button>`:''}</div>
             <div style="text-align:center;flex:1">
@@ -1826,7 +2109,13 @@ function renderToday(){
             </div>
             ${(effType!=='seconds'&&effType!=='reps_each')?`<span class="tx">&times;</span><div style="text-align:center;flex:1"><input class="nin" type="number" inputmode="numeric" placeholder="reps" min="0" step="1" value="${set.r}" oninput="updSet('${gd.label}',${ei},${si},'r',this.value)"><div class="nin-lbl">reps</div></div>`:''}
             <button class="dbtn${set.done?' dk':''}" onclick="togDone('${gd.label}',${ei},${si})">${set.done?'&#x2713;':'&#x25CB;'}</button>
-          </div>`;
+          </div>
+          ${(si===topSetIdx&&set.done&&effType!=='seconds')?`<div style="display:flex;align-items:center;gap:8px;padding:4px 0 10px 44px">
+            <span style="font-size:11px;color:var(--mut);font-weight:600">Reps in reserve:</span>
+            <div style="display:flex;gap:4px">
+              ${[0,1,2,3].map(v=>`<button onclick="setRIR('${gd.label}',${ei},${si},${v})" style="width:26px;height:26px;border-radius:8px;border:1px solid ${set.rir===v?'var(--cyan)':'var(--c3)'};background:${set.rir===v?'var(--cbg)':'var(--c2)'};color:${set.rir===v?'var(--cyan)':'var(--mut)'};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">${v===3?'3+':v}</button>`).join('')}
+            </div>
+          </div>`:''}`;
         });
       }
       h+=`<div class="set-actions">
@@ -1970,6 +2259,7 @@ function renderToday(){
 
   document.getElementById('p0').innerHTML=html;
   injectWeather();
+  renderFreshDiagram();
   if(gd&&gd.label==='Free session'&&_freeExPickerMode==='muscle')mountFreeMuscleDiagram();
   const curWs=gd?WS[gd.label]:null;
   if(curWs&&curWs.infoOpen!=null&&gd.ex[curWs.infoOpen])mountMiniExerciseDiagram(gd.ex[curWs.infoOpen]);
@@ -2044,7 +2334,7 @@ function startSuggestedSession(){
     const prefill=getPrefillSets(p,trackN,p.s||3);
     WS['Free session'].ex.push({
       name:trackN,origName:p.n,chosenType:null,
-      sets:Array.from({length:p.s||3},(_,si)=>({w:prefill?.[si]?.w||'',r:prefill?.[si]?.r||'',done:false,isDrop:false}))
+      sets:Array.from({length:p.s||3},(_,si)=>({w:prefill?.[si]?.w||'',r:prefill?.[si]?.r||'',pw:prefill?.[si]?.w||'',pr:prefill?.[si]?.r||'',done:false,isDrop:false}))
     });
   });
   adHocDay.focus='Chosen for you \u2014 fresh and due muscles, mixed freely';
@@ -2080,7 +2370,7 @@ function addToFreeSession(name){
   const prefill=getPrefillSets(def,trackN,def.s||3);
   WS['Free session'].ex.push({
     name:trackN,origName:def.n,chosenType:null,
-    sets:Array.from({length:def.s||3},(_,si)=>({w:prefill?.[si]?.w||'',r:prefill?.[si]?.r||'',done:false,isDrop:false}))
+    sets:Array.from({length:def.s||3},(_,si)=>({w:prefill?.[si]?.w||'',r:prefill?.[si]?.r||'',pw:prefill?.[si]?.w||'',pr:prefill?.[si]?.r||'',done:false,isDrop:false}))
   });
   saveDraft('Free session');
   renderToday();
@@ -2139,6 +2429,53 @@ function renderProgress(){
     <div class="pstat"><div class="pval" style="color:${miss>0?'var(--red)':'var(--cyan)'}">${miss}</div><div class="plbl">missed</div></div>
   </div>`;
 
+  html+=`<div class="card"><div class="cl">Exercise history</div>
+    <div class="ct" style="margin-bottom:10px">Search any exercise &mdash; best ever, last session, trend</div>
+    <input class="ex-search" type="text" id="prog-ex-search-input" placeholder="e.g. Pull-ups, Bench press..." oninput="searchExHistory(this.value,'prog-ex-result')">
+    <div id="prog-ex-result">
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${[...new Set(DAYS.flatMap(d=>d.ex.map(e=>e.n)))].filter(n=>getExHistory(n).length>0).slice(0,10).map(n=>`<button onclick="document.getElementById('prog-ex-search-input').value='${n.replace(/'/g,"\\'")}';searchExHistory('${n.replace(/'/g,"\\'")}','prog-ex-result')" style="padding:6px 12px;border:1px solid var(--c3);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;background:var(--c2);color:var(--mut);font-family:inherit">${n}</button>`).join('')}
+      </div>
+      <div class="cs" style="text-align:center;padding:10px 0">Search or tap an exercise above to see your best ever, last session, and trend.</div>
+    </div>
+  </div>`;
+
+  const muscleVol=Coach.getWeeklyMuscleVolume();
+  html+=`<div class="card"><div class="cl">Weekly Sets Per Muscle</div><div class="ct" style="margin-bottom:4px">Last 7 days</div>
+    <div class="cs" style="margin-bottom:10px">Primary work counts as a full set, secondary (incidental) work counts as half a set. Roughly 10\u201320 sets a week per muscle is the commonly-cited range for growth \u2014 not a hard rule, just a reference point.</div>
+    ${muscleVol.length?muscleVol.map(m=>`
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--txt);margin-bottom:2px"><span>${m.muscle}</span><span style="color:var(--mut)">${m.volume} set${m.volume===1?'':'s'}</span></div>
+        <div class="prog-bar"><div class="prog-fill" style="width:${Math.min(100,Math.round(m.volume/20*100))}%;background:${m.volume<8?'var(--amb)':'var(--cyan)'}"></div></div>
+      </div>`).join(''):`<div class="cs">No sessions logged in the last 7 days yet.</div>`}
+  </div>`;
+
+  const wtForecast=getWeightForecast(stats);
+  html+=`<div class="card"><div class="cl">Body Weight Trend</div><div class="ct" style="margin-bottom:8px">From your logged weigh-ins</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="btn ${_weightGraphPeriod==='week'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setWeightGraphPeriod('week')">Weekly</button>
+      <button class="btn ${_weightGraphPeriod==='month'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setWeightGraphPeriod('month')">Monthly</button>
+    </div>
+    ${renderLineChartSVG(getWeightTrendPoints(_weightGraphPeriod),{})}
+    ${wtForecast.available?`<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--c3)">
+      <div style="font-size:11px;color:var(--mut);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Forecast to ${wtForecast.goal}kg</div>
+      ${wtForecast.weeksLow!==null?`<div style="font-size:14px;color:var(--txt)">Roughly <strong style="color:var(--cyan)">${wtForecast.weeksLow}\u2013${wtForecast.weeksHigh} weeks</strong> at the current rate (${wtForecast.ratePerWeek>0?'+':''}${wtForecast.ratePerWeek}kg/week)</div>
+      <div style="font-size:11px;color:var(--dim);margin-top:4px">A range, not a date \u2014 real progress is never a straight line.</div>`
+      :`<div style="font-size:13px;color:var(--mut)">${wtForecast.message}</div>`}
+    </div>`:`<div style="font-size:12px;color:var(--dim);margin-top:10px">${wtForecast.reason}</div>`}
+  </div>`;
+
+  const adaptiveSugg=getAdaptiveNutritionSuggestion(stats);
+  if(!_adaptiveDismissed&&adaptiveSugg.available&&adaptiveSugg.suggestion){
+    html+=`<div class="card cyan"><div class="cl">Target check</div><div class="ct" style="margin-bottom:8px">Real trend vs. current kcal target</div>
+      <div style="font-size:13px;color:var(--txt);line-height:1.5;margin-bottom:12px">${adaptiveSugg.suggestion}</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-amb btn-sm" style="flex:1" onclick="applyAdaptiveTarget(${adaptiveSugg.newTarget})">Update to ${adaptiveSugg.newTarget} kcal</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="dismissAdaptiveTarget()">Not now</button>
+      </div>
+    </div>`;
+  }
+
   html+=`<div class="card"><div class="cl">Body stats &mdash; weekly</div><div class="ct" style="margin-bottom:4px">Samsung Watch data</div>
     <div class="cs" style="margin-bottom:12px">Log once a week, same day and time</div>
     ${latest?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
@@ -2157,61 +2494,6 @@ function renderProgress(){
     ${[['Waist (cm)','mw','80'],['Chest (cm)','mc','100'],['Left arm (cm)','mla','35'],['Right arm (cm)','mra','35']].map(([l,id,ph])=>`<div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">${l}</div><input class="sinput" type="number" inputmode="decimal" id="${id}" placeholder="${ph}" step="0.5" style="width:90px;text-align:center"></div>`).join('')}
     <button class="btn btn-ghost" onclick="saveMeasurements()">Save measurements</button>
     <div id="mconf" class="confbox">Measurements saved &#x2713;</div>
-  </div>`;
-
-  const now=new Date();
-
-  const muscleVol=Coach.getWeeklyMuscleVolume();
-  html+=`<div class="card"><div class="cl">Weekly Sets Per Muscle</div><div class="ct" style="margin-bottom:4px">Last 7 days</div>
-    <div class="cs" style="margin-bottom:10px">Primary work counts as a full set, secondary (incidental) work counts as half a set. Roughly 10\u201320 sets a week per muscle is the commonly-cited range for growth \u2014 not a hard rule, just a reference point.</div>
-    ${muscleVol.length?muscleVol.map(m=>`
-      <div style="margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--txt);margin-bottom:2px"><span>${m.muscle}</span><span style="color:var(--mut)">${m.volume} set${m.volume===1?'':'s'}</span></div>
-        <div class="prog-bar"><div class="prog-fill" style="width:${Math.min(100,Math.round(m.volume/20*100))}%;background:${m.volume<8?'var(--amb)':'var(--cyan)'}"></div></div>
-      </div>`).join(''):`<div class="cs">No sessions logged in the last 7 days yet.</div>`}
-  </div>`;
-
-  html+=`<div class="card"><div class="cl">Body Weight Trend</div><div class="ct" style="margin-bottom:8px">From your logged weigh-ins</div>
-    <div style="display:flex;gap:8px;margin-bottom:10px">
-      <button class="btn ${_weightGraphPeriod==='week'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setWeightGraphPeriod('week')">Weekly</button>
-      <button class="btn ${_weightGraphPeriod==='month'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setWeightGraphPeriod('month')">Monthly</button>
-    </div>
-    ${renderLineChartSVG(getWeightTrendPoints(_weightGraphPeriod),{})}
-  </div>`;
-
-  const exNamesWithHistory=[...new Set(DAYS.flatMap(d=>d.ex.map(e=>e.n)))].filter(n=>getExHistory(n).length>=2);
-  if(!_exerciseGraphPick||!exNamesWithHistory.includes(_exerciseGraphPick))_exerciseGraphPick=exNamesWithHistory[0]||null;
-  html+=`<div class="card"><div class="cl">Exercise Trend</div><div class="ct" style="margin-bottom:8px">Estimated 1RM over time, from your real logged sessions</div>
-    ${exNamesWithHistory.length?`
-    <select class="foodsel" onchange="setExerciseGraphPick(this.value)" style="margin-bottom:10px">
-      ${exNamesWithHistory.map(n=>`<option value="${n}" ${n===_exerciseGraphPick?'selected':''}>${n}</option>`).join('')}
-    </select>
-    <div style="display:flex;gap:8px;margin-bottom:10px">
-      <button class="btn ${_exerciseGraphPeriod==='week'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setExerciseGraphPeriod('week')">Weekly</button>
-      <button class="btn ${_exerciseGraphPeriod==='month'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setExerciseGraphPeriod('month')">Monthly</button>
-    </div>
-    ${renderLineChartSVG(getExerciseTrendPoints(_exerciseGraphPick,_exerciseGraphPeriod),{})}
-    `:`<div class="cs">Log the same exercise at least twice to see a trend here.</div>`}
-  </div>`;
-
-  html+=`<div class="card"><div class="cl">Body Map</div><div class="ct" style="margin-bottom:8px">Tap a muscle</div>
-    <div class="cs" style="margin-bottom:10px"><b style="color:var(--txt)">Volume</b> = what you've trained this week, looking back. <b style="color:var(--txt)">Freshness</b> = what's actually recovered and ready right now, looking forward \u2014 check this before picking today's session, not after.</div>
-    <div style="display:flex;gap:8px;margin-bottom:10px">
-      <button class="btn ${_progressDiagMode==='volume'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setProgressDiagMode('volume')">Volume</button>
-      <button class="btn ${_progressDiagMode==='freshness'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setProgressDiagMode('freshness')">Freshness</button>
-    </div>
-    <div class="cs" style="margin-bottom:10px">${_progressDiagMode==='freshness'
-      ?'Deeper red means trained harder and more recently, relative to that muscle\u2019s own normal \u2014 fading toward grey as it recovers. Not a literal green light yet, the color scale available doesn\u2019t support that.'
-      :'Brighter means more volume this week, relative to your busiest muscle.'}</div>
-    <select class="foodsel" style="margin-bottom:10px" onchange="if(this.value){_progressSelectedTags=[this.value];renderProgress();}">
-      <option value="">Hard to tap precisely? Pick by name...</option>
-      ${allMuscleTagsWithExercises().map(t=>`<option value="${t}" ${_progressSelectedTags[0]===t?'selected':''}>${t}</option>`).join('')}
-    </select>
-    <div style="display:flex;gap:12px;justify-content:center">
-      <div id="bodydiag-front" style="width:45%"></div>
-      <div id="bodydiag-back" style="width:45%"></div>
-    </div>
-    <div id="bodydiag-exlist">${renderProgressMuscleExList()}</div>
   </div>`;
 
   const correlation=getFoodSymptomCorrelation();
@@ -2243,7 +2525,6 @@ function renderProgress(){
   </div>`;
 
   document.getElementById('p1').innerHTML=html;
-  renderBodyDiagram();
 }
 
 function saveStats(){
@@ -2267,8 +2548,58 @@ function saveMeasurements(){
 }
 /* ===== FOOD ===== */
 function allFoods(){const c=lsG('custom_foods')||[];return[...FOODS,...c.map(f=>({...f,cat:'My foods'}))];}
+/* Section J link #1: grams of a specific food needed to close today's remaining protein gap.
+   Reads the same today's-log and target values the Log tab's own "need Xg protein more today"
+   line already computes from \u2014 no separate, potentially-disagreeing macro tally. Returns null
+   when the target is already met or the food carries no real protein, so callers can decline
+   gracefully instead of suggesting a nonsensical portion. */
+function gramsToCloseProteinGap(foodName){
+  const food=allFoods().find(f=>f.name===foodName);
+  if(!food||!food.per100||!food.per100.p)return null;
+  const log=lsG('food:'+todayKey())||[];
+  const t=getProfile().targets;
+  const p=log.reduce((s,i)=>s+(i.p||0),0);
+  const gap=t.protein-p;
+  if(gap<=0)return null;
+  return Math.max(10,Math.min(500,Math.round((gap/food.per100.p)*100)));
+}
+function fillGramsToGap(selectId,amtId,afterFn){
+  const sel=document.getElementById(selectId);
+  const grams=sel?gramsToCloseProteinGap(sel.value):null;
+  if(grams===null){alert('Protein target is already met today, or this isn\'t a protein source \u2014 pick a curry/protein food first.');return;}
+  const amtEl=document.getElementById(amtId);
+  if(amtEl)amtEl.value=grams;
+  if(typeof afterFn==='function')afterFn();
+}
+/* Recent & frequent: scans every stored daily food log (keys 'food:YYYY-MM-DD'),
+   counts how often each food name appears, and ranks by frequency with most-recently-
+   logged as the tiebreak. Used for the Log tab's tappable chip row. */
+function getFrequentFoods(limit){
+  limit=limit||8;
+  const counts={},lastSeen={};
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(!k||!k.startsWith('food:'))continue;
+    const dateStr=k.slice(5);
+    (lsG(k)||[]).forEach(e=>{
+      if(!e||!e.name)return;
+      counts[e.name]=(counts[e.name]||0)+1;
+      if(!lastSeen[e.name]||dateStr>lastSeen[e.name])lastSeen[e.name]=dateStr;
+    });
+  }
+  return Object.keys(counts).sort((a,b)=>(counts[b]-counts[a])||(lastSeen[b]<lastSeen[a]?-1:1)).slice(0,limit);
+}
 function foodOptsHtml(){
   const cats={};allFoods().forEach(f=>{if(!cats[f.cat])cats[f.cat]=[];cats[f.cat].push(f);});
+  return Object.entries(cats).map(([cat,items])=>`<optgroup label="${cat}">${items.map(f=>`<option value="${f.name}">${f.name}${f.fibreRisk?' \u26A0':''}${f.lbl?' ('+f.lbl+')':''}</option>`).join('')}</optgroup>`).join('');
+}
+/* Plate dropdowns show only foods tagged for that role (base/curry/side) so Roshan
+   can't accidentally pick a whole biryani as his "curry". Custom foods without a
+   plateRole (pre-v5.2 saves, or left as 'none') simply won't appear here \u2014 still
+   fully usable everywhere else via search. */
+function foodOptsHtmlByRole(role){
+  const items=allFoods().filter(f=>f.plateRole===role);
+  const cats={};items.forEach(f=>{if(!cats[f.cat])cats[f.cat]=[];cats[f.cat].push(f);});
   return Object.entries(cats).map(([cat,items])=>`<optgroup label="${cat}">${items.map(f=>`<option value="${f.name}">${f.name}${f.fibreRisk?' \u26A0':''}${f.lbl?' ('+f.lbl+')':''}</option>`).join('')}</optgroup>`).join('');
 }
 /* Unit-aware amount handling. 'g' and 'ml' foods are entered as a direct amount
@@ -2299,6 +2630,11 @@ function renderFood(){
   const opts=foodOptsHtml();
   const mealGap=_foodDay==='today'?getMealGapSuggestion():null;
   const swaps=_foodDay==='today'?getSwapSuggestions():[];
+  const freqFoods=getFrequentFoods(8);
+  const proteinPct=Math.min(totalP/t.protein*100,100);
+  const proteinColor=totalP>=t.protein?'var(--grn)':totalP>=t.protein*0.67?'var(--cyan)':'var(--red)';
+  const ringCirc=2*Math.PI*39;
+  const ringOffset=ringCirc*(1-proteinPct/100);
 
   document.getElementById('p2').innerHTML=`
   ${mealGap&&mealGap.needed?`<div class="card warm" style="margin-bottom:10px">
@@ -2325,10 +2661,9 @@ function renderFood(){
     <button class="btn btn-grn btn-sm" style="width:100%;margin-top:10px" onclick="saveTargets()">Save targets</button>
   </div>
   <div class="seg">
+    <button class="segb on" id="fsb-l" onclick="showFS('l')">Log</button>
     <button class="segb" id="fsb-c" onclick="showFS('c')">Cook</button>
     <button class="segb" id="fsb-pl" onclick="showFS('pl')">Plate</button>
-    <button class="segb on" id="fsb-l" onclick="showFS('l')">Ate</button>
-    <button class="segb" id="fsb-f" onclick="showFS('f')">Foods</button>
   </div>
 
   <!-- COOK: portion calculator -->
@@ -2339,17 +2674,12 @@ function renderFood(){
       <div class="statrow"><div style="font-size:13px;color:var(--mut);font-weight:500">Number of meals</div>
         <select class="sinput" id="pg-meals" style="width:64px">${[1,2,3,4,5].map(n=>`<option${n===3?' selected':''}>${n}</option>`).join('')}</select>
       </div>
-      <div class="statrow"><div style="font-size:13px;color:var(--mut);font-weight:500">Your portion</div>
-        <select class="sinput" id="pg-you" style="width:140px">
-          <option value="100">Small (~100g)</option><option value="150" selected>Medium (~150g)</option>
-          <option value="200">Large (~200g)</option><option value="250">XL (~250g)</option>
-        </select>
+      <div class="statrow"><div style="font-size:13px;color:var(--mut);font-weight:500">Your portion (g)</div>
+        <input class="sinput" id="pg-you" type="number" inputmode="decimal" value="150" step="10" min="0" style="width:90px;text-align:center">
       </div>
-      <div class="statrow"><div style="font-size:13px;color:var(--mut);font-weight:500">Second plate (wife)</div>
-        <select class="sinput" id="pg-wife" style="width:140px">
-          <option value="0">No second plate</option><option value="70">Small (~70g)</option>
-          <option value="90" selected>Medium (~90g)</option><option value="120">Large (~120g)</option>
-        </select>
+      <div style="text-align:right;margin-top:-6px;margin-bottom:8px"><a href="javascript:void(0)" onclick="fillGramsToGap('pg-food','pg-you',null)" style="color:var(--cyan);font-size:11px;font-weight:600;text-decoration:none">Fill to close today's protein gap</a></div>
+      <div class="statrow"><div style="font-size:13px;color:var(--mut);font-weight:500">Second plate (wife, g &mdash; 0 for none)</div>
+        <input class="sinput" id="pg-wife" type="number" inputmode="decimal" value="90" step="10" min="0" style="width:90px;text-align:center">
       </div>
       <button class="btn btn-amb" onclick="calcPortions()">Calculate</button>
       <div id="pg-result"></div>
@@ -2371,48 +2701,42 @@ function renderFood(){
       </div>
       <button class="btn btn-amb" onclick="calcBatchShare()">Calculate my portion</button>
       <div id="bs-result"></div>
-      <div style="font-size:11px;color:var(--dim);margin-top:12px">Full recipe builder with per-ingredient breakdown coming in v2.3.</div>
     </div>
   </div>
 
   <!-- PLATE BUILDER -->
   <div id="fs-pl" style="display:none">
-    <div class="card"><div class="cl">Build a Tamil plate</div><div class="ct" style="margin-bottom:4px">Rice + rasam/curry + protein + side</div>
+    <div class="card"><div class="cl">Build your plate</div><div class="ct" style="margin-bottom:4px">Base + curry + side</div>
       <div class="cs" style="margin-bottom:14px">Pick each component. Combined macros calculated instantly.</div>
       <div style="font-size:12px;color:var(--mut);margin-bottom:8px;font-weight:600;letter-spacing:1px;text-transform:uppercase">Meal type</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
         ${MEAL_TYPES.map(m=>`<button id="mt-${m}" onclick="selMeal('${m}')" style="padding:9px 16px;border:1px solid var(--c3);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;background:var(--c2);color:var(--mut);font-family:inherit;min-height:44px;transition:all .2s">${m}</button>`).join('')}
       </div>
-      <div class="plate-comp"><div class="plate-comp-lbl">Base (rice)</div>
+      <div class="plate-comp"><div class="plate-comp-lbl">Base (rice / dosa / chapati)</div>
         <div class="plate-row">
-          <select class="foodsel" id="pc-base" style="flex:1;margin-bottom:0" onchange="pcPrefill('base')">${foodOptsHtml().match(/Carbs[\s\S]*?<\/optgroup>/)?.[0]||opts}</select>
+          <select class="foodsel" id="pc-base" style="flex:1;margin-bottom:0" onchange="pcPrefill('base')">${foodOptsHtmlByRole('base')}</select>
           <input class="sinput" id="pc-base-amt" type="number" inputmode="decimal" value="150" placeholder="150" step="0.5" style="width:70px;text-align:center" oninput="buildPlate()">
           <div style="font-size:12px;color:var(--mut);font-weight:600" id="pc-base-u">g</div>
         </div>
       </div>
-      <div class="plate-comp"><div class="plate-comp-lbl">Liquid (rasam / sambar / curry)</div>
+      <div class="plate-comp"><div class="plate-comp-lbl">Curry (protein + gravy \u2014 chicken, mutton, fish, dal, sambar)</div>
         <div class="plate-row">
-          <select class="foodsel" id="pc-liq" style="flex:1;margin-bottom:0" onchange="pcPrefill('liq')">${opts}</select>
-          <input class="sinput" id="pc-liq-amt" type="number" inputmode="decimal" value="200" placeholder="200" step="0.5" style="width:70px;text-align:center" oninput="buildPlate()">
-          <div style="font-size:12px;color:var(--mut);font-weight:600" id="pc-liq-u">ml</div>
+          <select class="foodsel" id="pc-curry" style="flex:1;margin-bottom:0" onchange="pcPrefill('curry')"><option value="">None</option>${foodOptsHtmlByRole('curry')}</select>
+          <input class="sinput" id="pc-curry-amt" type="number" inputmode="decimal" value="200" placeholder="200" step="0.5" style="width:70px;text-align:center" oninput="buildPlate()">
+          <div style="font-size:12px;color:var(--mut);font-weight:600" id="pc-curry-u">g</div>
         </div>
+        <div style="text-align:right;margin-top:4px"><a href="javascript:void(0)" onclick="fillGramsToGap('pc-curry','pc-curry-amt',buildPlate)" style="color:var(--cyan);font-size:11px;font-weight:600;text-decoration:none">Fill to close today's protein gap</a></div>
       </div>
-      <div class="plate-comp"><div class="plate-comp-lbl">Protein (fish / chicken / egg)</div>
+      <div class="plate-comp"><div class="plate-comp-lbl">Side (beans fry / potato fry / egg)</div>
         <div class="plate-row">
-          <select class="foodsel" id="pc-pro" style="flex:1;margin-bottom:0" onchange="pcPrefill('pro')"><option value="">None</option>${opts}</select>
-          <input class="sinput" id="pc-pro-amt" type="number" inputmode="decimal" value="150" placeholder="150" step="0.5" style="width:70px;text-align:center" oninput="buildPlate()">
-          <div style="font-size:12px;color:var(--mut);font-weight:600" id="pc-pro-u">g</div>
-        </div>
-      </div>
-      <div class="plate-comp"><div class="plate-comp-lbl">Side (beans fry / potato fry)</div>
-        <div class="plate-row">
-          <select class="foodsel" id="pc-side" style="flex:1;margin-bottom:0" onchange="pcPrefill('side')"><option value="">None</option>${opts}</select>
+          <select class="foodsel" id="pc-side" style="flex:1;margin-bottom:0" onchange="pcPrefill('side')"><option value="">None</option>${foodOptsHtmlByRole('side')}</select>
           <input class="sinput" id="pc-side-amt" type="number" inputmode="decimal" value="100" placeholder="100" step="0.5" style="width:70px;text-align:center" oninput="buildPlate()">
           <div style="font-size:12px;color:var(--mut);font-weight:600" id="pc-side-u">g</div>
         </div>
       </div>
       <div id="plate-result"></div>
-      <button class="btn btn-amb" onclick="addPlateToLog()">Add plate to Ate</button>
+      <button class="btn btn-amb" onclick="addPlateToLog()">Add plate to Log</button>
+      <div style="text-align:center;margin-top:12px"><a href="javascript:void(0)" onclick="showFS('f')" style="color:var(--cyan);font-size:12px;font-weight:600;text-decoration:none">Can't find it? Add a custom food &rarr;</a></div>
     </div>
   </div>
 
@@ -2425,22 +2749,23 @@ function renderFood(){
         <button onclick="selFoodDay('yesterday')" style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--c3);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;background:${isYesterday?'var(--amb)':'var(--c2)'};color:${isYesterday?'#000':'var(--mut)'}">Yesterday</button>
       </div>
       <!-- Macro progress -->
-      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:6px">
-        <div>
-          <div style="font-size:13px;font-weight:700;color:var(--mut);letter-spacing:.5px;text-transform:uppercase;margin-bottom:2px">Protein</div>
-          <div style="font-size:26px;font-weight:900;font-family:'Barlow',sans-serif;color:${totalP>=t.protein?'var(--grn)':totalP>=t.protein*0.67?'var(--cyan)':'var(--red)'}">${totalP}<span style="font-size:13px;font-weight:400;color:var(--mut)">g / ${t.protein}\u2013${Math.round(t.protein*1.15)}g</span></div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:13px;font-weight:700;color:var(--mut);letter-spacing:.5px;text-transform:uppercase;margin-bottom:2px">Kcal</div>
-          <div style="font-size:20px;font-weight:800;font-family:'Barlow',sans-serif;color:var(--cyan)">${totalK}<span style="font-size:11px;font-weight:400;color:var(--mut)"> / 2100</span></div>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:${remP>0&&!isYesterday?8:12}px">
+        <svg width="92" height="92" viewBox="0 0 92 92" style="flex-shrink:0">
+          <circle cx="46" cy="46" r="39" fill="none" stroke="var(--c3)" stroke-width="9"/>
+          <circle cx="46" cy="46" r="39" fill="none" stroke="${proteinColor}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${ringCirc.toFixed(1)}" stroke-dashoffset="${ringOffset.toFixed(1)}" transform="rotate(-90 46 46)" style="transition:stroke-dashoffset .5s ease"/>
+          <text x="46" y="43" text-anchor="middle" font-family="Barlow, sans-serif" font-size="22" font-weight="900" fill="var(--txt)">${totalP}</text>
+          <text x="46" y="59" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" fill="var(--mut)">of ${t.protein}g</text>
+        </svg>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;font-weight:700;color:var(--mut);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Protein today</div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--mut);margin-bottom:2px"><span>Kcal</span><span style="color:var(--txt);font-weight:700">${totalK} / ${t.kcal}</span></div>
+          <div class="prog-bar" style="margin-bottom:6px"><div class="prog-fill" style="width:${Math.min(totalK/t.kcal*100,100)}%;background:var(--amb)"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--mut);margin-bottom:2px"><span>Carbs</span><span style="color:var(--txt);font-weight:700">${totalC}g / ${t.carbs}g</span></div>
+          <div class="prog-bar" style="margin-bottom:6px"><div class="prog-fill" style="width:${Math.min(totalC/t.carbs*100,100)}%;background:var(--cyan)"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--mut);margin-bottom:2px"><span>Fat</span><span style="color:var(--txt);font-weight:700">${totalF}g / ${t.fat}g</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:${Math.min(totalF/t.fat*100,100)}%;background:var(--purple)"></div></div>
         </div>
       </div>
-      <div class="prog-bar" style="margin-bottom:4px"><div class="prog-fill" style="width:${Math.min(totalP/t.protein*100,100)}%;background:${totalP>=t.protein?'var(--grn)':totalP>=t.protein*0.67?'var(--cyan)':'var(--red)'}"></div></div>
-      <div class="prog-bar" style="margin-bottom:8px"><div class="prog-fill" style="width:${Math.min(totalK/t.kcal*100,100)}%;background:var(--amb)"></div></div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:2px"><span>Carbs</span><span>${totalC}g / ${t.carbs}\u2013${Math.round(t.carbs*1.15)}g</span></div>
-      <div class="prog-bar" style="margin-bottom:6px"><div class="prog-fill" style="width:${Math.min(totalC/t.carbs*100,100)}%;background:var(--cyan)"></div></div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:2px"><span>Fat</span><span>${totalF}g / ${t.fat}\u2013${Math.round(t.fat*1.15)}g</span></div>
-      <div class="prog-bar" style="margin-bottom:${remP>0&&!isYesterday?8:12}px"><div class="prog-fill" style="width:${Math.min(totalF/t.fat*100,100)}%;background:var(--purple)"></div></div>
       ${remP>0&&!isYesterday?`<div style="font-size:12px;color:var(--mut);margin-bottom:12px">&#x25BA; Need <strong style="color:var(--cyan)">${remP}g protein</strong> and <strong>${remK} kcal</strong> more today${totalC>0?` &middot; ${totalC}g carbs &middot; ${totalF}g fat so far`:''}</div>`:''}
       ${totalP>=t.protein&&!isYesterday?`<div style="font-size:12px;color:var(--grn);margin-bottom:12px;font-weight:700">&#x2713; Protein target hit &middot; ${totalC}g carbs &middot; ${totalF}g fat</div>`:''}
       <div class="sep"></div>
@@ -2450,6 +2775,10 @@ function renderFood(){
       <div style="display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap">
         ${MEAL_TYPES.map(m=>`<button id="ql-mt-${m}" onclick="selQuickMeal('${m}')" style="padding:8px 12px;border:1px solid var(--c3);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:var(--c2);color:var(--mut);font-family:inherit;min-height:36px;transition:all .2s">${m}</button>`).join('')}
       </div>
+      ${freqFoods.length?`<div style="font-size:12px;color:var(--mut);margin-bottom:6px;font-weight:600">Recent &amp; frequent</div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        ${freqFoods.map(n=>`<button onclick="pickMealFood('${n.replace(/'/g,"\\'")}')" style="padding:8px 12px;border:1px solid var(--c3);border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:var(--c2);color:var(--txt);font-family:inherit;min-height:36px;transition:all .2s">${n}</button>`).join('')}
+      </div>`:''}
       <input class="genin" type="text" id="ml-food-search" placeholder="Search foods..." autocomplete="off" oninput="filterMealFoodList(this.value)" onfocus="filterMealFoodList(this.value)">
       <input type="hidden" id="ml-food">
       <div id="ml-food-list" style="max-height:180px;overflow-y:auto;display:none;background:var(--c2);border:1px solid var(--c3);border-radius:10px;margin-top:4px">
@@ -2463,11 +2792,13 @@ function renderFood(){
       <button class="btn btn-amb btn-sm" style="width:100%;margin-bottom:16px" onclick="logMeal()">+ Add</button>
       <!-- Meal groups -->
       ${renderMealGroups(log)}
+      <div style="text-align:center;margin-top:14px"><a href="javascript:void(0)" onclick="showFS('f')" style="color:var(--cyan);font-size:12px;font-weight:600;text-decoration:none">Can't find it? Add a custom food &rarr;</a></div>
     </div>
   </div>
 
   <!-- FOODS DB -->
   <div id="fs-f" style="display:none">
+    <div style="margin-bottom:10px"><a href="javascript:void(0)" onclick="showFS('l')" style="color:var(--mut);font-size:12px;text-decoration:none">&larr; Back to Log</a></div>
     <div class="card"><div class="cl">Manage food list</div><div class="ct" style="margin-bottom:4px">Add foods you eat regularly</div>
       <div class="cs" style="margin-bottom:12px">Appears in all tabs permanently</div>
       <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Food name</div><input class="sinput" id="cf-n" type="text" placeholder="Kothu roti" style="width:110px"></div>
@@ -2482,6 +2813,14 @@ function renderFood(){
       </div>
       ${[['Calories per 100g','cf-k','decimal','200'],['Protein per 100g','cf-p','decimal','15'],['Carbs per 100g','cf-c','decimal','20'],['Fat per 100g','cf-f','decimal','5']].map(([l,id,mode,ph])=>`<div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">${l}</div><input class="sinput" id="${id}" type="number" inputmode="${mode}" placeholder="${ph}" style="width:110px"></div>`).join('')}
       <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500" id="cf-t-lbl">Typical serving (g)</div><input class="sinput" id="cf-t" type="number" inputmode="decimal" placeholder="150" style="width:110px"></div>
+      <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Plate role</div>
+        <select class="sinput" id="cf-role" style="width:110px">
+          <option value="none" selected>Not on a plate</option>
+          <option value="base">Base (rice/dosa)</option>
+          <option value="curry">Curry (protein+gravy)</option>
+          <option value="side">Side</option>
+        </select>
+      </div>
       <button class="btn btn-amb" onclick="addCustomFood()">Save to my foods</button>
       <div id="cf-conf" class="confbox">Food added &#x2713;</div>
     </div>
@@ -2553,7 +2892,7 @@ function showFS(s){
 
 function computePlate(){
   const foods=allFoods();
-  const components=[{id:'base',amtId:'pc-base-amt'},{id:'liq',amtId:'pc-liq-amt'},{id:'pro',amtId:'pc-pro-amt'},{id:'side',amtId:'pc-side-amt'}];
+  const components=[{id:'base',amtId:'pc-base-amt'},{id:'curry',amtId:'pc-curry-amt'},{id:'side',amtId:'pc-side-amt'}];
   let totalK=0,totalP=0,totalC=0,totalF=0,names=[];const breakdown=[];
   components.forEach(c=>{
     const sel=document.getElementById('pc-'+c.id);const amt=parseFloat(document.getElementById(c.amtId)?.value)||0;
@@ -2670,7 +3009,7 @@ function quickLog(fname,amt){
   const log=lsG('food:'+todayKey())||[];
   log.push({name:food.name,amt:logAmt,unit:unitWord(food.unit),k:m.k,p:m.p,c:m.c,f:m.f,mealType:curQuickMeal,time});
   lsS('food:'+todayKey(),log);updateHeader();
-  document.getElementById('pg-result').innerHTML+=`<div class="nt ng">Logged to Ate &#x2713;</div>`+fibreWarnHTML(food.name);
+  document.getElementById('pg-result').innerHTML+=`<div class="nt ng">Added to Log &#x2713;</div>`+fibreWarnHTML(food.name);
 }
 function calcBatchShare(){
   const fname=document.getElementById('bs-food').value;
@@ -2686,7 +3025,7 @@ function calcBatchShare(){
     <div class="macrow"><span>Carbs</span><span class="macval">${m.c.toFixed(1)}g</span></div>
     <div class="macrow"><span>Fat</span><span class="macval">${m.f.toFixed(1)}g</span></div>
   </div>
-  <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="quickLog('${fname.replace(/'/g,"\\'")}',${myG})">+ Log to Ate</button>`;
+  <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="quickLog('${fname.replace(/'/g,"\\'")}',${myG})">+ Log to today</button>`;
 }
 function calcPortions(){
   const fname=document.getElementById('pg-food').value;
@@ -2709,7 +3048,7 @@ function calcPortions(){
     <div class="macrow"><span>Portion</span><span class="macval">${wifeG}g</span></div>
     <div class="macrow"><span>Calories</span><span class="macval">${Math.round(food.per100.k*wifeG/100)} kcal</span></div>`:''}
   </div>
-  <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="quickLog('${food.name.replace(/'/g,"\\'")}',${myG})">+ Log my portion to Ate</button>`;
+  <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="quickLog('${food.name.replace(/'/g,"\\'")}',${myG})">+ Log my portion to today</button>`;
 }
 function cfUnitChanged(){
   const u=document.getElementById('cf-unit')?.value||'g';
@@ -2724,10 +3063,11 @@ function addCustomFood(){
   const c=parseFloat(document.getElementById('cf-c').value)||0;
   const f=parseFloat(document.getElementById('cf-f').value)||0;
   const typ=parseFloat(document.getElementById('cf-t').value)||(isCountUnit(unit)?100:150);
+  const plateRole=document.getElementById('cf-role')?.value||'none';
   if(!name||!k||!p)return;
   const customs=lsG('custom_foods')||[];
   if(allFoods().find(x=>x.name.toLowerCase()===name.toLowerCase())){alert('A food with this name already exists \u2014 it would never be reachable. Pick a different name.');return;}
-  const food={name,cat:'My foods',per100:{k,p,c,f},typ};
+  const food={name,cat:'My foods',per100:{k,p,c,f},typ,plateRole};
   if(unit!=='g')food.unit=unit;
   customs.push(food);lsS('custom_foods',customs);
   const conf=document.getElementById('cf-conf');
@@ -2824,6 +3164,26 @@ function getE1RMTrend(exerciseName){
     lowConfidence:recent.some(p=>p.confidence==='low')
   };
 }
+/* Exercise e1RM forecast (Section I2) \u2014 built directly on getE1RMTrend above, not a separate
+   calculation. "At this rate, roughly where you'd be in 4/8/12 weeks", always as a range that
+   widens the further out it projects, since a flat straight-line projection would overstate
+   how sure anyone can be about 12 weeks from now. */
+function getE1RMForecast(exerciseName){
+  const trend=getE1RMTrend(exerciseName);
+  if(!trend.available||trend.points.length<3)return{available:false};
+  return{
+    available:true,
+    currentE1RM:trend.currentE1RM,
+    ratePerWeek:trend.ratePerWeek,
+    lowConfidence:trend.lowConfidence,
+    trending:trend.trending,
+    projections:[4,8,12].map(w=>{
+      const mid=trend.currentE1RM+trend.ratePerWeek*w;
+      const spread=Math.max(2,Math.abs(trend.ratePerWeek*w*0.35));
+      return{weeks:w,low:Math.round((mid-spread)*10)/10,high:Math.round((mid+spread)*10)/10};
+    })
+  };
+}
 /* Reps decline across sets at a FIXED weight (not weight declining \u2014 that's what drop sets
    already do separately). Curve is category-specific: bodyweight fatigues fastest, isolation
    holds up best, compound sits between. */
@@ -2887,26 +3247,55 @@ function getModeratePrefill(targetWeight,numSets){
    through the moderate, no-1RM-chase model, rather than one flat scheme for everything. */
 /* Shared by getPrefillSets and getSuggestion so the advisory text and the actual prefilled
    numbers can never disagree \u2014 both call this same function for the target weight. */
-function getNextTargetWeight(orig,trackName,w,r){
+function getNextTargetWeight(orig,trackName,w,r,rir){
   const round=realisticWeightRound;
   const targetR=orig.r&&orig.r.includes&&orig.r.includes('\u2013')?Number(orig.r.split('\u2013')[1]):(parseInt(orig.r)||r);
   const gotTop=r>=targetR;
   const isCompound=orig.compound!==false;
   let recW=w;
+  if(orig.assistWeight){
+    /* Assist machines work backwards from every other exercise: less weight means less help,
+       which means more effort. Hitting the rep target is real progress here, and progress
+       means reducing the assist, not adding more of it. The trend math elsewhere assumes
+       higher weight means higher capacity, which doesn't invert cleanly, so this uses a
+       simple, correctly-directed decrement instead rather than risk an inverted trend
+       suggestion, floored at zero rather than a negative assist weight. */
+    if(gotTop){
+      const step=w<20?1:2.5;
+      recW=Math.max(0,round(w-step));
+    }
+    return{recW,isCompound:false,gotTop,targetR};
+  }
   if(gotTop||isCompound){
     const inc=isCompound?2.5:1.0;
     const trend=getE1RMTrend(trackName);
+    let bump=inc;
     if(trend.available&&!trend.lowConfidence&&trend.trending==='up'){
-      recW=round(w+Math.max(inc,Math.min(inc*2,trend.ratePerWeek*0.5)));
-    }else if(gotTop||isCompound){
-      recW=round(w+inc);
+      bump=Math.max(inc,Math.min(inc*2,trend.ratePerWeek*0.5));
     }
+    /* RIR/RPE modifier \u2014 confirmed, top-set-only signal that genuinely drives this suggestion,
+       not just logged and ignored. Low RIR (0\u20131: last top set was already at or near maximal
+       effort even though the rep target was hit) caps the bump at the plain base increment,
+       since stacking the trend bonus on top of an already-maximal set risks a number the body
+       cannot do. High RIR (3+: real reps left in the tank) justifies landing at the top of the
+       SAME range the trend bonus was already allowed to reach \u2014 this never introduces a bigger
+       jump than the trend logic could already produce, it only picks which end of that existing
+       range fits what actually happened last time. Undefined/null rir (no RIR captured, e.g.
+       any session before this feature existed) leaves bump untouched \u2014 old data behaves exactly
+       as before. */
+    if(rir!==undefined&&rir!==null){
+      if(rir<=1)bump=Math.min(bump,inc);
+      else if(rir>=3)bump=Math.max(bump,inc*2);
+    }
+    if(gotTop||isCompound)recW=round(w+bump);
   }
   /* Real ceiling: small, individually-reasonable increments can still compound into numbers
      no real lifter would hit over many sessions \u2014 confirmed by simulation (83% growth in 20
      sessions with no cap). Caps growth to at most 10% over roughly a month's worth of
      sessions, matching realistic natural strength-gain rates, regardless of how aggressive
-     the raw trend math looks session to session. */
+     the raw trend math looks session to session. This applies AFTER the RIR modifier above,
+     so a high-RIR bump still cannot exceed it \u2014 RIR only ever picks a point within the range
+     this ceiling was already going to allow, never a reason to widen the ceiling itself. */
   const hist=getExHistory(trackName);
   if(hist.length>=6){
     const refW=parseFloat(hist[Math.max(0,hist.length-8)].best.w);
@@ -2934,7 +3323,7 @@ function getPrefillSets(orig,trackName,numSets){
     });
   }
   const w=parseFloat(lastBest.w),r=parseInt(lastBest.r);
-  const{recW,isCompound}=getNextTargetWeight(orig,trackName,w,r);
+  const{recW,isCompound}=getNextTargetWeight(orig,trackName,w,r,lastBest.rir);
   return isCompound?getRampPrefill(recW,numSets):getModeratePrefill(recW,numSets);
 }
 
@@ -3203,8 +3592,10 @@ function showDayFood(dateKey){
   </div>`;
 }
 
-function searchExHistory(query){
-  const el=document.getElementById('ex-history-result');if(!el||!query.trim())return;
+let _progExDiagCharts=[];
+function searchExHistory(query,targetId){
+  targetId=targetId||'ex-history-result';
+  const el=document.getElementById(targetId);if(!el||!query.trim())return;
   const q=query.trim().toLowerCase();
   const allNames=new Set();
   for(let i=0;i<localStorage.length;i++){
@@ -3214,6 +3605,7 @@ function searchExHistory(query){
     if(!sess||!sess.exercises)continue;
     sess.exercises.forEach(e=>{if(e.name&&e.name.toLowerCase().includes(q))allNames.add(e.name);if(e.origName&&e.origName.toLowerCase().includes(q))allNames.add(e.origName);});
   }
+  _progExDiagCharts.forEach(c=>c&&c.destroy());_progExDiagCharts=[];
   if(!allNames.size){el.innerHTML=`<div style="font-size:13px;color:var(--dim);padding:8px">No exercise found matching "${query}"</div>`;return;}
   // Detect inputType from exercise definition
   function getInputType(name){
@@ -3236,12 +3628,18 @@ function searchExHistory(query){
     if(itype==='reps_each')return best.w+' each side';
     return best.w+'kg \u00d7 '+(best.r||0);
   }
-  let html='';
+  let html='';const diagJobs=[];let idx=0;
   for(const name of allNames){
     const itype=getInputType(name);
     const hist=getExHistory(name);
     if(!hist.length)continue;
     const isRepsFirst=itype==='bodyweight';
+    const bestEver=hist.reduce((best,h)=>{
+      if(!h.best)return best;
+      const val=isRepsFirst?parseInt(h.best.r||0):parseFloat(h.best.w||0);
+      const bestVal=best?(isRepsFirst?parseInt(best.r||0):parseFloat(best.w||0)):-Infinity;
+      return val>bestVal?h.best:best;
+    },null);
     const chartPts=hist.filter(h=>h.best&&(isRepsFirst?h.best.r:h.best.w)).map(h=>({
       y:isRepsFirst?parseInt(h.best.r||0):parseFloat(h.best.w),
       label:h.date.slice(5),date:h.date,pr:h.isPR
@@ -3249,9 +3647,30 @@ function searchExHistory(query){
     const chartLabel=itype==='bodyweight'?'Reps per session':itype==='seconds'?'Seconds held':itype==='reps_each'?'Reps per side':'Best weight (kg)';
     const chartUnit=itype==='bodyweight'?'reps':itype==='seconds'?'s':itype==='reps_each'?'/side':'kg';
     const lastBest=hist[hist.length-1]?.best;
-    const liveSugg=lastBest?getSuggestion(getExDef(name,itype),lastBest,name):'';
-    html+=`<div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif;margin-bottom:10px;color:var(--txt)">${name}</div>
+    const def=getExDef(name,itype);
+    const liveSugg=lastBest?getSuggestion(def,lastBest,name):'';
+    const diagId='ex-mini-diag-'+(idx++);
+    const tag=(def.primaryMuscles||[])[0];
+    if(tag)diagJobs.push({diagId,tag});
+    html+=`<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:10px">
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif;margin-bottom:4px;color:var(--txt)">${name}</div>
+        ${bestEver?`<div style="font-size:13px;color:var(--grn);font-weight:700">Best ever: ${fmtBest(bestEver,itype)}</div>`:''}
+      </div>
+      ${tag?`<div id="${diagId}" style="width:70px;flex-shrink:0"></div>`:''}
+    </div>
     ${chartPts.length>=2?`<div class="chart-wrap"><div class="chart-label">${chartLabel}</div>${buildSVG(chartPts,'var(--cyan)',chartUnit)}<div style="font-size:11px;color:var(--dim);margin-top:4px">&#x25CF; Yellow dots = personal records</div></div>`:''}
+    ${itype==='weight'?(()=>{
+      const fc=getE1RMForecast(name);
+      if(!fc.available)return '';
+      return `<div style="margin:10px 0;padding:10px 12px;background:var(--c2);border-radius:10px">
+        <div style="font-size:11px;color:var(--mut);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">e1RM forecast${fc.lowConfidence?' (low confidence \u2014 higher-rep sets)':''}</div>
+        ${fc.trending==='flat'?`<div style="font-size:13px;color:var(--mut)">Trend is essentially flat right now \u2014 not enough real movement to project forward meaningfully.</div>`
+          :`<div style="display:flex;gap:10px;flex-wrap:wrap">
+          ${fc.projections.map(p=>`<div style="text-align:center;flex:1;min-width:70px"><div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px">${p.weeks}wk</div><div style="font-size:13px;font-weight:700;color:var(--txt)">${p.low}\u2013${p.high}kg</div></div>`).join('')}
+          </div><div style="font-size:11px;color:var(--dim);margin-top:6px">At this rate, roughly \u2014 a range, not a promise.</div>`}
+      </div>`;
+    })():''}
     <div style="margin-top:12px">
       ${hist.slice().reverse().map(h=>`<div class="hist-ex-row">
         <div class="hist-date">${h.date}</div>
@@ -3263,6 +3682,7 @@ function searchExHistory(query){
     <div class="sep"></div>`;
   }
   el.innerHTML=html||`<div style="font-size:13px;color:var(--dim);padding:8px">No data logged for "${query}" yet</div>`;
+  diagJobs.forEach(({diagId,tag})=>{const c=mountSingleMuscleDiagram(diagId,tag,null);if(c)_progExDiagCharts.push(c);});
 }
 
 /* ===== FLARE GUIDE ===== */
