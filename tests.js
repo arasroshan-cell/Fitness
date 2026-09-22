@@ -12,7 +12,7 @@ function T(name, cond) {
 }
 
 /* ---------- Static checks (grep-level) ---------- */
-T('version stamp v5.5 in header', /Roshan Fitness v5\.5/.test(src));
+T('version stamp v5.6 in header', /Roshan Fitness v5\.6/.test(src));
 T('N1: no slice(-52) remains', !src.includes('slice(-52)'));
 T('N1: two slice(-260) caps present', (src.match(/slice\(-260\)/g) || []).length === 2);
 T('N2: three fibreRisk flags', (src.match(/fibreRisk:true/g) || []).length === 3);
@@ -71,7 +71,7 @@ const localStorage = {
   key: i => Object.keys(store)[i] ?? null,
   get length() { return Object.keys(store).length; }
 };
-const elStub = () => ({ style: {}, innerHTML: '', textContent: '', value: '', addEventListener: () => {}, appendChild: () => {}, querySelector: () => null, classList: { add: () => {}, remove: () => {}, toggle: () => {} }, closest: () => null, insertAdjacentHTML: () => {}, click: () => {} });
+const elStub = () => ({ style: {}, innerHTML: '', textContent: '', value: '', addEventListener: () => {}, appendChild: () => {}, querySelector: () => null, classList: { add: () => {}, remove: () => {}, toggle: () => {} }, closest: () => null, insertAdjacentHTML: () => {}, click: () => {}, remove: () => {}, onclick: null });
 const document = new Proxy({}, { get: (t, p) => {
   if (p === 'getElementById' || p === 'querySelector') return () => elStub();
   if (p === 'querySelectorAll') return () => [];
@@ -85,18 +85,18 @@ const scriptBlocks = [...src.matchAll(/<script>([\s\S]*?)<\/script>/g)];
 const script = scriptBlocks[scriptBlocks.length - 1][1];
 try {
   const run = new Function('localStorage', 'document', 'window', 'navigator', 'fetch', 'File', 'URL', 'Blob', 'alert', 'confirm',
-    script + '\n;return {bestSetOf, checkPR, todayKey, monthKey, prevMonthKey, mergedMlog, isSymptomDay, fibreWarnHTML, lsS, lsG, getSuggestion, FOODS, SUB_TYPE_OVERRIDE, inferSubWlabel, getProfile, saveProfile, Coach, getExHistory, saveSession, WS, initWS, DAYS, findExDef, getSmoothedWeight, Data, estimate1RM, getE1RMTrend, getPrefillSets, getFatigueCurve, getMealGapSuggestion, getSwapSuggestions, getFoodSymptomCorrelation, getRampPrefill, getModeratePrefill, resolveClickedTag, resolveClickedTagsAll, getExercisesForMuscleTag, LIB_ID_TO_TAGS, getBodyStatsReminderDays, getFoodLoggingGapDays, getSuggestedSessionExercises, getFreeSessionExerciseList, renderLineChartSVG, getWeightTrendPoints, getExerciseTrendPoints, allMuscleTagsWithExercises, startFreeSession, addToFreeSession, togDone, addSet, addDropSet, liveCoachAdjust, getFrequentFoods, allFoods, foodOptsHtmlByRole, getNextTargetWeight, getWeightForecast, getE1RMForecast, getAdaptiveNutritionSuggestion, gramsToCloseProteinGap, SUBS};');
+    script + '\n;return {bestSetOf, checkPR, todayKey, monthKey, prevMonthKey, mergedMlog, isSymptomDay, fibreWarnHTML, lsS, lsG, getSuggestion, FOODS, SUB_TYPE_OVERRIDE, inferSubWlabel, getProfile, saveProfile, Coach, getExHistory, saveSession, WS, initWS, DAYS, findExDef, getSmoothedWeight, Data, estimate1RM, getE1RMTrend, getPrefillSets, getFatigueCurve, getMealGapSuggestion, getSwapSuggestions, getFoodSymptomCorrelation, getRampPrefill, getModeratePrefill, resolveClickedTag, resolveClickedTagsAll, getExercisesForMuscleTag, LIB_ID_TO_TAGS, getBodyStatsReminderDays, getFoodLoggingGapDays, getSuggestedSessionExercises, getFreeSessionExerciseList, renderLineChartSVG, getWeightTrendPoints, getExerciseTrendPoints, allMuscleTagsWithExercises, startFreeSession, addToFreeSession, togDone, addSet, addDropSet, liveCoachAdjust, getFrequentFoods, allFoods, foodOptsHtmlByRole, getNextTargetWeight, getWeightForecast, getE1RMForecast, getAdaptiveNutritionSuggestion, gramsToCloseProteinGap, SUBS, editSession, repairHistoricalSessions, resolveStaleDraftSave, skipSession, getNextIdx, computeExVolume, startSession, saveDraft, get adHocDay(){return adHocDay;}, get adHocSeqIdx(){return adHocSeqIdx;}, get editingDate(){return editingDate;}, get _staleDraftPending(){return _staleDraftPending;}, set _staleDraftPending(v){_staleDraftPending=v;}};');
   const app = run(localStorage, document, window, navigator, () => Promise.reject(new Error('offline')), function(){}, { createObjectURL: () => '' , revokeObjectURL: () => {} }, function(){}, () => {}, () => true);
 
   /* D2: bodyweight PR by reps at constant weight */
-  const bwBest = app.bestSetOf([{ w: '85', r: '8' }, { w: '85', r: '10' }, { w: '85', r: '9' }], 'bodyweight');
+  const bwBest = app.bestSetOf([{ w: '85', r: '8', done: true }, { w: '85', r: '10', done: true }, { w: '85', r: '9', done: true }], 'bodyweight');
   T('D2: bodyweight best set picks highest reps (10)', bwBest && bwBest.r === '10');
   T('D2: bodyweight PR fires on rep increase', (app.lsS('pr:Pull-ups (unassisted)', { w: '85', r: '9', date: '2026-07-01' }), app.checkPR('Pull-ups (unassisted)', bwBest, 'bodyweight') === true));
   /* D2: weighted unchanged */
-  const wBest = app.bestSetOf([{ w: '60', r: '8' }, { w: '65', r: '6' }], 'weight');
+  const wBest = app.bestSetOf([{ w: '60', r: '8', done: true }, { w: '65', r: '6', done: true }], 'weight');
   T('D2: weighted best set still picks highest weight (65)', wBest && wBest.w === '65');
   /* D2: seconds picks longest hold */
-  const sBest = app.bestSetOf([{ w: '40' }, { w: '55' }, { w: '50' }], 'seconds');
+  const sBest = app.bestSetOf([{ w: '40', done: true }, { w: '55', done: true }, { w: '50', done: true }], 'seconds');
   T('D2: timed best set picks longest hold (55s)', sBest && sBest.w === '55');
   /* D2: drop-set-free empty input returns null */
   T('D2: no valid sets returns null', app.bestSetOf([{ w: '', r: '' }], 'weight') === null);
@@ -158,7 +158,7 @@ try {
   T('Free session: saveSession never writes a real seqIdx or corrupts last_seq_idx for a free session', src.includes("const isFree=seqIdx==='free'") && src.includes('if(!isFree)lsS(\'last_seq_idx\',seqIdx)'));
   T('Free session: init-time draft restoration handles free sessions correctly, not just the 4 fixed day labels', src.includes("d.dl==='Free session'") && src.includes('adHocSeqIdx=null'));
   T('Deep-dive find: editSession can reconstruct a saved free session (was silently failing after any state reload)', (() => {
-    const i = src.indexOf('function editSession()');
+    const i = src.indexOf('function editSession(dateKey)');
     const body = src.slice(i, i + 700);
     return body.includes("const isFree=ex.dl==='Free session'") && body.includes('findExDef(e.origName)');
   })());
@@ -233,10 +233,10 @@ try {
   T('Data layer migration: checkPR uses Data.pr instead of raw lsG/lsS calls', (() => {
     const i = src.indexOf('function checkPR(');
     const body = src.slice(i, i + 900);
-    return body.includes('Data.pr.get(origName)') && body.includes('Data.pr.set(origName') && !body.includes("'pr:'+origName");
+    return body.includes('Data.pr.get(origName)') && body.includes('Data.pr.restore(origName') && !body.includes("'pr:'+origName");
   })());
   T('Data layer migration: saveSession, editSession, skipSession, unskipSession all use Data.session instead of raw sess: keys', src.includes('Data.session.set(session,saveDate)') && src.includes('Data.session.delete()') && src.includes('Data.session.setLast('));
-  T('Data layer migration: saveDraft/clearDraft delegate to Data.draft, and the init-time restoration uses Data.draft.findAny() instead of duplicating the scan logic', src.includes('function saveDraft(dl){if(WS[dl])Data.draft.save(dl,WS[dl]);}') && src.includes('function clearDraft(){Data.draft.clearAll();}') && src.includes('const d=Data.draft.findAny();'));
+  T('Data layer migration: saveDraft/clearDraft delegate to Data.draft, and the init-time restoration uses Data.draft.findAny() instead of duplicating the scan logic', src.includes('function saveDraft(dl,dateKey){if(WS[dl])Data.draft.save(dl,WS[dl],dateKey||editingDate||todayKey());}') && src.includes('function clearDraft(dateKey){Data.draft.clear(dateKey||todayKey());}') && src.includes('const d=Data.draft.findAny();'));
   T('Data layer migration: zero raw pr:/sess:/last:/ws_draft: calls remain anywhere outside the Data namespace itself', (() => {
     const dataStart = src.indexOf('const Data={');
     const dataEnd = src.indexOf('\n};', dataStart) + 3;
@@ -249,11 +249,11 @@ try {
     return body.includes('renderFood();showFS(\'l\');');
   })());
   T('Feature: removeSet exists and delete control only shows for extra/drop sets, not standard ones', src.includes('function removeSet') && src.includes('const isExtra=isDrop||si>=(subOverride?.s||orig.s||3)'));
-  T('Feature: squat machine added as Leg press substitute with pain-stop caution baked into its name', src.includes("'Leg press':['Step-ups (bodyweight)','Wall sit (hold 60s)','Pendulum/hack squat machine (light weight only \\u2014 stop on any pain)']"));
+  T('Feature: squat machine added as Leg press substitute with pain-stop caution baked into its name', src.includes("Pendulum/hack squat machine (light weight only \\u2014 stop on any pain)'") && src.includes("'Leg press':['Step-ups (bodyweight)','Wall sit (hold 60s)','Pendulum/hack squat machine"));
 
   /* S1: PR keyed by actual performed exercise, not the originally scheduled one */
   app.lsS('pr:Cable tricep pushdown', null);
-  const s1Best = app.bestSetOf([{ w: '25', r: '8' }], 'weight');
+  const s1Best = app.bestSetOf([{ w: '25', r: '8', done: true }], 'weight');
   T('S1: checkPR keys correctly on the substitute name (Rope pushdown), not the original', app.checkPR('Rope pushdown', s1Best, 'weight') === true && app.lsG('pr:Rope pushdown') !== null && app.lsG('pr:Cable tricep pushdown') === null);
 
   /* S2: substitute type override table gives correct measurement type */
@@ -379,7 +379,7 @@ try {
     return rev.primaryMuscles[0] === 'Forearms' && rev.secondaryMuscles[0] === 'Brachialis' && ez.primaryMuscles[0] === 'Biceps';
   })());
   T('Bar weights: Smith machine pre-population moved to real app init, not tucked inside renderProgress \u2014 confirmed correct even if Progress tab is never visited', src.includes("(()=>{const bw=lsG('bar_weights')||{};if(!bw.smith){bw.smith='15';lsS('bar_weights',bw);}})();\ncheckStorage();"));
-  T('Real bug reported: saveSession now calls renderToday() immediately, not after a 5-second setTimeout that made the page look stuck \u2014 the exact behavior reported', src.includes('clearDraft();showStickyBtn(false);stopTimerTick();skipRestTimer();\n  renderToday();') && !src.includes("setTimeout(()=>{cb.style.display='none';renderToday();},5000)"));
+  T('Real bug reported: saveSession now calls renderToday() immediately, not after a 5-second setTimeout that made the page look stuck \u2014 the exact behavior reported', src.includes('clearDraft(saveDate);showStickyBtn(false);stopTimerTick();skipRestTimer();\n  adHocDay=null;adHocSeqIdx=null;editingDate=null;\n  renderToday();') && !src.includes("setTimeout(()=>{cb.style.display='none';renderToday();},5000)"));
   T('Save confirmation moved to a genuinely persistent toast element outside the content area, since the old confbox was actually rebuilt by renderToday() itself and got destroyed the moment the page transitioned \u2014 that\'s what the original 5-second delay was clumsily working around', src.includes('id="save-toast"') && src.includes("document.getElementById('save-toast')"));
   T('Real bug reported: tapping the biceps region now surfaces ALL three genuinely distinct groups sharing that spot (general Biceps curls, long-head-specific curls, brachialis-specific curls), not just one winner hiding the other two', (() => {
     const tags = app.resolveClickedTagsAll('biceps-left');
@@ -470,7 +470,7 @@ try {
   })());
   T('Real bug reported: Obliques data was always correct (Side plank exists, correctly tagged) \u2014 the actual problem was tap precision on a small mobile diagram, confirmed by the fact that direct tag resolution worked perfectly while the reported symptom only appeared through physical tapping', app.getExercisesForMuscleTag('Obliques').some(e => e.n === 'Side plank'));
   T('Real fix: a reliable muscle-name dropdown now exists as an alternative to tapping the diagram, directly solving the reported precision problem rather than trying to fight SVG hit-target sizing on mobile', src.includes('function allMuscleTagsWithExercises()') && (src.match(/allMuscleTagsWithExercises\(\)/g)||[]).length >= 3);
-  T('Real recurring bug reported: forgetting to save a workout used to silently mis-date it to whenever you next opened the app, with a meaningless multi-day duration \u2014 now detected at load time and the person gets a clear choice, every time, not left to accumulate and eventually save wrong', src.includes('let _staleDraftPending=null;') && src.includes("if(d.date&&d.date!==todayKey()){"));
+  T('Real recurring bug reported: forgetting to save a workout used to silently mis-date it to whenever you next opened the app, with a meaningless multi-day duration \u2014 now detected at load time and the person gets a clear choice, every time, not left to accumulate and eventually save wrong', src.includes('let _staleDraftPending=null;') && src.includes("d.date&&d.date!==todayKey()"));
   T('Stale draft fix: saveSession now accepts an explicit date, correctly saves under that real date (not today), skips a meaningless multi-day duration, and correctly computes which month\u2019s log entry to update \u2014 handles the draft spanning into a previous month too, not just a previous day', src.includes('function saveSession(dl,seqIdx,explicitDate)') && src.includes('const saveMonth=saveDate.slice(0,7);') && src.includes('const duration=(!explicitDate&&s.startAt)'));
   T('Stale draft fix: a genuine same-day draft (briefly closing the app mid-workout) is completely unaffected \u2014 still restores silently and normally, the new prompt only fires for a draft from a different calendar day', src.includes('WS[d.dl]=d.state;') && src.includes('_staleDraftPending={dl:d.dl,state:d.state,date:d.date};'));
   T('Freshness improvement 1: accumulated fatigue now sums residual fatigue across ALL recent hits, not just the single most recent one \u2014 hand-verified a repeated hit correctly lowers freshness below what a single isolated hit would show', (() => {
@@ -934,6 +934,445 @@ try {
   T('Correction: rest timer now customisable in the moment with both -30s and +30s, not just a one-directional extend', src.includes('onclick="extendRestTimer(-30)">-30s<') && src.includes('onclick="extendRestTimer(30)">+30s<'));
   T('Correction: extendRestTimer floors safely so -30s repeated taps can\u2019t drive the countdown negative or divide-by-zero the progress bar', src.includes('_restTimerEndAt=Math.max(Date.now()+minRemaining,_restTimerEndAt+sec*1000);') && src.includes('_restTimerDuration=Math.max(5,_restTimerDuration+sec);'));
   T('Correction: adaptive nutrition target now confirms before changing the real kcal target, given Boss\u2019s own stated uncertainty about the feature and its medical-adjacent nature', src.includes("if(!confirm('Change your daily kcal target from '+p.targets.kcal+' to '+newKcal"));
+
+  /* ---------- v5.6 FIX 1: ghost-recorded exercises \u2014 bestSetOf/saveSession now require st.done===true ---------- */
+  T('FIX1: bestSetOf no longer counts a prefilled-but-undone set as a real lift (reproduces the Face pulls 18-Aug ghost-PR mechanism \u2014 valid w/r sitting in the fields from prefill, but never touched)', app.bestSetOf([{w:'12',r:'15',done:false}],'weight') === null);
+  T('FIX1: bestSetOf still picks the genuinely best DONE set among a mix of done and undone sets, ignoring the undone ones entirely', (() => {
+    const b = app.bestSetOf([{w:'20',r:'12',done:true},{w:'25',r:'10',done:false},{w:'22',r:'11',done:true}],'weight');
+    return b.w === '22';
+  })());
+  T('FIX1: an exercise with zero done sets saves as notPerformed:true, best:null, exVolume:0, and never fires a PR (reproduces the Incline press (Smith machine) 26-Aug/5-Sep ghost-PR mechanism)', (() => {
+    app.startFreeSession();
+    app.addToFreeSession('Incline press (Smith machine)');
+    const ex = app.WS['Free session'].ex[0];
+    ex.sets = [{w:'60',r:'8',pw:'60',pr:'8',done:false,isDrop:false}];
+    app.saveSession('Free session','free');
+    const saved = app.Data.session.get();
+    const e = saved.exercises[0];
+    return e.notPerformed === true && e.best === null && e.exVolume === 0 && e.isPR === false && (saved.newPRs||[]).length === 0;
+  })());
+  T('FIX1: a not-performed exercise is not silently dropped from the saved session \u2014 it still appears in exercises[] with its name intact, just flagged', (() => {
+    app.startFreeSession();
+    app.addToFreeSession('Dumbbell shrugs');
+    const ex = app.WS['Free session'].ex[0];
+    ex.sets = [{w:'15',r:'15',pw:'15',pr:'15',done:false,isDrop:false}];
+    app.saveSession('Free session','free');
+    const saved = app.Data.session.get();
+    return saved.exercises.length === 1 && saved.exercises[0].name === 'Dumbbell shrugs' && saved.exercises[0].notPerformed === true;
+  })());
+  T('FIX1: partial completion only counts DONE sets toward exVolume, not prefilled-but-untouched sets sitting alongside real ones (reproduces the Lat pulldown 27-Aug/2-Sep mechanism where some sets were real and others were ghost)', (() => {
+    app.startFreeSession();
+    app.addToFreeSession('Lat pulldown');
+    const ex = app.WS['Free session'].ex[0];
+    ex.sets = [{w:'50',r:'10',pw:'50',pr:'10',done:true,isDrop:false},{w:'50',r:'10',pw:'50',pr:'10',done:false,isDrop:false}];
+    app.saveSession('Free session','free');
+    const saved = app.Data.session.get();
+    const e = saved.exercises[0];
+    return e.notPerformed === false && e.exVolume === 500 && e.best && e.best.w === '50';
+  })());
+  T('FIX1: a fully-completed exercise is unaffected by the done-gating \u2014 no regression for genuine sets (sanity check against the fix itself)', (() => {
+    app.startFreeSession();
+    app.addToFreeSession('Face pulls');
+    const ex = app.WS['Free session'].ex[0];
+    ex.sets = [{w:'15',r:'15',pw:'15',pr:'15',done:true,isDrop:false},{w:'17',r:'18',pw:'17',pr:'18',done:true,isDrop:false}];
+    app.saveSession('Free session','free');
+    const saved = app.Data.session.get();
+    const e = saved.exercises[0];
+    return e.notPerformed === false && e.best.w === '17' && e.exVolume === (15*15+17*18);
+  })());
+
+  /* ---------- v5.6 FIX 3: Free/Suggested sessions now show the completion screen after save ---------- */
+  T('FIX3: saveSession clears adHocDay/adHocSeqIdx/editingDate on a real save, so the Today tab\u2019s existing completion-screen branch (gated on !adHocDay) now fires for Free sessions exactly as it already did for structured days', (() => {
+    app.startFreeSession();
+    app.addToFreeSession('Face pulls');
+    const ex = app.WS['Free session'].ex[0];
+    ex.sets = [{w:'15',r:'15',pw:'15',pr:'15',done:true,isDrop:false}];
+    app.saveSession('Free session','free');
+    return app.adHocDay === null && app.adHocSeqIdx === null && app.editingDate === null;
+  })());
+  T('FIX3: the clearing happens inside the successful-save path itself, not gated to a specific session type \u2014 confirmed by source position (after skipRestTimer, before renderToday, inside saveSession)', src.includes('clearDraft(saveDate);showStickyBtn(false);stopTimerTick();skipRestTimer();\n  adHocDay=null;adHocSeqIdx=null;editingDate=null;\n  renderToday();'));
+
+  /* ---------- v5.6 FIX 4: shareBackup no longer fails silently ---------- */
+  T('FIX4: a rejected navigator.share (cancelled sheet or genuine failure) now falls back to exportData\u2019s working download path instead of doing nothing', src.includes(".catch(()=>{exportData();});"));
+
+  /* ---------- v5.6 FIX 5: past-date session editing ---------- */
+  T('FIX5: editSession accepts a dateKey parameter instead of always assuming today', src.includes('function editSession(dateKey){'));
+  T('FIX5: editing a past date unlocks that date\u2019s real saved session into WS for editing, not today\u2019s (reproduces reopening an 18-Aug session)', (() => {
+    const pastDate = '2026-08-18';
+    app.Data.session.set({date:pastDate,dl:'Free session',seqIdx:null,exercises:[{name:'Face pulls',origName:'Face pulls',best:{w:'15',r:'15'},sets:[{w:'15',r:'15',done:true,isDrop:false}],chosenType:null,isPR:false,inputType:'weight',exVolume:225,notPerformed:false}],note:'',painNote:'',skipped:false,duration:5,newPRs:[],totalVolume:225}, pastDate);
+    app.editSession(pastDate);
+    const result = app.WS['Free session'] && app.WS['Free session'].ex[0].name === 'Face pulls' && app.editingDate === pastDate && app.Data.session.get(pastDate) === null;
+    app.lsS('ws_draft:'+pastDate, null);
+    return result;
+  })());
+  T('FIX5: editing today\u2019s own session still behaves exactly as before \u2014 editingDate stays null so a re-save lands back on today via the default saveDate, no regression for the existing today-only flow', (() => {
+    app.startFreeSession();
+    app.addToFreeSession('Face pulls');
+    let ex = app.WS['Free session'].ex[0];
+    ex.sets = [{w:'15',r:'15',pw:'15',pr:'15',done:true,isDrop:false}];
+    app.saveSession('Free session','free');
+    app.editSession();
+    return app.editingDate === null && app.WS['Free session'].ex[0].name === 'Face pulls';
+  })());
+  T('FIX5: unlocking a past date for editing does not touch last_seq_idx \u2014 only editing today\u2019s own structured session still rotates it, so reopening an old day can\u2019t desync which day the app suggests next', src.includes("if(!isFree&&isToday)lsS('last_seq_idx',(seqIdx+3)%4);"));
+  T('FIX5: History gets a tap-to-edit affordance on non-skipped rows of the last 14 days, calling editSession with that row\u2019s own date', src.includes('onclick="editSession(\'${s.date}\')" style="cursor:pointer"'));
+
+  /* ---------- v5.6 FIX 6 (partial): Calf raises \u2014 Boss confirmed pendulum squat machine, plates loaded, not the bodyweight-style "Add kg if weighted" phrasing ---------- */
+  T('FIX6: Calf raises wlabel now names the real equipment (pendulum squat machine, plates loaded) instead of the ambiguous bodyweight-style "Add kg if weighted" \u2014 Boss confirmed this is inputType:weight with real plates, not a bodyweight-plus-addon exercise', (() => {
+    const i = src.indexOf("n:'Calf raises'");
+    const seg = src.slice(i, src.indexOf('},', i));
+    return seg.includes("wlabel:'Plates loaded (pendulum squat machine)'") && seg.includes("inputType:'weight'") && !seg.includes('Add kg if weighted');
+  })());
+
+  /* ---------- v5.6 FIX 6 (full check): combined-equipment entries split into genuinely separate exercises, per Boss's "ALL LABELS MUST MATCH EXERCISE, not combined for substitutes" rule. Old combined entries kept fully resolvable for historical data \u2014 Boss confirmed he has logged sessions under some of them. ---------- */
+  T('FIX6 split: Overhead tricep extension\u2019s wlabel now matches its own long-standing "Rope attachment" cue (Stack weight, not DB one-hand) \u2014 both DAYS instances (Push day + Push-2 alt superset)', (() => {
+    const occurrences = [...src.matchAll(/\{n:'Overhead tricep extension'[^}]*\}/g)];
+    return occurrences.length === 2 && occurrences.every(m => m[0].includes("wlabel:'Stack weight'") && /rope attachment/i.test(m[0]) && !m[0].includes('DB weight (one hand)'));
+  })());
+  T('FIX6 split: a genuinely separate one-hand DB overhead extension now exists as its own correctly-labeled substitute, instead of being crammed into the primary\u2019s contradictory label', (() => {
+    const d = app.findExDef('One-hand DB overhead extension');
+    return d && d.wlabel === 'DB weight (one hand)' && d.nt.includes('one hand') && app.SUBS['Overhead tricep extension'].includes('One-hand DB overhead extension');
+  })());
+  T('FIX6 split: the OLD combined "Skull crushers" entry is untouched \u2014 still resolvable exactly as before, for any historical session logged under that name', (() => {
+    const d = app.findExDef('Skull crushers');
+    return d.wlabel === 'Total kg incl. bar (EZ bar or Smith bar \u2014 your call)' && app.SUBS['Overhead tricep extension'].includes('Skull crushers');
+  })());
+  T('FIX6 split: Skull crushers (EZ bar) and Skull crushers (Smith bar) exist as genuinely separate, correctly-labeled substitutes going forward', (() => {
+    const ez = app.findExDef('Skull crushers (EZ bar)'), sm = app.findExDef('Skull crushers (Smith bar)');
+    return ez && ez.wlabel.includes('EZ bar') && !ez.wlabel.includes('Smith') && sm && sm.wlabel.includes('Smith bar') && !sm.wlabel.includes('EZ bar');
+  })());
+  T('FIX6 split: the OLD combined "T-bar row" entry is untouched for history, and T-bar row (machine) / T-bar row (landmine) exist as separate, unambiguous substitutes going forward', (() => {
+    const old = app.findExDef('T-bar row');
+    const machine = app.findExDef('T-bar row (machine)'), landmine = app.findExDef('T-bar row (landmine)');
+    return old.wlabel.includes('or landmine attachment') && app.SUBS['Seated cable row'].includes('T-bar row') &&
+      machine && machine.wlabel === 'Total kg loaded (plates on the bar)' &&
+      landmine && landmine.wlabel === 'Total kg loaded (landmine attachment, one end anchored)';
+  })());
+  T('FIX6 split: the OLD combined "Pendulum/hack squat machine" substitute is untouched for history, and Pendulum squat machine / Hack squat machine now exist as separate substitutes with an explicit wlabel instead of relying on generic inference', (() => {
+    const old = app.findExDef('Pendulum/hack squat machine (light weight only \u2014 stop on any pain)');
+    const pend = app.findExDef('Pendulum squat machine (light weight only \u2014 stop on any pain)');
+    const hack = app.findExDef('Hack squat machine (light weight only \u2014 stop on any pain)');
+    return old && app.SUBS['Leg press'].includes('Pendulum/hack squat machine (light weight only \u2014 stop on any pain)') &&
+      pend && pend.wlabel === 'Total kg loaded (plates)' && hack && hack.wlabel === 'Total kg loaded (plates)';
+  })());
+
+  /* ---------- v5.6 FIX 2: historical repair pass \u2014 sandboxed fixtures reproducing a fabricated PR from real stored data ---------- */
+  app.lsS('pr:Dumbbell shrugs', null);
+  app.lsS('sess:2026-08-18', {date:'2026-08-18',dl:'Free session',seqIdx:null,
+    exercises:[{name:'Dumbbell shrugs',origName:'Dumbbell shrugs',best:{w:'20',r:'15'},sets:[{w:'20',r:'15',done:false,isDrop:false}],chosenType:null,isPR:true,inputType:'weight',exVolume:300}],
+    note:'',painNote:'',skipped:false,duration:5,newPRs:['Dumbbell shrugs'],totalVolume:300},'2026-08-18');
+  T('FIX2: dry run correctly identifies the fabricated PR from real stored done flags (reproduces exactly the 6-case mechanism: isPR:true was saved from a set that was never marked done)', (() => {
+    const plan = app.repairHistoricalSessions(true);
+    const hit = plan.find(c => c.dateKey === '2026-08-18');
+    return !!hit && hit.before.newPRs.includes('Dumbbell shrugs') && !hit.after.newPRs.includes('Dumbbell shrugs') && hit.after.totalVolume === 0;
+  })());
+  T('FIX2: dry run mutates nothing \u2014 the stored session and the pr: record are both exactly as they were before the dry run ran', (() => {
+    const before = JSON.stringify(app.lsG('sess:2026-08-18'));
+    const prBefore = app.lsG('pr:Dumbbell shrugs');
+    app.repairHistoricalSessions(true);
+    const after = JSON.stringify(app.lsG('sess:2026-08-18'));
+    const prAfter = app.lsG('pr:Dumbbell shrugs');
+    return before === after && JSON.stringify(prBefore) === JSON.stringify(prAfter);
+  })());
+  T('FIX2: a real (non-dry) run corrects the stored session in place \u2014 isPR false, notPerformed true, best null, exVolume 0, newPRs empty \u2014 without touching date/dl/note/painNote/duration', (() => {
+    app.repairHistoricalSessions(false);
+    const s = app.lsG('sess:2026-08-18');
+    const e = s.exercises[0];
+    return e.isPR === false && e.notPerformed === true && e.best === null && e.exVolume === 0 &&
+      s.newPRs.length === 0 && s.totalVolume === 0 &&
+      s.date === '2026-08-18' && s.dl === 'Free session' && s.duration === 5;
+  })());
+  T('FIX2: the repair pass never touches food logs, symptom logs, or body stats \u2014 only sess: keys', (() => {
+    app.lsS('food:2026-08-18', [{name:'test food', p: 30, k: 200}]);
+    app.lsS('sym:2026-08-18', {energy: 3, seton: 2, bowel: 'normal'});
+    app.lsS('bstats', [{date:'2026-08-18', w: 84, fm: 21}]);
+    app.repairHistoricalSessions(false);
+    return JSON.stringify(app.lsG('food:2026-08-18')) === JSON.stringify([{name:'test food', p: 30, k: 200}]) &&
+      JSON.stringify(app.lsG('sym:2026-08-18')) === JSON.stringify({energy: 3, seton: 2, bowel: 'normal'}) &&
+      JSON.stringify(app.lsG('bstats')) === JSON.stringify([{date:'2026-08-18', w: 84, fm: 21}]);
+  })());
+  T('FIX2: chronological replay still lets a genuinely later best register as a real PR once the fabricated earlier one is removed (proves the fix doesn\u2019t just zero everything out \u2014 real progress still counts)', (() => {
+    app.lsS('pr:Dumbbell shrugs', null);
+    app.lsS('sess:2026-08-18', {date:'2026-08-18',dl:'Free session',seqIdx:null,
+      exercises:[{name:'Dumbbell shrugs',origName:'Dumbbell shrugs',best:{w:'20',r:'15'},sets:[{w:'20',r:'15',done:false,isDrop:false}],chosenType:null,isPR:true,inputType:'weight',exVolume:300}],
+      note:'',painNote:'',skipped:false,duration:5,newPRs:['Dumbbell shrugs'],totalVolume:300},'2026-08-18');
+    app.lsS('sess:2026-08-25', {date:'2026-08-25',dl:'Free session',seqIdx:null,
+      exercises:[{name:'Dumbbell shrugs',origName:'Dumbbell shrugs',best:{w:'22',r:'12'},sets:[{w:'22',r:'12',done:true,isDrop:false}],chosenType:null,isPR:false,inputType:'weight',exVolume:264}],
+      note:'',painNote:'',skipped:false,duration:5,newPRs:[],totalVolume:264},'2026-08-25');
+    app.repairHistoricalSessions(false);
+    const early = app.lsG('sess:2026-08-18').exercises[0];
+    const later = app.lsG('sess:2026-08-25').exercises[0];
+    return early.isPR === false && early.notPerformed === true && later.isPR === true && app.lsG('pr:Dumbbell shrugs').w === '22';
+  })());
+
+  /* ---------- v5.6 post-delivery audit fixes (code-review, 2026-09-22): 3 real bugs found and fixed before merge ---------- */
+  T('Audit fix 1: repairHistoricalSessions keys checkPR by the exercise actually PERFORMED (e.name), not the originally-scheduled one (e.origName) — reproduces a substitute (Skull crushers) being wrongly credited to the original (Overhead tricep extension)', (() => {
+    app.lsS('pr:Overhead tricep extension', null);
+    app.lsS('pr:Skull crushers', null);
+    app.lsS('sess:2026-08-10', {date:'2026-08-10',dl:'Free session',seqIdx:null,
+      exercises:[{name:'Skull crushers',origName:'Overhead tricep extension',best:{w:'20',r:'8'},sets:[{w:'20',r:'8',done:true,isDrop:false}],chosenType:null,isPR:false,inputType:'weight',exVolume:160,notPerformed:false}],
+      note:'',painNote:'',skipped:false,duration:5,newPRs:[],totalVolume:160},'2026-08-10');
+    app.repairHistoricalSessions(false);
+    const result = app.lsG('pr:Overhead tricep extension') === null && app.lsG('pr:Skull crushers') && app.lsG('pr:Skull crushers').w === '20';
+    app.lsS('sess:2026-08-10', null);
+    return result;
+  })());
+  T('Audit fix 2: saveSession no longer overwrites the real "most recent session" cache (setLast) or last_seq_idx when re-saving a past-dated session via editSession — reproduces editing an old Free session clobbering today’s real last-session prefill data', (() => {
+    app.startFreeSession();
+    app.addToFreeSession('Face pulls');
+    app.WS['Free session'].ex[0].sets = [{w:'40',r:'15',pw:'40',pr:'15',done:true,isDrop:false}];
+    app.saveSession('Free session','free');
+    const realLast = JSON.stringify(app.Data.session.getLast('Free session'));
+    app.lsS('sess:2019-05-05', {date:'2019-05-05',dl:'Free session',seqIdx:null,
+      exercises:[{name:'Face pulls',origName:'Face pulls',best:{w:'10',r:'10'},sets:[{w:'10',r:'10',done:true,isDrop:false}],chosenType:null,isPR:false,inputType:'weight',exVolume:100,notPerformed:false}],
+      note:'',painNote:'',skipped:false,duration:3,newPRs:[],totalVolume:100},'2019-05-05');
+    app.editSession('2019-05-05');
+    app.saveSession('Free session','free',app.editingDate);
+    const result2 = JSON.stringify(app.Data.session.getLast('Free session')) === realLast;
+    app.lsS('sess:2019-05-05', null);
+    return result2;
+  })());
+  T('Audit fix 2b: last_seq_idx is not rotated when re-saving an ALREADY-RECORDED past-dated structured session via editSession — only a genuine today save, or backfilling a session that was never saved, should advance the rotation', (() => {
+    app.lsS('last_seq_idx', 2);
+    app.lsS('sess:2019-05-06', {date:'2019-05-06',dl:'Push day',seqIdx:0,
+      exercises: app.DAYS[0].ex.map(e => ({name: e.n, origName: e.n, best:{w:'40',r:'8'}, sets: [{w:'40',r:'8',done:true,isDrop:false}], chosenType: null, isPR:false, inputType:'weight', exVolume:320, notPerformed:false})),
+      note:'',painNote:'',skipped:false,duration:5,newPRs:[],totalVolume:320*app.DAYS[0].ex.length},'2019-05-06');
+    app.editSession('2019-05-06');
+    app.saveSession('Push day', 0, app.editingDate);
+    const result2b = app.lsG('last_seq_idx') === 2;
+    app.lsS('sess:2019-05-06', null);
+    return result2b;
+  })());
+  T('Audit fix 3: a dry-run repair preview no longer permanently loses the real date a PR was achieved — reproduces merely PREVIEWING the repair (which always runs a dry run first) silently re-stamping today’s date onto a genuine old PR', (() => {
+    app.lsS('pr:Face pulls', {w:'18',r:'20',date:'2026-01-05'});
+    app.lsS('sess:2026-01-05b', {date:'2026-01-05',dl:'Free session',seqIdx:null,
+      exercises:[{name:'Face pulls',origName:'Face pulls',best:{w:'18',r:'20'},sets:[{w:'18',r:'20',done:true,isDrop:false}],chosenType:null,isPR:true,inputType:'weight',exVolume:360,notPerformed:false}],
+      note:'',painNote:'',skipped:false,duration:5,newPRs:['Face pulls'],totalVolume:360},'2026-01-05b');
+    app.repairHistoricalSessions(true);
+    const result3 = app.lsG('pr:Face pulls').date === '2026-01-05';
+    app.lsS('sess:2026-01-05b', null);
+    return result3;
+  })());
+  T('Audit fix 3b: a REAL (committed, non-dry-run) repair that discovers a genuinely corrected PR stamps it with the actual historical session date, not the day the repair tool happened to run — the dry-run fix alone did not cover this, the only run that permanently persists', (() => {
+    app.lsS('pr:Dumbbell shrugs', null);
+    app.lsS('sess:2018-03-03', {date:'2018-03-03',dl:'Free session',seqIdx:null,
+      exercises:[{name:'Dumbbell shrugs',origName:'Dumbbell shrugs',best:{w:'25',r:'12'},sets:[{w:'25',r:'12',done:true,isDrop:false}],chosenType:null,isPR:false,inputType:'weight',exVolume:300,notPerformed:false}],
+      note:'',painNote:'',skipped:false,duration:5,newPRs:[],totalVolume:300},'2018-03-03');
+    app.repairHistoricalSessions(false);
+    const pr = app.lsG('pr:Dumbbell shrugs');
+    const result3b = pr && pr.w === '25' && pr.date === '2018-03-03' && pr.date !== app.todayKey();
+    app.lsS('sess:2018-03-03', null);
+    return result3b;
+  })());
+  T('Audit fix 4: repairHistoricalSessions backs up and clears pr: records under BOTH the performed name and the originally-scheduled name, so a legacy pr: record keyed under the wrong name does not survive the repair as permanent orphaned data', (() => {
+    app.lsS('pr:Overhead tricep extension', {w:'99',r:'5',date:'2020-01-01'});
+    app.lsS('sess:2026-07-07', {date:'2026-07-07',dl:'Free session',seqIdx:null,
+      exercises:[{name:'Skull crushers',origName:'Overhead tricep extension',best:{w:'15',r:'10'},sets:[{w:'15',r:'10',done:true,isDrop:false}],chosenType:null,isPR:false,inputType:'weight',exVolume:150,notPerformed:false}],
+      note:'',painNote:'',skipped:false,duration:5,newPRs:[],totalVolume:150},'2026-07-07');
+    app.repairHistoricalSessions(false);
+    const result4 = app.lsG('pr:Overhead tricep extension') === null;
+    app.lsS('sess:2026-07-07', null);
+    return result4;
+  })());
+  T('Audit fix 5: saveSession still updates setLast/last_seq_idx for an explicitDate save that is NOT an editSession re-save (reproduces resolveStaleDraftSave backfilling a genuinely forgotten-but-recent session) — only editSession’s re-save of an already-recorded OLD session should skip this, not every explicitDate save', (() => {
+    app.lsS('last_seq_idx', 1);
+    app.WS['Push day'] = {ex: app.DAYS[0].ex.map(e => ({name: e.n, origName: e.n, chosenType: null, sets: [{w:'60',r:'8',pw:'60',pr:'8',done:true,isDrop:false}]})), subOpen: null, note: '', painNote: '', startAt: Date.now(), lastSetAt: null};
+    app.saveSession('Push day', 0, '2026-09-21');
+    const result5 = app.lsG('last_seq_idx') === 0 && app.Data.session.getLast('Push day').exercises[0].sets[0].w === '60';
+    app.lsS('sess:2026-09-21', null);
+    return result5;
+  })());
+  T('Audit fix 6: abandoning an editSession() edit and starting a genuinely different session no longer carries the stale editingDate into the new save — reproduces unlocking an old date, then switching to a Free session instead, saving under TODAY’S key rather than silently overwriting the old date’s data', (() => {
+    app.lsS('sess:2015-03-03', {date:'2015-03-03',dl:'Free session',seqIdx:null,
+      exercises:[{name:'Face pulls',origName:'Face pulls',best:{w:'12',r:'12'},sets:[{w:'12',r:'12',done:true,isDrop:false}],chosenType:null,isPR:false,inputType:'weight',exVolume:144,notPerformed:false}],
+      note:'',painNote:'',skipped:false,duration:3,newPRs:[],totalVolume:144},'2015-03-03');
+    app.editSession('2015-03-03');
+    app.startFreeSession();
+    app.addToFreeSession('Face pulls');
+    app.WS['Free session'].ex[0].sets = [{w:'99',r:'9',pw:'99',pr:'9',done:true,isDrop:false}];
+    app.saveSession('Free session','free',app.editingDate);
+    const oldDateNotClobbered = !app.lsG('sess:2015-03-03') || app.lsG('sess:2015-03-03').exercises[0].best.w !== '99';
+    const newSavedUnderToday = app.Data.session.get() && app.Data.session.get().date === app.todayKey() && app.Data.session.get().exercises[0].best.w === '99';
+    app.lsS('sess:2015-03-03', null);
+    app.lsS('ws_draft:2015-03-03', null);
+    return oldDateNotClobbered && newSavedUnderToday;
+  })());
+  T('Audit fix 7: repairHistoricalSessions preserves checkPR’s "0" fallback for bodyweight exercises logged with no added weight, instead of writing an empty-string w into the pr: record', (() => {
+    app.lsS('pr:Pull-ups (unassisted)', null);
+    app.lsS('sess:2024-05-05', {date:'2024-05-05',dl:'Push day',seqIdx:0,
+      exercises:[{name:'Pull-ups (unassisted)',origName:'Pull-ups (unassisted)',best:{w:'',r:'8'},sets:[{w:'',r:'8',done:true,isDrop:false}],chosenType:null,isPR:false,inputType:'bodyweight',exVolume:8,notPerformed:false}],
+      note:'',painNote:'',skipped:false,duration:5,newPRs:[],totalVolume:8},'2024-05-05');
+    app.repairHistoricalSessions(false);
+    const pr = app.lsG('pr:Pull-ups (unassisted)');
+    const result7 = pr && pr.w === '0' && pr.r === '8';
+    app.lsS('sess:2024-05-05', null);
+    return result7;
+  })());
+  T('Audit fix 8: resolveStaleDraftSave resets editingDate before saving, so a dangling editingDate left over from an abandoned, unrelated editSession() edit does not wrongly skip setLast/last_seq_idx for a genuine recovered-draft backfill', (() => {
+    app.lsS('sess:2010-01-01', {date:'2010-01-01',dl:'Free session',seqIdx:null,
+      exercises:[{name:'Face pulls',origName:'Face pulls',best:{w:'5',r:'5'},sets:[{w:'5',r:'5',done:true,isDrop:false}],chosenType:null,isPR:false,inputType:'weight',exVolume:25,notPerformed:false}],
+      note:'',painNote:'',skipped:false,duration:2,newPRs:[],totalVolume:25},'2010-01-01');
+    app.editSession('2010-01-01');
+    app.lsS('last_seq_idx', 1);
+    app._staleDraftPending = {dl:'Push day', state:{ex: app.DAYS[0].ex.map(e => ({name: e.n, origName: e.n, chosenType: null, sets: [{w:'70',r:'6',pw:'70',pr:'6',done:true,isDrop:false}]})), note:'', painNote:''}, date:'2026-09-20'};
+    app.resolveStaleDraftSave();
+    const result8 = app.lsG('last_seq_idx') === 0 && app.Data.session.getLast('Push day').exercises[0].sets[0].w === '70';
+    app.lsS('sess:2010-01-01', null);
+    app.lsS('sess:2026-09-20', null);
+    app.lsS('ws_draft:2010-01-01', null);
+    return result8;
+  })());
+  T('Audit fix 9: editSession no longer overwrites today’s real in-progress draft when editing a PAST date — the single ws_draft: slot is only written when editing today’s own session, matching the original pre-FIX5 behavior', (() => {
+    app.WS['Push day'] = {ex:[{name:'Bench press',origName:'Bench press',chosenType:null,sets:[{w:'80',r:'5',pw:'80',pr:'5',done:true,isDrop:false}]}],subOpen:null,note:'',painNote:'',startAt:Date.now(),lastSetAt:null};
+    app.Data.draft.save('Push day', app.WS['Push day']);
+    app.lsS('sess:2012-02-02', {date:'2012-02-02',dl:'Free session',seqIdx:null,
+      exercises:[{name:'Face pulls',origName:'Face pulls',best:{w:'8',r:'8'},sets:[{w:'8',r:'8',done:true,isDrop:false}],chosenType:null,isPR:false,inputType:'weight',exVolume:64,notPerformed:false}],
+      note:'',painNote:'',skipped:false,duration:2,newPRs:[],totalVolume:64},'2012-02-02');
+    app.editSession('2012-02-02');
+    const stillPushDay = app.Data.draft.findAny();
+    app.lsS('sess:2012-02-02', null);
+    app.lsS('ws_draft:2012-02-02', null);
+    app.lsS('ws_draft:'+app.todayKey(), null);
+    return stillPushDay && stillPushDay.dl === 'Push day';
+  })());
+  T('Audit fix 10: exVolume calculation is a single shared computeExVolume helper, not duplicated between saveSession and repairHistoricalSessions', (() => {
+    const count = (src.match(/function computeExVolume\(/g)||[]).length;
+    return count === 1 && src.includes('computeExVolume(doneSets,effOrig.inputType)') && src.includes('computeExVolume(doneSets,e.inputType)');
+  })());
+  T('Audit fix 11: skipSession discards a stale adHocDay left over from an abandoned past-date edit, instead of mislabeling today’s skip with the wrong (old) session type', (() => {
+    app.lsS('sess:2011-11-11', {date:'2011-11-11',dl:'Free session',seqIdx:null,
+      exercises:[{name:'Face pulls',origName:'Face pulls',best:{w:'6',r:'6'},sets:[{w:'6',r:'6',done:true,isDrop:false}],chosenType:null,isPR:false,inputType:'weight',exVolume:36,notPerformed:false}],
+      note:'',painNote:'',skipped:false,duration:2,newPRs:[],totalVolume:36},'2011-11-11');
+    app.editSession('2011-11-11');
+    app.skipSession('tired');
+    const today = app.Data.session.get();
+    app.lsS('sess:2011-11-11', null);
+    app.lsS('ws_draft:2011-11-11', null);
+    return today && today.dl !== 'Free session' && today.skipped === true;
+  })());
+  T('Audit fix 12: fmtCompletedBest no longer shows a blank result for a genuinely completed bodyweight exercise logged with no added weight (gates on the type-appropriate field, not universally on best.w)', (() => {
+    const i = src.indexOf('function fmtCompletedBest(e){');
+    const body = src.slice(i, i + 400);
+    return body.includes("if(!e.best)return '';") && body.includes("it==='bodyweight')return e.best.r?e.best.r+' reps':''");
+  })());
+  T('Audit fix 13 (superseded, real fix built): editSession now gives a past-date edit its own dateKey-scoped draft slot instead of colliding with today’s real draft — both can exist simultaneously without either clobbering the other', (() => {
+    app.Data.draft.clearAll();
+    app.WS['Push day'] = {ex:[{name:'Bench press',origName:'Bench press',chosenType:null,sets:[{w:'80',r:'5',pw:'80',pr:'5',done:true,isDrop:false}]}],subOpen:null,note:'',painNote:'',startAt:Date.now(),lastSetAt:null};
+    app.Data.draft.save('Push day', app.WS['Push day']);
+    app.lsS('sess:2013-03-03', {date:'2013-03-03',dl:'Free session',seqIdx:null,
+      exercises:[{name:'Face pulls',origName:'Face pulls',best:{w:'9',r:'9'},sets:[{w:'9',r:'9',done:true,isDrop:false}],chosenType:null,isPR:false,inputType:'weight',exVolume:81,notPerformed:false}],
+      note:'',painNote:'',skipped:false,duration:2,newPRs:[],totalVolume:81},'2013-03-03');
+    app.editSession('2013-03-03');
+    const todayDraft = app.lsG('ws_draft:'+app.todayKey());
+    const oldDraft = app.lsG('ws_draft:2013-03-03');
+    app.lsS('sess:2013-03-03', null);
+    app.lsS('ws_draft:2013-03-03', null);
+    app.lsS('ws_draft:'+app.todayKey(), null);
+    return todayDraft && todayDraft.dl === 'Push day' && oldDraft && oldDraft.dl === 'Free session';
+  })());
+  T('Audit fix 13b: abandoning a past-date edit and reloading recovers it via the existing stale-draft-resolve banner (findAny prioritizes today’s own draft, then falls back to any other dated draft) — the edit is no longer permanently lost if abandoned before saving', (() => {
+    app.Data.draft.clearAll();
+    app.lsS('sess:2014-04-04', {date:'2014-04-04',dl:'Free session',seqIdx:null,
+      exercises:[{name:'Face pulls',origName:'Face pulls',best:{w:'9',r:'9'},sets:[{w:'9',r:'9',done:true,isDrop:false}],chosenType:null,isPR:false,inputType:'weight',exVolume:81,notPerformed:false}],
+      note:'',painNote:'',skipped:false,duration:2,newPRs:[],totalVolume:81},'2014-04-04');
+    app.editSession('2014-04-04');
+    const found = app.Data.draft.findAny();
+    app.lsS('sess:2014-04-04', null);
+    app.lsS('ws_draft:2014-04-04', null);
+    return found && found.date === '2014-04-04' && found.dl === 'Free session';
+  })());
+  T('Audit fix 13c: clearDraft only clears the draft for the date actually being saved — finishing today’s real session no longer wipes an unrelated, still-in-progress past-date edit’s draft (and vice versa)', (() => {
+    app.lsS('sess:2015-05-05', {date:'2015-05-05',dl:'Free session',seqIdx:null,
+      exercises:[{name:'Face pulls',origName:'Face pulls',best:{w:'9',r:'9'},sets:[{w:'9',r:'9',done:true,isDrop:false}],chosenType:null,isPR:false,inputType:'weight',exVolume:81,notPerformed:false}],
+      note:'',painNote:'',skipped:false,duration:2,newPRs:[],totalVolume:81},'2015-05-05');
+    app.editSession('2015-05-05');
+    app.startFreeSession();
+    app.addToFreeSession('Face pulls');
+    app.WS['Free session'].ex[0].sets = [{w:'20',r:'10',pw:'20',pr:'10',done:true,isDrop:false}];
+    app.saveSession('Free session','free');
+    const oldEditDraftSurvives = !!app.lsG('ws_draft:2015-05-05');
+    app.lsS('sess:2015-05-05', null);
+    app.lsS('ws_draft:2015-05-05', null);
+    return oldEditDraftSurvives;
+  })());
+  T('Audit fix 14: checkPR now takes an explicit date parameter, so a genuine new PR discovered while editing/saving a PAST session is stamped with the session’s real date, not the day the edit happened to be saved (root fix — saveSession and repairHistoricalSessions both now go through the same date-aware checkPR, no more separate patch)', (() => {
+    app.lsS('pr:Face pulls', {w:'10',r:'10',date:'2020-01-01'});
+    app.lsS('sess:2026-01-01', {date:'2026-01-01',dl:'Free session',seqIdx:null,
+      exercises:[{name:'Face pulls',origName:'Face pulls',best:{w:'10',r:'10'},sets:[{w:'10',r:'10',done:true,isDrop:false}],chosenType:null,isPR:false,inputType:'weight',exVolume:100,notPerformed:false}],
+      note:'',painNote:'',skipped:false,duration:3,newPRs:[],totalVolume:100},'2026-01-01');
+    app.editSession('2026-01-01');
+    app.WS['Free session'].ex[0].sets = [{w:'50',r:'10',pw:'50',pr:'10',done:true,isDrop:false}];
+    app.saveSession('Free session','free',app.editingDate);
+    const pr = app.lsG('pr:Face pulls');
+    app.lsS('sess:2026-01-01', null);
+    return pr && pr.w === '50' && pr.date === '2026-01-01';
+  })());
+  T('Audit fix 17: mid-edit autosave calls (togDone, updSet, etc. — saveDraft(dl) with no dateKey) now correctly target the date actually being edited via an editingDate fallback, instead of re-clobbering today’s real draft on the very first tap during a past-date edit (found by auditing the #13/#17 draft-scoping fix itself)', (() => {
+    app.Data.draft.clearAll();
+    app.WS['Push day'] = {ex:[{name:'Bench press',origName:'Bench press',chosenType:null,sets:[{w:'80',r:'5',pw:'80',pr:'5',done:true,isDrop:false}]}],subOpen:null,note:'',painNote:'',startAt:Date.now(),lastSetAt:null};
+    app.Data.draft.save('Push day', app.WS['Push day']);
+    app.lsS('sess:2016-06-06', {date:'2016-06-06',dl:'Free session',seqIdx:null,
+      exercises:[{name:'Face pulls',origName:'Face pulls',best:{w:'9',r:'9'},sets:[{w:'9',r:'9',done:true,isDrop:false}],chosenType:null,isPR:false,inputType:'weight',exVolume:81,notPerformed:false}],
+      note:'',painNote:'',skipped:false,duration:2,newPRs:[],totalVolume:81},'2016-06-06');
+    app.editSession('2016-06-06');
+    app.togDone('Free session',0,0);
+    const todayDraft = app.lsG('ws_draft:'+app.todayKey());
+    const oldEditDraft = app.lsG('ws_draft:2016-06-06');
+    app.lsS('sess:2016-06-06', null);
+    app.lsS('ws_draft:2016-06-06', null);
+    app.lsS('ws_draft:'+app.todayKey(), null);
+    return todayDraft && todayDraft.dl === 'Push day' && oldEditDraft && oldEditDraft.dl === 'Free session';
+  })());
+  T('Audit fix 18: the boot-time stale-draft check now looks for an other-dated draft regardless of whether today already has a session recorded, so abandoning a past-date edit (via skip or starting a different session, which orphans the dateKey-scoped draft since editSession already deleted the original) surfaces it for recovery on the next reload instead of being permanently unreachable (found by auditing the #17 draft-scoping fix itself)', (() => {
+    const i = src.indexOf('const _todaySession=Data.session.get();');
+    const body = src.slice(i, i + 500);
+    return i >= 0 && body.includes('d.date&&d.date!==todayKey()') && body.includes('_staleDraftPending={dl:d.dl,state:d.state,date:d.date};') && body.includes('!_todaySession&&d&&d.dl&&d.state');
+  })());
+  T('Audit fix 19: initWS detects when WS[dl] holds a different date’s data (leftover from an abandoned editSession edit sharing the same day label) and recovers today’s real persisted draft instead of silently reusing the stale old data — reproduces a genuine today Push day being replaced by a years-old edit and then ‘resumed’ as if it were still today’s progress', (() => {
+    app.Data.draft.clearAll();
+    delete app.WS['Push day'];
+    app.startSession(0);
+    app.WS['Push day'].ex[0].sets[0].w = '777';
+    app.WS['Push day'].ex[0].sets[0].done = true;
+    app.saveDraft('Push day');
+    app.lsS('sess:2020-01-01', {date:'2020-01-01',dl:'Push day',seqIdx:0,
+      exercises: app.DAYS[0].ex.map(e => ({name: e.n, origName: e.n, best:{w:'11',r:'8'}, sets: [{w:'11',r:'8',done:true,isDrop:false}], chosenType: null, isPR:false, inputType:'weight', exVolume:88, notPerformed:false})),
+      note:'',painNote:'',skipped:false,duration:5,newPRs:[],totalVolume:88*app.DAYS[0].ex.length},'2020-01-01');
+    app.editSession('2020-01-01');
+    app.startSession(-1);
+    app.startSession(0);
+    const recovered = app.WS['Push day'].ex[0].sets[0].w === '777';
+    app.lsS('sess:2020-01-01', null);
+    app.lsS('ws_draft:2020-01-01', null);
+    app.lsS('ws_draft:'+app.todayKey(), null);
+    return recovered;
+  })());
+  T('Audit fix 19b: WHILE an editSession edit of a past date is still genuinely in progress (editingDate matches WS[dl]._forDate), initWS does not treat it as stale — re-rendering mid-edit does not discard the edit itself', (() => {
+    app.Data.draft.clearAll();
+    delete app.WS['Push day'];
+    app.lsS('sess:2021-02-02', {date:'2021-02-02',dl:'Push day',seqIdx:0,
+      exercises: app.DAYS[0].ex.map(e => ({name: e.n, origName: e.n, best:{w:'33',r:'8'}, sets: [{w:'33',r:'8',done:true,isDrop:false}], chosenType: null, isPR:false, inputType:'weight', exVolume:264, notPerformed:false})),
+      note:'',painNote:'',skipped:false,duration:5,newPRs:[],totalVolume:264*app.DAYS[0].ex.length},'2021-02-02');
+    app.editSession('2021-02-02');
+    const gd = app.DAYS[0];
+    app.initWS('Push day', gd);
+    const stillEditing = app.WS['Push day'].ex[0].sets[0].w === '33' && app.editingDate === '2021-02-02';
+    app.lsS('sess:2021-02-02', null);
+    app.lsS('ws_draft:2021-02-02', null);
+    return stillEditing;
+  })());
+  T('Audit fix 15: repairHistoricalSessions falls back to e.origName when e.name is missing (a legacy/pre-migration session shape), instead of silently corrupting the PR record under a bogus "pr:undefined" key', (() => {
+    app.lsS('pr:Dumbbell wrist curls', null);
+    app.lsS('sess:2017-07-17', {date:'2017-07-17',dl:'Free session',seqIdx:null,
+      exercises:[{origName:'Dumbbell wrist curls',best:{w:'8',r:'15'},sets:[{w:'8',r:'15',done:true,isDrop:false}],chosenType:null,isPR:false,inputType:'weight',exVolume:120,notPerformed:false}],
+      note:'',painNote:'',skipped:false,duration:3,newPRs:[],totalVolume:120},'2017-07-17');
+    app.repairHistoricalSessions(false);
+    const pr = app.lsG('pr:Dumbbell wrist curls');
+    const bogus = app.lsG('pr:undefined');
+    app.lsS('sess:2017-07-17', null);
+    return pr && pr.w === '8' && !bogus;
+  })());
+  T('Audit fix 16: computeExVolume reads .w (not .r) for reps_each exercises, matching how bestSetOf and fmtCompletedBest already read the single reps-per-side value — volume was silently zeroed for every reps_each exercise before this fix (a pre-existing bug relocated verbatim during the FIX2 dedup, caught while extracting the shared helper)', app.computeExVolume([{w:'10',r:'',done:true},{w:'12',r:'',done:true}],'reps_each') === 44);
 } catch (e) {
   fail++; console.log('X FAIL  script eval crashed: ' + e.message);
 }

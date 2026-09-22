@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.5</title>
+<title>Roshan Fitness v5.6</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -261,7 +261,7 @@ const DAYS=[
     {n:'Seated DB shoulder press',s:3,r:'10\u201312',nt:'Seated \u2014 less pressure on seton sites',priority:'must',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Front delts'],secondaryMuscles:['Triceps','Side delts'],tip:'Press slightly forward, not straight overhead \u2014 that path is easier on the shoulder.'},
     {n:'Lateral raises',s:3,r:'15\u201320',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Side delts'],secondaryMuscles:[],tip:'Lead with your elbows, not your hands \u2014 stop at shoulder height, don\u2019t swing it up.'},
     {n:'Cable tricep pushdown',s:4,r:'12\u201315',nt:'Straight bar or rope, your call',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Triceps (lateral/medial)'],secondaryMuscles:[],tip:'Elbows stay pinned at your sides \u2014 if they drift forward you\u2019re using shoulders, not triceps.'},
-    {n:'Overhead tricep extension',s:3,r:'12',nt:'Rope attachment \u2014 lets wrists rotate through the stretch',priority:'optional',compound:false,inputType:'weight',wlabel:'DB weight (one hand)',primaryMuscles:['Triceps (long head)'],secondaryMuscles:[],tip:'Elbows point forward, not flared out to the sides \u2014 that\u2019s what keeps tension on the long head.'}
+    {n:'Overhead tricep extension',s:3,r:'12',nt:'Rope attachment \u2014 lets wrists rotate through the stretch',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Triceps (long head)'],secondaryMuscles:[],tip:'Elbows point forward, not flared out to the sides \u2014 that\u2019s what keeps tension on the long head.'}
   ]},
   {label:'Pull day',focus:'Back \u00b7 Biceps',time:'~6pm',ex:[
     {n:'Pull-ups (unassisted)',s:4,r:'Max reps',nt:'Full range at the bottom \u2014 no kipping or swinging, exhale as you pull',priority:'must',noweight:true,inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',primaryMuscles:['Lats'],secondaryMuscles:['Biceps','Mid-back'],tip:'Full extension at the bottom, drive your elbows down and back \u2014 no kipping or swinging.'},
@@ -278,7 +278,7 @@ const DAYS=[
     {n:'Leg press',s:4,r:'12\u201315',nt:'Safe \u2014 no spinal or perianal pressure \u00b7 exhale on push, never hold breath',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Quads'],secondaryMuscles:['Glutes','Hamstrings'],tip:'Don\u2019t let your knees cave inward, and don\u2019t lock out hard at the top \u2014 keep a soft knee.'},
     {n:'Leg extension (machine)',s:3,r:'15',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Quads'],secondaryMuscles:[],tip:'Controlled tempo, brief pause at the top \u2014 momentum here just skips the muscle doing the work.'},
     {n:'Seated leg curl',s:3,r:'15',nt:'Seated preferred',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Hamstrings'],secondaryMuscles:[],tip:'Full range, controlled tempo \u2014 don\u2019t bounce out of the stretch at the bottom.'},
-    {n:'Calf raises',s:4,r:'20',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Add kg if weighted',primaryMuscles:['Calves'],secondaryMuscles:[],tip:'Pause at the top, full stretch at the bottom \u2014 bouncing through the reps skips the actual work.'},
+    {n:'Calf raises',s:4,r:'20',nt:'Pendulum squat machine, calf-raise position',priority:'optional',compound:false,inputType:'weight',wlabel:'Plates loaded (pendulum squat machine)',primaryMuscles:['Calves'],secondaryMuscles:[],tip:'Pause at the top, full stretch at the bottom \u2014 bouncing through the reps skips the actual work.'},
     {n:'Plank',s:3,r:'30\u201360s',nt:'Exhale on entry \u2014 no breath holding',priority:'must',noweight:true,inputType:'seconds',wlabel:'Seconds held',primaryMuscles:['Core'],secondaryMuscles:[],tip:'Hips level \u2014 not sagging, not piked up. Breathe normally, don\u2019t hold your breath.'},
     {n:'Side plank',s:3,r:'20\u201340s',nt:'Isometric hold, no twisting \u2014 breathe normally, do both sides each set',priority:'optional',noweight:true,inputType:'seconds',wlabel:'Seconds held (each side)',primaryMuscles:['Obliques'],secondaryMuscles:['Core'],tip:'Stack hips and shoulders in one straight line \u2014 don\u2019t let the top hip roll forward or the hips sag toward the floor.'},
     {n:'Dead bug',s:3,r:'10 each',nt:'Best Crohn-safe core move',priority:'must',noweight:true,inputType:'reps_each',wlabel:'Reps per side',primaryMuscles:['Core'],secondaryMuscles:[],tip:'Lower back stays pressed into the floor the whole time \u2014 if it arches, you\u2019ve gone too far.'},
@@ -294,7 +294,7 @@ const DAYS=[
     {n:'Seated cable row',s:3,r:'12',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps','Traps'],tip:'Chest up, pull to your lower ribs \u2014 if your lower back is rounding, drop the weight.'},
     {n:'Dumbbell curl (alternating)',s:3,r:'12',nt:'Standard supinated curl \u2014 Pull day already covers barbell + hammer',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Biceps (long head)'],secondaryMuscles:[],tip:'Full supination at the top \u2014 rotate your palm up as you curl, not just lift straight.'},
     {n:'Cable tricep pushdown',s:3,r:'10',nt:'Superset with overhead extension below \u2014 no rest between the two \u00b7 straight bar or rope',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Triceps (lateral/medial)'],secondaryMuscles:[],tip:'Elbows stay pinned at your sides \u2014 if they drift forward you\u2019re using shoulders, not triceps.'},
-    {n:'Overhead tricep extension',s:3,r:'10',nt:'Second half of the superset \u2014 straight into this after pushdown \u00b7 rope attachment',priority:'optional',compound:false,inputType:'weight',wlabel:'DB weight (one hand)',primaryMuscles:['Triceps (long head)'],secondaryMuscles:[],tip:'Elbows point forward, not flared out to the sides \u2014 that\u2019s what keeps tension on the long head.'},
+    {n:'Overhead tricep extension',s:3,r:'10',nt:'Second half of the superset \u2014 straight into this after pushdown \u00b7 rope attachment',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Triceps (long head)'],secondaryMuscles:[],tip:'Elbows point forward, not flared out to the sides \u2014 that\u2019s what keeps tension on the long head.'},
     {n:'Plank or dead bug',s:3,r:'\u2014',nt:'Core finisher \u2014 pick one below',priority:'must',noweight:true,inputType:'choice',primaryMuscles:['Core'],secondaryMuscles:[],
      choiceOptions:[{name:'Plank',r:'30\u201360s',inputType:'seconds',primaryMuscles:['Core'],secondaryMuscles:[]},{name:'Dead bug',r:'10 each side',inputType:'reps_each',primaryMuscles:['Core'],secondaryMuscles:[]}]}
   ]}
@@ -306,15 +306,15 @@ const SUBS={
   'Seated DB shoulder press':['Smith machine shoulder press','Machine shoulder press'],
   'Lateral raises':['Cable lateral raise','Machine lateral raise'],
   'Cable tricep pushdown':['Rope pushdown','DB kickback','Machine tricep dip'],
-  'Overhead tricep extension':['Cable overhead extension','Skull crushers'],
+  'Overhead tricep extension':['Cable overhead extension','Skull crushers','One-hand DB overhead extension','Skull crushers (EZ bar)','Skull crushers (Smith bar)'],
   'Pull-ups (unassisted)':['Assisted pull-ups (machine)','Lat pulldown','Band-assisted pull-ups'],
   'Lat pulldown':['Pull-ups','Straight arm pulldown'],
-  'Seated cable row':['DB row','Machine row','T-bar row','Smith machine row'],
+  'Seated cable row':['DB row','Machine row','T-bar row','Smith machine row','T-bar row (machine)','T-bar row (landmine)'],
   'Single arm DB row':['Cable single arm row','Machine row'],
   'Face pulls':['Reverse cable fly','Rear delt machine fly','Band pull-apart'],
   'Barbell curl':['DB curl','EZ bar curl','Cable curl','Reverse EZ bar curl'],
   'Hammer curls':['Cable hammer curl','Cross-body curl'],
-  'Leg press':['Step-ups (bodyweight)','Wall sit (hold 60s)','Pendulum/hack squat machine (light weight only \u2014 stop on any pain)'],
+  'Leg press':['Step-ups (bodyweight)','Wall sit (hold 60s)','Pendulum/hack squat machine (light weight only \u2014 stop on any pain)','Pendulum squat machine (light weight only \u2014 stop on any pain)','Hack squat machine (light weight only \u2014 stop on any pain)'],
   'Seated leg curl':['Lying leg curl (if ok)','Nordic curl'],
   'Calf raises':['Seated calf raise','Single-leg calf raise'],
   'Plank':['Dead bug','Bear crawl hold','Pallof press'],
@@ -350,7 +350,16 @@ const SUB_TYPE_OVERRIDE={
   'T-bar row':{wlabel:'Total kg loaded (plates on the bar, or landmine attachment)'},
   'DB kickback':{nt:'Elbow pinned high and still against your side \u2014 only the forearm moves'},
   'Machine tricep dip':{nt:'Full lockout at the bottom of the press'},
-  'Nordic curl':{inputType:'bodyweight',wlabel:'Bodyweight (add kg held at chest if weighted)',noweight:true,nt:'GHD footplate locks your feet, hips right at the pad edge \u2014 lower under control and catch yourself with your hands at the bottom, don\u2019t free-fall'}
+  'Nordic curl':{inputType:'bodyweight',wlabel:'Bodyweight (add kg held at chest if weighted)',noweight:true,nt:'GHD footplate locks your feet, hips right at the pad edge \u2014 lower under control and catch yourself with your hands at the bottom, don\u2019t free-fall'},
+  /* v5.6 FIX 6: split-out replacements for combined-equipment entries above. Old entries kept
+     untouched for history \u2014 these are the ones to actually pick going forward. */
+  'One-hand DB overhead extension':{wlabel:'DB weight (one hand)',nt:'Single dumbbell held in one hand behind your head \u2014 lower under control, opposite hand can support your elbow'},
+  'Skull crushers (EZ bar)':{wlabel:'Total kg incl. bar (10kg EZ bar, confirmed)',nt:'Elbows stay pointed at the ceiling and still \u2014 only the forearms move through the stretch'},
+  'Skull crushers (Smith bar)':{wlabel:'Total kg incl. bar (Smith bar \u2014 check yours)',nt:'Elbows stay pointed at the ceiling and still \u2014 only the forearms move through the stretch'},
+  'T-bar row (machine)':{wlabel:'Total kg loaded (plates on the bar)'},
+  'T-bar row (landmine)':{wlabel:'Total kg loaded (landmine attachment, one end anchored)'},
+  'Pendulum squat machine (light weight only \u2014 stop on any pain)':{wlabel:'Total kg loaded (plates)',nt:'Light weight only \u2014 stop immediately on any pain, cleared for this specifically, not a blanket safe claim'},
+  'Hack squat machine (light weight only \u2014 stop on any pain)':{wlabel:'Total kg loaded (plates)',nt:'Light weight only \u2014 stop immediately on any pain, cleared for this specifically, not a blanket safe claim'}
 };
 function findExDef(name){
   for(const d of DAYS){for(const e of d.ex){
@@ -774,7 +783,9 @@ function mountSingleMuscleDiagram(elId,tag,prevInstance){
 const Data={
   pr:{
     get(name){return lsG('pr:'+name);},
-    set(name,best){return lsS('pr:'+name,{w:best.w,r:best.r,date:todayKey()});},
+    set(name,best){return Data.pr.restore(name,{w:best.w,r:best.r,date:todayKey()});},
+    clear(name){return lsS('pr:'+name,null);},
+    restore(name,record){return lsS('pr:'+name,record);},
     clearAll(){
       for(let i=localStorage.length-1;i>=0;i--){
         const k=localStorage.key(i);
@@ -790,17 +801,21 @@ const Data={
     setLast(dl,data){return lsS('last:'+dl,data);}
   },
   draft:{
-    save(dl,state){return lsS('ws_draft:'+todayKey(),{dl,state,date:todayKey()});},
+    save(dl,state,dateKey){dateKey=dateKey||todayKey();return lsS('ws_draft:'+dateKey,{dl,state,date:dateKey});},
+    get(dateKey){return lsG('ws_draft:'+(dateKey||todayKey()));},
     findAny(){
+      const today=lsG('ws_draft:'+todayKey());
+      if(today&&today.dl&&today.state)return today;
       for(let i=0;i<localStorage.length;i++){
         const k=localStorage.key(i);
-        if(k&&k.startsWith('ws_draft:')){
+        if(k&&k.startsWith('ws_draft:')&&k!=='ws_draft:'+todayKey()){
           const d=lsG(k);
           if(d&&d.dl&&d.state)return d;
         }
       }
       return null;
     },
+    clear(dateKey){return lsDel('ws_draft:'+(dateKey||todayKey()));},
     clearAll(){
       for(let i=localStorage.length-1;i>=0;i--){
         const k=localStorage.key(i);
@@ -1020,17 +1035,29 @@ function getSkipWarnings(){
 }
 
 /* ===== DRAFT ===== */
-function saveDraft(dl){if(WS[dl])Data.draft.save(dl,WS[dl]);}
-function clearDraft(){Data.draft.clearAll();}
+function saveDraft(dl,dateKey){if(WS[dl])Data.draft.save(dl,WS[dl],dateKey||editingDate||todayKey());}
+function clearDraft(dateKey){Data.draft.clear(dateKey||todayKey());}
 
 /* ===== WORKOUT STATE ===== */
 let WS={};
 let adHocDay=null;
 let adHocSeqIdx=null;
+let editingDate=null;
 let _forcePickerOnce=false;
 
 function initWS(dl,def){
   const pSubs=lsG('persisted_subs')||{};
+  if(WS[dl]&&WS[dl]._forDate&&WS[dl]._forDate!==todayKey()&&WS[dl]._forDate!==editingDate){
+    /* This slot holds a different date's data — leftover in memory from an editSession()
+       edit that was abandoned rather than saved (the edit overwrites WS[dl] directly, and
+       nothing else clears it on abandonment). editingDate still matching _forDate means the
+       edit is genuinely still in progress, not abandoned — leave it alone in that case.
+       Otherwise never trust it for today; recover today's own real draft if one was
+       persisted, otherwise fall through to a fresh build below. */
+    const todayDraft=Data.draft.get(todayKey());
+    if(todayDraft&&todayDraft.dl===dl)WS[dl]=todayDraft.state;
+    else delete WS[dl];
+  }
   if(!WS[dl]){
     WS[dl]={
       ex:def.ex.map(e=>{
@@ -1040,10 +1067,11 @@ function initWS(dl,def){
           sets:Array.from({length:e.s},(_,si)=>({w:prefill?.[si]?.w||'',r:prefill?.[si]?.r||'',pw:prefill?.[si]?.w||'',pr:prefill?.[si]?.r||'',done:false,isDrop:false}))
         };
       }),
-      subOpen:null,note:'',painNote:'',startAt:null,lastSetAt:null
+      subOpen:null,note:'',painNote:'',startAt:null,lastSetAt:null,_forDate:todayKey()
     };
     return;
   }
+  if(!(editingDate&&WS[dl]._forDate===editingDate))WS[dl]._forDate=todayKey();
   /* Reconcile a possibly-stale draft (e.g. loaded from before a source-code update) against
      the current exercise array, matching by origName so in-progress sets are preserved for
      exercises that still exist, instead of crashing on index misalignment for new ones. */
@@ -1436,8 +1464,9 @@ function getSuggestion(orig,best,prKey){
 }
 
 /* ===== PR DETECTION ===== */
-function checkPR(origName,best,inputType){
+function checkPR(origName,best,inputType,date){
   if(!best)return false;
+  const d=date||todayKey();
   const cur=Data.pr.get(origName);
   const isRepsFirst=inputType==='bodyweight';
   const isTimeFirst=inputType==='seconds';
@@ -1445,27 +1474,36 @@ function checkPR(origName,best,inputType){
     if(!best.r||parseInt(best.r)<=0)return false;
     const bw=parseFloat(best.w||0),br=parseInt(best.r||0);
     const cw=cur?parseFloat(cur.w||0):0,cr=cur?parseInt(cur.r||0):0;
-    if(!cur||br>cr||bw>cw){Data.pr.set(origName,{w:best.w||'0',r:best.r});return true;}
+    if(!cur||br>cr||bw>cw){Data.pr.restore(origName,{w:best.w||'0',r:best.r,date:d});return true;}
     return false;
   }
   if(!best.w||parseFloat(best.w)<=0)return false;
   if(isTimeFirst){
     const bw=parseFloat(best.w),cw=cur?parseFloat(cur.w||0):0;
-    if(!cur||bw>cw){Data.pr.set(origName,{w:best.w,r:best.r});return true;}
+    if(!cur||bw>cw){Data.pr.restore(origName,{w:best.w,r:best.r,date:d});return true;}
     return false;
   }
   if(!cur||parseFloat(best.w)>parseFloat(cur.w)||(parseFloat(best.w)===parseFloat(cur.w)&&parseInt(best.r||0)>parseInt(cur.r||0))){
-    Data.pr.set(origName,{w:best.w,r:best.r});return true;
+    Data.pr.restore(origName,{w:best.w,r:best.r,date:d});return true;
   }
   return false;
 }
 
 /* ===== SAVE SESSION ===== */
+function computeExVolume(doneSets,inputType){
+  return doneSets.reduce((v,st)=>{
+    if(inputType==='bodyweight')return v+(parseInt(st.r)||0);
+    if(inputType==='seconds')return v+(parseFloat(st.w)||0);
+    if(inputType==='reps_each')return v+(parseInt(st.w)||0)*2;
+    return v+(parseFloat(st.w)||0)*(parseInt(st.r)||0);
+  },0);
+}
 function bestSetOf(workingSets,inputType){
   const singleField=inputType==='seconds'||inputType==='reps_each';
   const repsFirst=inputType==='bodyweight';
   const metric=st=>repsFirst?parseInt(st.r||0):parseFloat(st.w||0);
   return workingSets.reduce((b,st)=>{
+    if(st.done!==true)return b;
     const valid=singleField?(st.w&&parseFloat(st.w)>0):repsFirst?(st.r&&parseInt(st.r)>0):(st.w&&st.r&&parseFloat(st.w)>0);
     if(valid&&(!b||metric(st)>metric(b)))return{w:st.w,r:st.r,rir:st.rir};
     return b;
@@ -1487,28 +1525,28 @@ function saveSession(dl,seqIdx,explicitDate){
     const effName=chosenOpt?ex.chosenType:ex.name;
     const effOrigName=chosenOpt?ex.chosenType:ex.origName;
     const workingSets=ex.sets.filter(st=>!st.isDrop);
+    const doneSets=workingSets.filter(st=>st.done===true);
+    const notPerformed=doneSets.length===0;
     const best=bestSetOf(workingSets,effOrig.inputType);
-    const isPR=checkPR(effName,best,effOrig.inputType);
+    const isPR=checkPR(effName,best,effOrig.inputType,saveDate);
     if(isPR)newPRs.push(effName);
-    const exVolume=workingSets.reduce((v,st)=>{
-      if(effOrig.inputType==='bodyweight')return v+(parseInt(st.r)||0);
-      if(effOrig.inputType==='seconds')return v+(parseFloat(st.w)||0);
-      if(effOrig.inputType==='reps_each')return v+(parseInt(st.r)||0)*2;
-      return v+(parseFloat(st.w)||0)*(parseInt(st.r)||0);
-    },0);
-    return{name:effName,origName:effOrigName,best,sets:ex.sets,chosenType:ex.chosenType,suggestion:getSuggestion(effOrig,best,effName),isPR,inputType:effOrig.inputType,exVolume};
+    const exVolume=notPerformed?0:computeExVolume(doneSets,effOrig.inputType);
+    return{name:effName,origName:effOrigName,best,sets:ex.sets,chosenType:ex.chosenType,suggestion:getSuggestion(effOrig,best,effName),isPR,inputType:effOrig.inputType,exVolume,notPerformed};
   });
   const totalVolume=exercises.reduce((v,e)=>v+(e.exVolume||0),0);
   const isFree=seqIdx==='free';
   const session={date:saveDate,dl,seqIdx:isFree?null:seqIdx,exercises,note:s.note,painNote:s.painNote||'',skipped:false,duration,newPRs,totalVolume};
   Data.session.set(session,saveDate);
-  Data.session.setLast(dl,{date:saveDate,exercises});
-  if(!isFree)lsS('last_seq_idx',seqIdx);
+  if(!editingDate){
+    Data.session.setLast(dl,{date:saveDate,exercises});
+    if(!isFree)lsS('last_seq_idx',seqIdx);
+  }
   lsS('last_dl',dl);
   const mlog=lsG('mlog:'+saveMonth)||{};
   mlog[saveDate]={type:'done',dl,seqIdx:isFree?undefined:seqIdx};
   lsS('mlog:'+saveMonth,mlog);
-  clearDraft();showStickyBtn(false);stopTimerTick();skipRestTimer();
+  clearDraft(saveDate);showStickyBtn(false);stopTimerTick();skipRestTimer();
+  adHocDay=null;adHocSeqIdx=null;editingDate=null;
   renderToday();
   const toast=document.getElementById('save-toast');
   if(toast){
@@ -1549,9 +1587,11 @@ function showSessionCelebration(dl,newPRs,duration,totalVolume){
   setTimeout(()=>{if(document.getElementById('seal-overlay'))el.remove();},isPR?4500:3000);
 }
 /* ===== EDIT / SKIP / UNSKIP ===== */
-function editSession(){
-  if(!confirm('Unlock today\'s session for editing? Current save will be removed.'))return;
-  const ex=Data.session.get();if(!ex||ex.skipped)return;
+function editSession(dateKey){
+  dateKey=dateKey||todayKey();
+  const isToday=dateKey===todayKey();
+  if(!confirm('Unlock '+(isToday?'today\'s':dateKey)+' session for editing? Current save will be removed.'))return;
+  const ex=Data.session.get(dateKey);if(!ex||ex.skipped)return;
   const isFree=ex.dl==='Free session';
   const seqIdx=isFree?null:(ex.seqIdx!==undefined&&ex.seqIdx!==null?ex.seqIdx:SEQ.indexOf(ex.dl));
   const gd=isFree?{label:'Free session',focus:'Your combo today',time:'',ex:ex.exercises.map(e=>({n:e.origName,...(findExDef(e.origName)||{}),priority:'must'}))}:(DAYS[seqIdx]||DAYS.find(d=>d.label===ex.dl));
@@ -1561,14 +1601,16 @@ function editSession(){
       name:e.name,origName:e.origName,chosenType:e.chosenType||null,
       sets:e.sets||[{w:e.best?.w||'',r:e.best?.r||'',done:true,isDrop:false}]
     })),
-    subOpen:null,note:ex.note||'',painNote:ex.painNote||'',startAt:Date.now(),lastSetAt:null
+    subOpen:null,note:ex.note||'',painNote:ex.painNote||'',startAt:Date.now(),lastSetAt:null,_forDate:dateKey
   };
-  Data.session.delete();
-  const mlog=lsG('mlog:'+monthKey())||{};delete mlog[todayKey()];lsS('mlog:'+monthKey(),mlog);
-  if(!isFree)lsS('last_seq_idx',(seqIdx+3)%4);
-  adHocDay=gd;adHocSeqIdx=seqIdx;
-  saveDraft(ex.dl);
+  Data.session.delete(dateKey);
+  const mk=dateKey.slice(0,7);
+  const mlog=lsG('mlog:'+mk)||{};delete mlog[dateKey];lsS('mlog:'+mk,mlog);
+  if(!isFree&&isToday)lsS('last_seq_idx',(seqIdx+3)%4);
+  adHocDay=gd;adHocSeqIdx=seqIdx;editingDate=isToday?null:dateKey;
+  saveDraft(ex.dl,dateKey);
   renderToday();
+  document.querySelector('.tab[data-t="0"]')?.click();
 }
 function showSkipSheet(){
   // Works from picker (no gd yet) and active workout (gd set)
@@ -1591,6 +1633,7 @@ function unskipSession(){
   renderToday();
 }
 function skipSession(reason){
+  if(editingDate){adHocDay=null;adHocSeqIdx=null;editingDate=null;}
   const nextIdx=getNextIdx();
   const gd=adHocDay||(nextIdx!==null?DAYS[nextIdx]:null);
   const dl=gd?gd.label:'Rest day';
@@ -1616,8 +1659,54 @@ function shareBackup(){
   const data={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);data[k]=localStorage.getItem(k);}
   const file=new File([JSON.stringify(data)],'roshan-fitness-'+todayKey()+'.json',{type:'application/json'});
   if(navigator.canShare&&navigator.canShare({files:[file]})){
-    navigator.share({files:[file],title:'Fitness backup '+todayKey()}).then(()=>{lsS('last_export',todayKey());renderProgress();}).catch(()=>{});
+    navigator.share({files:[file],title:'Fitness backup '+todayKey()}).then(()=>{lsS('last_export',todayKey());renderProgress();}).catch(()=>{exportData();});
   }else{exportData();}
+}
+/* One-time historical repair (v5.6 FIX 2): recomputes best/exVolume/isPR/newPRs for every
+   saved session using the same done-gated logic saveSession now uses, correcting sessions
+   where an untouched prefilled set was counted as performed. dryRun leaves localStorage
+   untouched and only reports what would change — the pr: replay is reversed afterward. */
+function repairHistoricalSessions(dryRun){
+  const keys=[];
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('sess:'))keys.push(k);}
+  const entries=keys.map(k=>({key:k,dateKey:k.slice(5),session:lsG(k)})).filter(x=>x.session&&!x.session.skipped&&x.session.exercises).sort((a,b)=>a.dateKey<b.dateKey?-1:1);
+  const affectedNames=new Set();
+  entries.forEach(x=>x.session.exercises.forEach(e=>{affectedNames.add(e.name||e.origName);affectedNames.add(e.origName);}));
+  const prBackup={};
+  affectedNames.forEach(n=>{prBackup[n]=Data.pr.get(n);Data.pr.clear(n);});
+  const changes=[];
+  entries.forEach(({key,dateKey,session})=>{
+    const newPRs=[];
+    const exercises=session.exercises.map(e=>{
+      const workingSets=(e.sets||[]).filter(st=>!st.isDrop);
+      const doneSets=workingSets.filter(st=>st.done===true);
+      const notPerformed=doneSets.length===0;
+      const best=bestSetOf(workingSets,e.inputType);
+      const trackName=e.name||e.origName;
+      const isPR=checkPR(trackName,best,e.inputType,dateKey);
+      if(isPR)newPRs.push(trackName);
+      const exVolume=notPerformed?0:computeExVolume(doneSets,e.inputType);
+      return{...e,best,isPR,exVolume,notPerformed};
+    });
+    const totalVolume=exercises.reduce((v,e)=>v+(e.exVolume||0),0);
+    const before={newPRs:session.newPRs||[],totalVolume:session.totalVolume||0};
+    const after={newPRs,totalVolume};
+    if(JSON.stringify(before)!==JSON.stringify(after)){
+      changes.push({dateKey,dl:session.dl,before,after});
+      if(!dryRun)lsS(key,{...session,exercises,newPRs,totalVolume});
+    }
+  });
+  if(dryRun)affectedNames.forEach(n=>Data.pr.restore(n,prBackup[n]));
+  return changes;
+}
+function runHistoricalRepair(){
+  const plan=repairHistoricalSessions(true);
+  if(!plan.length){alert('No ghost-recorded sets found — nothing to repair.');return;}
+  const summary=plan.map(c=>c.dateKey+' ('+c.dl+'): '+c.before.newPRs.length+' PR listed → '+c.after.newPRs.length+' PR, volume '+c.before.totalVolume+' → '+c.after.totalVolume).join('\n');
+  if(!confirm('This will correct '+plan.length+' session(s) where an untouched prefilled set was counted as performed:\n\n'+summary+'\n\nOnly best/PR/volume fields change. Sets, notes and every other log are untouched. Proceed?'))return;
+  repairHistoricalSessions(false);
+  alert('Repair complete. '+plan.length+' session(s) corrected.');
+  renderHistory();renderProgress();
 }
 function showTextModal(title,text){
   const ov=document.createElement('div');
@@ -1689,7 +1778,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.5';
+const APP_VERSION='v5.6';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -1807,7 +1896,7 @@ function showStickyBtn(show,dl,seqIdx){
   w.style.display=show?'block':'none';
   if(show&&dl!==undefined&&seqIdx!==undefined){
     b.disabled=false;b.style.opacity='';
-    b.onclick=()=>{if(b.disabled)return;b.disabled=true;b.style.opacity='.6';saveSession(dl,seqIdx);};
+    b.onclick=()=>{if(b.disabled)return;b.disabled=true;b.style.opacity='.6';saveSession(dl,seqIdx,editingDate);};
   }
 }
 /* ===== RENDER TODAY ===== */
@@ -1922,12 +2011,12 @@ function renderToday(){
       }}return 'weight';
     }
     function fmtCompletedBest(e){
-      if(!e.best||!e.best.w)return '';
+      if(!e.best)return '';
       const it=getExInputType(e.name||e.origName);
-      if(it==='bodyweight')return e.best.r+' reps';
-      if(it==='seconds')return e.best.w+'s';
-      if(it==='reps_each')return e.best.w+' each side';
-      return e.best.w+'kg \u00d7 '+(e.best.r||'');
+      if(it==='bodyweight')return e.best.r?e.best.r+' reps':'';
+      if(it==='seconds')return e.best.w?e.best.w+'s':'';
+      if(it==='reps_each')return e.best.w?e.best.w+' each side':'';
+      return e.best.w?e.best.w+'kg \u00d7 '+(e.best.r||''):'';
     }
     html+=`<div class="card success">
       <div class="cl">${existing.date}${existing.duration?' &middot; '+existing.duration+' min':''}</div>
@@ -1937,7 +2026,7 @@ function renderToday(){
       ${existing.exercises.map(e=>`<div style="padding:9px 0;border-bottom:1px solid var(--c3)">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif">${e.name}${e.isPR?' <span style="font-size:11px;color:var(--cyan)">PR&#x2191;</span>':''}</div>
-          ${e.best?`<div style="font-size:12px;color:var(--dim)">${fmtCompletedBest(e)}</div>`:''}
+          ${e.best?`<div style="font-size:12px;color:var(--dim)">${fmtCompletedBest(e)}</div>`:e.notPerformed?`<div style="font-size:12px;color:var(--amb)">Not performed</div>`:''}
         </div>
         <div style="font-size:12px;color:var(--cyan);margin-top:3px;font-weight:600">${e.suggestion||''}</div>
       </div>`).join('')}
@@ -2266,6 +2355,7 @@ function renderToday(){
 }
 
 function startSession(dayIndex){
+  editingDate=null;
   if(dayIndex===-1){_forcePickerOnce=true;adHocDay=null;adHocSeqIdx=null;renderToday();return;}
   _forcePickerOnce=false;
   adHocDay=DAYS[dayIndex];adHocSeqIdx=dayIndex;
@@ -2273,10 +2363,11 @@ function startSession(dayIndex){
   renderToday();
 }
 function startFreeSession(){
+  editingDate=null;
   _forcePickerOnce=false;
   adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:[]};
   adHocSeqIdx=null;
-  WS['Free session']={ex:[],subOpen:null,note:'',painNote:'',startAt:Date.now(),lastSetAt:null};
+  WS['Free session']={ex:[],subOpen:null,note:'',painNote:'',startAt:Date.now(),lastSetAt:null,_forDate:todayKey()};
   _freeExPickerMode='search';_freeExSelectedTags=[];
   _isSuggestedSession=false;
   saveDraft('Free session');
@@ -2522,6 +2613,7 @@ function renderProgress(){
     <button class="btn btn-grn btn-sm" style="width:100%;margin-bottom:8px" onclick="exportData()">Export all data (JSON)</button>
     <button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:8px" onclick="shareBackup()">Share backup (WhatsApp / Drive)</button>
     <button class="btn btn-ghost btn-sm" style="width:100%" onclick="document.getElementById('import-input').click()">Import from backup</button>
+    <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="runHistoricalRepair()">Repair ghost-recorded PRs (one-time)</button>
   </div>`;
 
   document.getElementById('p1').innerHTML=html;
@@ -3449,8 +3541,8 @@ function renderHistory(){
   const recents=[];
   for(let d=0;d<14;d++){const dt=new Date(now);dt.setDate(dt.getDate()-d);const dk=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');const s=Data.session.get(dk);if(s)recents.push(s);}
   if(recents.length){
-    html+=`<div class="card"><div class="cl">Recent sessions</div><div class="ct" style="margin-bottom:10px">Last 14 days</div>
-      ${recents.map(s=>`<div class="hitem"><div style="display:flex;justify-content:space-between;align-items:center">
+    html+=`<div class="card"><div class="cl">Recent sessions</div><div class="ct" style="margin-bottom:10px">Last 14 days &mdash; tap to edit</div>
+      ${recents.map(s=>`<div class="hitem"${s.skipped?'':` onclick="editSession('${s.date}')" style="cursor:pointer"`}><div style="display:flex;justify-content:space-between;align-items:center">
         <div><div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif">${s.date}${s.duration?' <span style="font-size:12px;color:var(--dim);font-family:\'IBM Plex Sans\',sans-serif">'+s.duration+'m</span>':''}</div>
         <div style="font-size:13px;color:var(--mut)">${s.dl}${s.newPRs&&s.newPRs.length?' &#x2605;':''}</div></div>
         <div class="pill ${s.skipped?(s.skipReason==='flare'?'pr':'pa'):'pg'}">${s.skipped?(s.skipReason==='flare'?'Flare':s.skipReason==='tired'?'Tired':'Busy'):'Done &#x2713;'}</div>
@@ -3735,6 +3827,7 @@ checkUpdate();
 let _staleDraftPending=null;
 function resolveStaleDraftSave(){
   if(!_staleDraftPending)return;
+  editingDate=null;
   const{dl,state,date}=_staleDraftPending;
   WS[dl]=state;
   const _idx=SEQ.indexOf(dl);
@@ -3749,24 +3842,23 @@ function resolveStaleDraftSave(){
   _staleDraftPending=null;
 }
 function discardStaleDraft(){
-  Data.draft.clearAll();
+  if(_staleDraftPending)Data.draft.clear(_staleDraftPending.date);
   _staleDraftPending=null;
   renderToday();
 }
-if(!Data.session.get()){
+{
+  const _todaySession=Data.session.get();
   const d=Data.draft.findAny();
-  if(d&&d.dl&&d.state){
-    if(d.date&&d.date!==todayKey()){
-      _staleDraftPending={dl:d.dl,state:d.state,date:d.date};
+  if(d&&d.dl&&d.state&&d.date&&d.date!==todayKey()){
+    _staleDraftPending={dl:d.dl,state:d.state,date:d.date};
+  }else if(!_todaySession&&d&&d.dl&&d.state){
+    WS[d.dl]=d.state;
+    if(d.dl==='Free session'){
+      adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:d.state.ex.map(e=>({n:e.origName,...(findExDef(e.origName)||{}),priority:'must'}))};
+      adHocSeqIdx=null;
     }else{
-      WS[d.dl]=d.state;
-      if(d.dl==='Free session'){
-        adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:d.state.ex.map(e=>({n:e.origName,...(findExDef(e.origName)||{}),priority:'must'}))};
-        adHocSeqIdx=null;
-      }else{
-        const _idx=SEQ.indexOf(d.dl);
-        if(_idx>=0){adHocDay=DAYS[_idx];adHocSeqIdx=_idx;}
-      }
+      const _idx=SEQ.indexOf(d.dl);
+      if(_idx>=0){adHocDay=DAYS[_idx];adHocSeqIdx=_idx;}
     }
   }
 }
