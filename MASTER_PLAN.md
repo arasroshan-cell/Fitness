@@ -1,8 +1,8 @@
 # ROSHAN FITNESS TRACKER — MASTER REFERENCE
 **Single source of truth. Read this before every build session.**
-**Last updated:** 2026-09-18
+**Last updated:** 2026-09-22
 **Supersedes:** the v2.2a version of this document (2026-07-12), ROADMAP_MASTER.md, AUDIT_FULL.md, EVALUATION_v2_2a_COMPLETE.md, HANDOVER_v5_0.md
-**Paired with:** index.html (v5.5, 3782 lines, 161 functions), tests.js (300 assertions, all passing at last check)
+**Paired with:** index.html (v5.6, 3852 lines, 163 functions), tests.js (326 assertions, all passing at last check)
 
 ---
 
@@ -26,13 +26,18 @@
 
 | Item | Value | Evidence |
 |---|---|---|
-| Deployed/built version | v5.5 | title tag + `APP_VERSION` const in index.html |
-| HTML lines | 3782 | `wc -l` |
-| Functions | 161 | `grep -c "^function "` |
+| Deployed/built version | v5.6 | title tag + `APP_VERSION` const in index.html |
+| HTML lines | 3852 | `wc -l` |
+| Functions | 163 | `grep -c "^function "` |
 | Foods in DB | 83 (74 base + 8 Tamil/Telugu additions + 1 Aldi granola) | FOODS array parse |
 | fibreRisk foods | 3 | Chickpeas masala, Rajma masala, Soya chunks masala fry |
 | oilInclusive foods | 28 | FOODS array parse |
-| tests.js | EXISTS, 300/300 passing | last full run this session |
+| tests.js | EXISTS, 326/326 passing | last full run this session |
+| Ghost-recorded exercises (untouched prefilled sets counted as performed) | FIXED v5.6 | `bestSetOf`/`saveSession` now require `st.done===true`; `notPerformed` flag added |
+| Historical PR/volume repair pass | BUILT v5.6, not yet run against Roshan's real data | "Repair ghost-recorded PRs" button, Data backup card — dry-run diff shown before any commit |
+| Free/Suggested session completion screen | FIXED v5.6 | `saveSession` now clears `adHocDay`/`adHocSeqIdx`/`editingDate` on real save |
+| Share backup silent failure | FIXED v5.6 | Falls back to `exportData()` on any `navigator.share` rejection |
+| Past-date session editing | FIXED v5.6 | `editSession(dateKey)` parametrised; History rows tap-to-edit |
 | plateRole system | IMPLEMENTED — every food tagged base/curry/side/none | Section 6 |
 | Rest timer | IMPLEMENTED — 150s compound / 75s isolation, ±30s adjustable | Section 5 |
 | RIR/RPE capture + coaching effect | IMPLEMENTED — top-set only | Section 5 |
@@ -92,6 +97,8 @@
 | OI4 | Rest timer default durations (150s compound / 75s isolation) | Implemented with ±30s in-session adjustment per Roshan's request. The defaults themselves are reasonable convention, not something Roshan specifically confirmed — revisit if they feel wrong in practice. |
 | OI5 | Weekly check-in summary | Not built. Flagged repeatedly as needing its own conversation before scoping. |
 | OI6 | B12 / Vitamin D supplementation status | Carried forward from the original plan as unresolved administrative items. Not touched this session. Ask Roshan for current status. |
+| OI7 | 2 July body-stats entry: `fm:217` (physically implausible at 84kg/25% BF) | **OPEN — Roshan chose to leave it flagged, not corrected, 2026-09-22.** Data lives in his phone's localStorage, not in this repo — cannot be verified or fixed from Claude Code. Ask for the real figure directly if this comes up again. |
+| OI8 | FIX 6 equipment-label audit | **RESOLVED 2026-09-22.** See Section 6C. Calf raises fixed directly (pendulum squat machine, plates loaded — Roshan confirmed). Overhead tricep extension, T-bar row, Pendulum/hack squat, and Skull crushers all split into genuinely separate, correctly-labeled exercises per Roshan's explicit rule ("ALL LABELS MUST MATCH EXERCISE, not combined for substitutes") — old combined entries kept fully untouched and resolvable since Roshan confirmed he has real historical logs under some of them. Smith machine row, flagged in the v5.6 task as broken, was already correct via existing `inferSubWlabel` smith-machine pattern matching — no fix needed there, the task's claim was wrong. |
 
 ---
 
@@ -161,6 +168,21 @@ Plain curries, rice, idli, rasam, sambar, curd, and yogurt do not — log oil/gh
 
 ### fibreRisk foods (obstruction risk with the stricture — implemented and live)
 Chickpeas masala (tinned), Rajma masala (tinned), Soya chunks masala fry.
+
+---
+
+## SECTION 6C — v5.6 BUILD TASK: COMPLETED VS DEFERRED (2026-09-22)
+
+| Item | Status | Notes |
+|---|---|---|
+| FIX 1 — Ghost-recorded exercises | **DONE** | `bestSetOf` requires `st.done===true`; `saveSession` adds `notPerformed`, gates `exVolume`/`isPR` on real done sets. 6 tests added, reproducing the exact mechanism (undone prefilled sets, zero-done exercises, partial completion) using the named real cases as fixtures. Visible in the Today completion card as "Not performed". |
+| FIX 2 — Historical data repair | **BUILT, not yet run against real data** | `repairHistoricalSessions(dryRun)` + `runHistoricalRepair()` button (Data backup card). Dry-run diffs before any write; only ever touches `sess:` keys, never food/symptom/bstats logs; chronological PR replay confirmed correct in sandboxed tests (5 tests). **Cannot be run against Roshan's real data from Claude Code — localStorage lives on his phone.** He needs to tap the button himself; the in-app confirm dialog shows the diff before committing, satisfying the "confirm before running against real data" requirement at the point where it actually matters. |
+| FIX 3 — Free/Suggested completion screen | **DONE** | `adHocDay`/`adHocSeqIdx`/`editingDate` cleared inside `saveSession`'s success path. Implemented session-type-agnostic rather than gated to Free/Suggested specifically — the underlying code defect (`adHocDay` never cleared after save) applies to every session type equally; gating it artificially would have left the same latent bug for structured days. 2 tests added. |
+| FIX 4 — Share backup silent failure | **DONE** | `.catch(()=>{exportData();})` — any rejection falls back to the working download path. 1 test added. |
+| FIX 5 — Past-date session editing | **DONE** | `editSession(dateKey)` parametrised, defaults to today for backward compatibility. History's last-14-days rows are tap-to-edit (skipped days excluded). `last_seq_idx` rotation now only fires when editing *today's* own structured session, so reopening an old day can't desync the next-suggested day. 5 tests added. |
+| FIX 6 — Equipment label audit | **DONE, including a structural follow-up Roshan asked for same-session** | Full `DAYS`+`SUB_TYPE_OVERRIDE` `wlabel` sweep found: Overhead tricep extension contradicting its own "Rope attachment" cue; Calf raises phrased like the bodyweight-plus-add-on convention despite `inputType:'weight'`; T-bar row and the Pendulum/hack squat substitute each naming two different pieces of equipment in one label; Skull crushers doing the same (EZ bar or Smith bar). Smith machine row, which the task claimed was broken, was already correct via `inferSubWlabel` — no fix needed, the task was wrong. Calf raises fixed directly (Roshan confirmed: pendulum squat machine, plates loaded). For the other four, Roshan's rule was "ALL LABELS MUST MATCH EXERCISE, not combined for substitutes" — so each was split into genuinely separate exercises rather than just relabeled: **Overhead tricep extension**'s primary wlabel corrected to match its own rope cue (Stack weight), plus a new **One-hand DB overhead extension** substitute added. **T-bar row (machine)** and **T-bar row (landmine)** added alongside the old combined **T-bar row**. **Pendulum squat machine** and **Hack squat machine** added alongside the old combined **Pendulum/hack squat machine** substitute (now with an explicit wlabel instead of relying on generic inference). **Skull crushers (EZ bar)** and **Skull crushers (Smith bar)** added alongside the old combined **Skull crushers**. All four old combined entries were deliberately left completely untouched, not removed or renamed — Roshan confirmed he has real historical sessions logged under some of them, and removing an entry from `SUBS` would make `findExDef` return null for any old session still referencing that name, breaking History/Progress lookups for that data. 11 new tests added covering both the split entries and the old ones' continued resolvability. |
+| FIX 7 — Nordic curl / TKE cleanup | **SKIPPED — task was wrong** | Task claimed Roshan has no GHD/partner access, contradicting his direct confirmation earlier this same session (used to resolve OI1 in v5.5). Roshan reconfirmed 2026-09-22: he does have GHD access. v5.5's fix stands unchanged. TKE clause was already moot — TKE was removed entirely from `SUBS` in v5.5 per OI2, nothing left to override. |
+| FIX 8 — 2 July `fm:217` body-stats correction | **DEFERRED per Roshan's own choice** | Data lives in his phone's localStorage, not this repo — Claude Code has no way to read or verify it. Roshan chose to leave it flagged rather than guess. See OI7. |
 
 ---
 
