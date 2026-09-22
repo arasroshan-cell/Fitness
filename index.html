@@ -783,8 +783,9 @@ function mountSingleMuscleDiagram(elId,tag,prevInstance){
 const Data={
   pr:{
     get(name){return lsG('pr:'+name);},
-    set(name,best){return lsS('pr:'+name,{w:best.w,r:best.r,date:todayKey()});},
+    set(name,best){return Data.pr.restore(name,{w:best.w,r:best.r,date:todayKey()});},
     clear(name){return lsS('pr:'+name,null);},
+    restore(name,record){return lsS('pr:'+name,record);},
     clearAll(){
       for(let i=localStorage.length-1;i>=0;i--){
         const k=localStorage.key(i);
@@ -800,17 +801,21 @@ const Data={
     setLast(dl,data){return lsS('last:'+dl,data);}
   },
   draft:{
-    save(dl,state){return lsS('ws_draft:'+todayKey(),{dl,state,date:todayKey()});},
+    save(dl,state,dateKey){dateKey=dateKey||todayKey();return lsS('ws_draft:'+dateKey,{dl,state,date:dateKey});},
+    get(dateKey){return lsG('ws_draft:'+(dateKey||todayKey()));},
     findAny(){
+      const today=lsG('ws_draft:'+todayKey());
+      if(today&&today.dl&&today.state)return today;
       for(let i=0;i<localStorage.length;i++){
         const k=localStorage.key(i);
-        if(k&&k.startsWith('ws_draft:')){
+        if(k&&k.startsWith('ws_draft:')&&k!=='ws_draft:'+todayKey()){
           const d=lsG(k);
           if(d&&d.dl&&d.state)return d;
         }
       }
       return null;
     },
+    clear(dateKey){return lsDel('ws_draft:'+(dateKey||todayKey()));},
     clearAll(){
       for(let i=localStorage.length-1;i>=0;i--){
         const k=localStorage.key(i);
@@ -1030,8 +1035,8 @@ function getSkipWarnings(){
 }
 
 /* ===== DRAFT ===== */
-function saveDraft(dl){if(WS[dl])Data.draft.save(dl,WS[dl]);}
-function clearDraft(){Data.draft.clearAll();}
+function saveDraft(dl,dateKey){if(WS[dl])Data.draft.save(dl,WS[dl],dateKey||editingDate||todayKey());}
+function clearDraft(dateKey){Data.draft.clear(dateKey||todayKey());}
 
 /* ===== WORKOUT STATE ===== */
 let WS={};
@@ -1042,6 +1047,17 @@ let _forcePickerOnce=false;
 
 function initWS(dl,def){
   const pSubs=lsG('persisted_subs')||{};
+  if(WS[dl]&&WS[dl]._forDate&&WS[dl]._forDate!==todayKey()&&WS[dl]._forDate!==editingDate){
+    /* This slot holds a different date's data — leftover in memory from an editSession()
+       edit that was abandoned rather than saved (the edit overwrites WS[dl] directly, and
+       nothing else clears it on abandonment). editingDate still matching _forDate means the
+       edit is genuinely still in progress, not abandoned — leave it alone in that case.
+       Otherwise never trust it for today; recover today's own real draft if one was
+       persisted, otherwise fall through to a fresh build below. */
+    const todayDraft=Data.draft.get(todayKey());
+    if(todayDraft&&todayDraft.dl===dl)WS[dl]=todayDraft.state;
+    else delete WS[dl];
+  }
   if(!WS[dl]){
     WS[dl]={
       ex:def.ex.map(e=>{
@@ -1051,10 +1067,11 @@ function initWS(dl,def){
           sets:Array.from({length:e.s},(_,si)=>({w:prefill?.[si]?.w||'',r:prefill?.[si]?.r||'',pw:prefill?.[si]?.w||'',pr:prefill?.[si]?.r||'',done:false,isDrop:false}))
         };
       }),
-      subOpen:null,note:'',painNote:'',startAt:null,lastSetAt:null
+      subOpen:null,note:'',painNote:'',startAt:null,lastSetAt:null,_forDate:todayKey()
     };
     return;
   }
+  if(!(editingDate&&WS[dl]._forDate===editingDate))WS[dl]._forDate=todayKey();
   /* Reconcile a possibly-stale draft (e.g. loaded from before a source-code update) against
      the current exercise array, matching by origName so in-progress sets are preserved for
      exercises that still exist, instead of crashing on index misalignment for new ones. */
@@ -1447,8 +1464,9 @@ function getSuggestion(orig,best,prKey){
 }
 
 /* ===== PR DETECTION ===== */
-function checkPR(origName,best,inputType){
+function checkPR(origName,best,inputType,date){
   if(!best)return false;
+  const d=date||todayKey();
   const cur=Data.pr.get(origName);
   const isRepsFirst=inputType==='bodyweight';
   const isTimeFirst=inputType==='seconds';
@@ -1456,22 +1474,30 @@ function checkPR(origName,best,inputType){
     if(!best.r||parseInt(best.r)<=0)return false;
     const bw=parseFloat(best.w||0),br=parseInt(best.r||0);
     const cw=cur?parseFloat(cur.w||0):0,cr=cur?parseInt(cur.r||0):0;
-    if(!cur||br>cr||bw>cw){Data.pr.set(origName,{w:best.w||'0',r:best.r});return true;}
+    if(!cur||br>cr||bw>cw){Data.pr.restore(origName,{w:best.w||'0',r:best.r,date:d});return true;}
     return false;
   }
   if(!best.w||parseFloat(best.w)<=0)return false;
   if(isTimeFirst){
     const bw=parseFloat(best.w),cw=cur?parseFloat(cur.w||0):0;
-    if(!cur||bw>cw){Data.pr.set(origName,{w:best.w,r:best.r});return true;}
+    if(!cur||bw>cw){Data.pr.restore(origName,{w:best.w,r:best.r,date:d});return true;}
     return false;
   }
   if(!cur||parseFloat(best.w)>parseFloat(cur.w)||(parseFloat(best.w)===parseFloat(cur.w)&&parseInt(best.r||0)>parseInt(cur.r||0))){
-    Data.pr.set(origName,{w:best.w,r:best.r});return true;
+    Data.pr.restore(origName,{w:best.w,r:best.r,date:d});return true;
   }
   return false;
 }
 
 /* ===== SAVE SESSION ===== */
+function computeExVolume(doneSets,inputType){
+  return doneSets.reduce((v,st)=>{
+    if(inputType==='bodyweight')return v+(parseInt(st.r)||0);
+    if(inputType==='seconds')return v+(parseFloat(st.w)||0);
+    if(inputType==='reps_each')return v+(parseInt(st.w)||0)*2;
+    return v+(parseFloat(st.w)||0)*(parseInt(st.r)||0);
+  },0);
+}
 function bestSetOf(workingSets,inputType){
   const singleField=inputType==='seconds'||inputType==='reps_each';
   const repsFirst=inputType==='bodyweight';
@@ -1502,27 +1528,24 @@ function saveSession(dl,seqIdx,explicitDate){
     const doneSets=workingSets.filter(st=>st.done===true);
     const notPerformed=doneSets.length===0;
     const best=bestSetOf(workingSets,effOrig.inputType);
-    const isPR=checkPR(effName,best,effOrig.inputType);
+    const isPR=checkPR(effName,best,effOrig.inputType,saveDate);
     if(isPR)newPRs.push(effName);
-    const exVolume=notPerformed?0:doneSets.reduce((v,st)=>{
-      if(effOrig.inputType==='bodyweight')return v+(parseInt(st.r)||0);
-      if(effOrig.inputType==='seconds')return v+(parseFloat(st.w)||0);
-      if(effOrig.inputType==='reps_each')return v+(parseInt(st.r)||0)*2;
-      return v+(parseFloat(st.w)||0)*(parseInt(st.r)||0);
-    },0);
+    const exVolume=notPerformed?0:computeExVolume(doneSets,effOrig.inputType);
     return{name:effName,origName:effOrigName,best,sets:ex.sets,chosenType:ex.chosenType,suggestion:getSuggestion(effOrig,best,effName),isPR,inputType:effOrig.inputType,exVolume,notPerformed};
   });
   const totalVolume=exercises.reduce((v,e)=>v+(e.exVolume||0),0);
   const isFree=seqIdx==='free';
   const session={date:saveDate,dl,seqIdx:isFree?null:seqIdx,exercises,note:s.note,painNote:s.painNote||'',skipped:false,duration,newPRs,totalVolume};
   Data.session.set(session,saveDate);
-  Data.session.setLast(dl,{date:saveDate,exercises});
-  if(!isFree)lsS('last_seq_idx',seqIdx);
+  if(!editingDate){
+    Data.session.setLast(dl,{date:saveDate,exercises});
+    if(!isFree)lsS('last_seq_idx',seqIdx);
+  }
   lsS('last_dl',dl);
   const mlog=lsG('mlog:'+saveMonth)||{};
   mlog[saveDate]={type:'done',dl,seqIdx:isFree?undefined:seqIdx};
   lsS('mlog:'+saveMonth,mlog);
-  clearDraft();showStickyBtn(false);stopTimerTick();skipRestTimer();
+  clearDraft(saveDate);showStickyBtn(false);stopTimerTick();skipRestTimer();
   adHocDay=null;adHocSeqIdx=null;editingDate=null;
   renderToday();
   const toast=document.getElementById('save-toast');
@@ -1578,14 +1601,14 @@ function editSession(dateKey){
       name:e.name,origName:e.origName,chosenType:e.chosenType||null,
       sets:e.sets||[{w:e.best?.w||'',r:e.best?.r||'',done:true,isDrop:false}]
     })),
-    subOpen:null,note:ex.note||'',painNote:ex.painNote||'',startAt:Date.now(),lastSetAt:null
+    subOpen:null,note:ex.note||'',painNote:ex.painNote||'',startAt:Date.now(),lastSetAt:null,_forDate:dateKey
   };
   Data.session.delete(dateKey);
   const mk=dateKey.slice(0,7);
   const mlog=lsG('mlog:'+mk)||{};delete mlog[dateKey];lsS('mlog:'+mk,mlog);
   if(!isFree&&isToday)lsS('last_seq_idx',(seqIdx+3)%4);
   adHocDay=gd;adHocSeqIdx=seqIdx;editingDate=isToday?null:dateKey;
-  saveDraft(ex.dl);
+  saveDraft(ex.dl,dateKey);
   renderToday();
   document.querySelector('.tab[data-t="0"]')?.click();
 }
@@ -1610,6 +1633,7 @@ function unskipSession(){
   renderToday();
 }
 function skipSession(reason){
+  if(editingDate){adHocDay=null;adHocSeqIdx=null;editingDate=null;}
   const nextIdx=getNextIdx();
   const gd=adHocDay||(nextIdx!==null?DAYS[nextIdx]:null);
   const dl=gd?gd.label:'Rest day';
@@ -1647,7 +1671,7 @@ function repairHistoricalSessions(dryRun){
   for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('sess:'))keys.push(k);}
   const entries=keys.map(k=>({key:k,dateKey:k.slice(5),session:lsG(k)})).filter(x=>x.session&&!x.session.skipped&&x.session.exercises).sort((a,b)=>a.dateKey<b.dateKey?-1:1);
   const affectedNames=new Set();
-  entries.forEach(x=>x.session.exercises.forEach(e=>affectedNames.add(e.origName)));
+  entries.forEach(x=>x.session.exercises.forEach(e=>{affectedNames.add(e.name||e.origName);affectedNames.add(e.origName);}));
   const prBackup={};
   affectedNames.forEach(n=>{prBackup[n]=Data.pr.get(n);Data.pr.clear(n);});
   const changes=[];
@@ -1658,14 +1682,10 @@ function repairHistoricalSessions(dryRun){
       const doneSets=workingSets.filter(st=>st.done===true);
       const notPerformed=doneSets.length===0;
       const best=bestSetOf(workingSets,e.inputType);
-      const isPR=checkPR(e.origName,best,e.inputType);
-      if(isPR)newPRs.push(e.name);
-      const exVolume=notPerformed?0:doneSets.reduce((v,st)=>{
-        if(e.inputType==='bodyweight')return v+(parseInt(st.r)||0);
-        if(e.inputType==='seconds')return v+(parseFloat(st.w)||0);
-        if(e.inputType==='reps_each')return v+(parseInt(st.r)||0)*2;
-        return v+(parseFloat(st.w)||0)*(parseInt(st.r)||0);
-      },0);
+      const trackName=e.name||e.origName;
+      const isPR=checkPR(trackName,best,e.inputType,dateKey);
+      if(isPR)newPRs.push(trackName);
+      const exVolume=notPerformed?0:computeExVolume(doneSets,e.inputType);
       return{...e,best,isPR,exVolume,notPerformed};
     });
     const totalVolume=exercises.reduce((v,e)=>v+(e.exVolume||0),0);
@@ -1676,7 +1696,7 @@ function repairHistoricalSessions(dryRun){
       if(!dryRun)lsS(key,{...session,exercises,newPRs,totalVolume});
     }
   });
-  if(dryRun)affectedNames.forEach(n=>prBackup[n]===null?Data.pr.clear(n):Data.pr.set(n,prBackup[n]));
+  if(dryRun)affectedNames.forEach(n=>Data.pr.restore(n,prBackup[n]));
   return changes;
 }
 function runHistoricalRepair(){
@@ -1991,12 +2011,12 @@ function renderToday(){
       }}return 'weight';
     }
     function fmtCompletedBest(e){
-      if(!e.best||!e.best.w)return '';
+      if(!e.best)return '';
       const it=getExInputType(e.name||e.origName);
-      if(it==='bodyweight')return e.best.r+' reps';
-      if(it==='seconds')return e.best.w+'s';
-      if(it==='reps_each')return e.best.w+' each side';
-      return e.best.w+'kg \u00d7 '+(e.best.r||'');
+      if(it==='bodyweight')return e.best.r?e.best.r+' reps':'';
+      if(it==='seconds')return e.best.w?e.best.w+'s':'';
+      if(it==='reps_each')return e.best.w?e.best.w+' each side':'';
+      return e.best.w?e.best.w+'kg \u00d7 '+(e.best.r||''):'';
     }
     html+=`<div class="card success">
       <div class="cl">${existing.date}${existing.duration?' &middot; '+existing.duration+' min':''}</div>
@@ -2335,6 +2355,7 @@ function renderToday(){
 }
 
 function startSession(dayIndex){
+  editingDate=null;
   if(dayIndex===-1){_forcePickerOnce=true;adHocDay=null;adHocSeqIdx=null;renderToday();return;}
   _forcePickerOnce=false;
   adHocDay=DAYS[dayIndex];adHocSeqIdx=dayIndex;
@@ -2342,10 +2363,11 @@ function startSession(dayIndex){
   renderToday();
 }
 function startFreeSession(){
+  editingDate=null;
   _forcePickerOnce=false;
   adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:[]};
   adHocSeqIdx=null;
-  WS['Free session']={ex:[],subOpen:null,note:'',painNote:'',startAt:Date.now(),lastSetAt:null};
+  WS['Free session']={ex:[],subOpen:null,note:'',painNote:'',startAt:Date.now(),lastSetAt:null,_forDate:todayKey()};
   _freeExPickerMode='search';_freeExSelectedTags=[];
   _isSuggestedSession=false;
   saveDraft('Free session');
@@ -3805,6 +3827,7 @@ checkUpdate();
 let _staleDraftPending=null;
 function resolveStaleDraftSave(){
   if(!_staleDraftPending)return;
+  editingDate=null;
   const{dl,state,date}=_staleDraftPending;
   WS[dl]=state;
   const _idx=SEQ.indexOf(dl);
@@ -3819,24 +3842,23 @@ function resolveStaleDraftSave(){
   _staleDraftPending=null;
 }
 function discardStaleDraft(){
-  Data.draft.clearAll();
+  if(_staleDraftPending)Data.draft.clear(_staleDraftPending.date);
   _staleDraftPending=null;
   renderToday();
 }
-if(!Data.session.get()){
+{
+  const _todaySession=Data.session.get();
   const d=Data.draft.findAny();
-  if(d&&d.dl&&d.state){
-    if(d.date&&d.date!==todayKey()){
-      _staleDraftPending={dl:d.dl,state:d.state,date:d.date};
+  if(d&&d.dl&&d.state&&d.date&&d.date!==todayKey()){
+    _staleDraftPending={dl:d.dl,state:d.state,date:d.date};
+  }else if(!_todaySession&&d&&d.dl&&d.state){
+    WS[d.dl]=d.state;
+    if(d.dl==='Free session'){
+      adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:d.state.ex.map(e=>({n:e.origName,...(findExDef(e.origName)||{}),priority:'must'}))};
+      adHocSeqIdx=null;
     }else{
-      WS[d.dl]=d.state;
-      if(d.dl==='Free session'){
-        adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:d.state.ex.map(e=>({n:e.origName,...(findExDef(e.origName)||{}),priority:'must'}))};
-        adHocSeqIdx=null;
-      }else{
-        const _idx=SEQ.indexOf(d.dl);
-        if(_idx>=0){adHocDay=DAYS[_idx];adHocSeqIdx=_idx;}
-      }
+      const _idx=SEQ.indexOf(d.dl);
+      if(_idx>=0){adHocDay=DAYS[_idx];adHocSeqIdx=_idx;}
     }
   }
 }

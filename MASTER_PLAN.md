@@ -2,7 +2,7 @@
 **Single source of truth. Read this before every build session.**
 **Last updated:** 2026-09-22
 **Supersedes:** the v2.2a version of this document (2026-07-12), ROADMAP_MASTER.md, AUDIT_FULL.md, EVALUATION_v2_2a_COMPLETE.md, HANDOVER_v5_0.md
-**Paired with:** index.html (v5.6, 3852 lines, 163 functions), tests.js (326 assertions, all passing at last check)
+**Paired with:** index.html (v5.6, 3874 lines, 164 functions), tests.js (350 assertions, all passing at last check)
 
 ---
 
@@ -27,12 +27,13 @@
 | Item | Value | Evidence |
 |---|---|---|
 | Deployed/built version | v5.6 | title tag + `APP_VERSION` const in index.html |
-| HTML lines | 3852 | `wc -l` |
-| Functions | 163 | `grep -c "^function "` |
+| HTML lines | 3874 | `wc -l` |
+| Functions | 164 | `grep -c "^function "` |
 | Foods in DB | 83 (74 base + 8 Tamil/Telugu additions + 1 Aldi granola) | FOODS array parse |
 | fibreRisk foods | 3 | Chickpeas masala, Rajma masala, Soya chunks masala fry |
 | oilInclusive foods | 28 | FOODS array parse |
-| tests.js | EXISTS, 326/326 passing | last full run this session |
+| tests.js | EXISTS, 350/350 passing | last full run this session |
+| Post-delivery audit (2026-09-22) | 16 real bugs found and fixed across 10 review rounds before merge, per Roshan's "audit then merge if clean" request | See Section 6D |
 | Ghost-recorded exercises (untouched prefilled sets counted as performed) | FIXED v5.6 | `bestSetOf`/`saveSession` now require `st.done===true`; `notPerformed` flag added |
 | Historical PR/volume repair pass | BUILT v5.6, not yet run against Roshan's real data | "Repair ghost-recorded PRs" button, Data backup card — dry-run diff shown before any commit |
 | Free/Suggested session completion screen | FIXED v5.6 | `saveSession` now clears `adHocDay`/`adHocSeqIdx`/`editingDate` on real save |
@@ -183,6 +184,50 @@ Chickpeas masala (tinned), Rajma masala (tinned), Soya chunks masala fry.
 | FIX 6 — Equipment label audit | **DONE, including a structural follow-up Roshan asked for same-session** | Full `DAYS`+`SUB_TYPE_OVERRIDE` `wlabel` sweep found: Overhead tricep extension contradicting its own "Rope attachment" cue; Calf raises phrased like the bodyweight-plus-add-on convention despite `inputType:'weight'`; T-bar row and the Pendulum/hack squat substitute each naming two different pieces of equipment in one label; Skull crushers doing the same (EZ bar or Smith bar). Smith machine row, which the task claimed was broken, was already correct via `inferSubWlabel` — no fix needed, the task was wrong. Calf raises fixed directly (Roshan confirmed: pendulum squat machine, plates loaded). For the other four, Roshan's rule was "ALL LABELS MUST MATCH EXERCISE, not combined for substitutes" — so each was split into genuinely separate exercises rather than just relabeled: **Overhead tricep extension**'s primary wlabel corrected to match its own rope cue (Stack weight), plus a new **One-hand DB overhead extension** substitute added. **T-bar row (machine)** and **T-bar row (landmine)** added alongside the old combined **T-bar row**. **Pendulum squat machine** and **Hack squat machine** added alongside the old combined **Pendulum/hack squat machine** substitute (now with an explicit wlabel instead of relying on generic inference). **Skull crushers (EZ bar)** and **Skull crushers (Smith bar)** added alongside the old combined **Skull crushers**. All four old combined entries were deliberately left completely untouched, not removed or renamed — Roshan confirmed he has real historical sessions logged under some of them, and removing an entry from `SUBS` would make `findExDef` return null for any old session still referencing that name, breaking History/Progress lookups for that data. 11 new tests added covering both the split entries and the old ones' continued resolvability. |
 | FIX 7 — Nordic curl / TKE cleanup | **SKIPPED — task was wrong** | Task claimed Roshan has no GHD/partner access, contradicting his direct confirmation earlier this same session (used to resolve OI1 in v5.5). Roshan reconfirmed 2026-09-22: he does have GHD access. v5.5's fix stands unchanged. TKE clause was already moot — TKE was removed entirely from `SUBS` in v5.5 per OI2, nothing left to override. |
 | FIX 8 — 2 July `fm:217` body-stats correction | **DEFERRED per Roshan's own choice** | Data lives in his phone's localStorage, not this repo — Claude Code has no way to read or verify it. Roshan chose to leave it flagged rather than guess. See OI7. |
+
+---
+
+## SECTION 6D — POST-DELIVERY AUDIT (2026-09-22): 16 real bugs found and fixed before merge
+
+Roshan asked for a full audit before merging v5.6, conditioned on the result being clean. It was not
+clean on the first pass, or the second, or several after that. The `/code-review` skill (high effort,
+independent of the code that had just been written) was run 10 times against the branch, fixing real
+findings between each run, until a pass came back with nothing new. 16 genuine bugs were found this way
+— none were present in the original delivery's own 300+ tests, since those tests were written by the
+same pass that wrote the code. One claimed finding (a supposed `"undefined"` string written to
+localStorage) was checked and found to be **false** — `lsG`'s missing-key handling already guards
+against it — and was not "fixed", since fixing something that is not broken is its own risk.
+
+| # | Bug | Fix |
+|---|---|---|
+| 1 | `repairHistoricalSessions` keyed `checkPR` by the originally-scheduled exercise (`e.origName`) instead of the one actually performed (`e.name`), fabricating a PR under the wrong exercise when a substitute was used | Keyed by `e.name` (with an `e.origName` fallback for legacy records missing `.name` — see #15) |
+| 2 | `saveSession`'s new `!explicitDate` guard (added to fix the completion-screen bug) also silently skipped `setLast`/`last_seq_idx` for `resolveStaleDraftSave`'s genuinely-most-recent backfill save, not just `editSession`'s re-save of an already-old session | Gated on the more specific `editingDate` signal instead of the generic `explicitDate` parameter |
+| 2b | Same gate, structured-day case | Same fix, confirmed for `DAYS`-indexed sessions too |
+| 3 | A dry-run repair *preview* (which `runHistoricalRepair` always runs first) permanently re-stamped today's date onto a genuine old PR via `Data.pr.set`'s automatic `date:todayKey()` | Added `Data.pr.restore(name,record)` — writes an exact record with no auto-dating — for the dry-run revert path |
+| 3b | The same date-loss bug on the real (committed) repair run — the dry-run fix alone didn't cover the only run that actually persists | `Data.pr.restore` used for the real run's write too, with the session's actual `dateKey` |
+| 4 | `affectedNames` (the repair's pre-reset backup set) was keyed only by `e.name`, so any legacy `pr:` record under the old `e.origName` key would never be touched by the repair — permanent orphaned data | Both `e.name` and `e.origName` added to `affectedNames` |
+| 5 | `editingDate` is a session-lifetime global cleared only on successful save — abandoning an `editSession()` edit and starting a genuinely different session (`startSession`/`startFreeSession`) carried the stale date into the new save, silently overwriting the wrong date's data | `editingDate=null` added to both `startSession` and `startFreeSession` |
+| 6 | Same class of bug at a third call site: `resolveStaleDraftSave` didn't reset `editingDate` either | `editingDate=null` added there too |
+| 7 | `Data.pr.restore` dropped `checkPR`'s `w:best.w||'0'` fallback for bodyweight exercises logged with no added weight, writing an empty string into the PR record | Fallback restored |
+| 8 | (folded into #5/#6 — no separate fix) | — |
+| 9 | `editSession` unlocking a past date called `saveDraft`, which writes to the single `ws_draft:<today>` slot — silently clobbering a genuinely different, in-progress *today* workout draft | `saveDraft` now only called when editing *today's own* session |
+| 10 | `computeExVolume`'s calculation was duplicated verbatim between `saveSession` and `repairHistoricalSessions` — a maintenance hazard, not yet a live bug | Extracted into one shared `computeExVolume(doneSets,inputType)` function |
+| 11 | `skipSession` didn't discard a stale `adHocDay` left over from an abandoned past-date edit, so skipping mid-abandoned-edit recorded *today's* skip under the *old edited session's* label | `skipSession` now resets `adHocDay`/`adHocSeqIdx`/`editingDate` when `editingDate` is set |
+| 12 | `fmtCompletedBest` returned a blank result for a genuinely completed bodyweight exercise logged with no added weight (gated on `best.w` universally instead of the type-appropriate field) — undermining FIX 1's own "don't show blank, show a real result or Not performed" goal | Gates on the correct field per `inputType` |
+| 13 | Editing a past date deletes the original record immediately with no draft backup (unlike today's edits) — abandoning the edit loses the original permanently | **Real fix built, not just disclosed** (Roshan's explicit call — see #17/#18): `Data.draft` given a `dateKey`-scoped slot instead of the single `ws_draft:<today>` one |
+| 14 | `checkPR` always stamped `date:todayKey()` internally — editing an old session and hitting a genuine new PR during that edit recorded the PR as achieved "today" instead of on the session's real date. This was the same bug class already fixed for the repair tool (#3/#3b) but left live on the ordinary save path | `checkPR` takes an explicit `date` parameter (defaults to today); `saveSession` passes `saveDate`, `repairHistoricalSessions` passes `dateKey` — one shared, root-level fix instead of two patches |
+| 15 | Repair would corrupt/orphan data under a `pr:undefined` key for any legacy session record missing the `.name` field (a schema shape old enough to predate the migration wipe of `pr:` keys, which never touched `sess:` keys) | Falls back to `e.origName` when `e.name` is absent |
+| 16 | `computeExVolume`'s `reps_each` branch read `st.r` (always empty for reps_each sets, which store their single value in `.w` — confirmed by `bestSetOf` and `fmtCompletedBest` both already reading `.w`), silently zeroing volume for every reps_each exercise (Dead bug, etc.) in every saved and repaired session. **Pre-existing since before this session** — relocated verbatim during the #10 dedup, caught while extracting the shared helper | Reads `st.w` |
+| 17 | `Data.draft` given a `dateKey`-scoped `save`/`clear`, `findAny()` prioritises today's own draft then falls back to any other dated one, `discardStaleDraft` clears only the specific stale draft — replacing the earlier disclose-only mitigation for #13 | `editSession` now calls `saveDraft(ex.dl,dateKey)` unconditionally under the edit's own date; `saveSession`/`skipSession` clear only the date actually being saved, not every draft |
+| 18 | **Found auditing #17's own fix**: ~15 mid-edit autosave call sites (`togDone`, `updSet`, `setRIR`, `addSet`, `removeSet`, the note/painNote inputs, `pickSub`, etc.) all call `saveDraft(dl)` with no `dateKey` — every one of them defaulted back to `ws_draft:<today>` regardless of what date was actually being edited, so the very first tap during a past-date edit re-clobbered today's real draft, reopening #9/#13 immediately after #17 closed it | `saveDraft(dl,dateKey)` now falls back to `dateKey\|\|editingDate\|\|todayKey()` — a single root-level fix, no changes needed at any of the ~15 call sites |
+| 18b | **Found auditing #18's own fix**: the boot-time stale-draft check only ran `if(!Data.session.get())`, so an abandoned past-date edit's draft was never surfaced for recovery once today already had *any* session recorded (a skip counts) — permanently orphaned even though the data technically still existed | Restructured to check for an other-dated draft unconditionally, independent of today's session state; only the "restore today's own draft directly into WS" branch stays gated on `!todaySession` |
+| 19 | **Found auditing #17/#18's own fix, the most severe of the three**: `editSession()` overwrites `WS[dl]` in memory with the historical session's data, and `initWS()` (which every render of the active-workout view calls) trusted an already-populated `WS[dl]` as-is with no way to tell it apart from today's real data. Editing an old session sharing today's own day label (e.g. an old "Push day"), then abandoning the edit and resuming today's real "Push day", silently kept the *old* session's data in memory — saving from there would have fabricated today's record, PR and volume from a years-old session | Every `WS[dl]` assignment now carries a `_forDate` tag (the date it actually represents). `initWS` checks the tag: if it doesn't match today *and* doesn't match the currently in-progress `editingDate` (i.e. genuinely abandoned, not still being edited), it discards the stale slot and recovers today's own real draft via a new `Data.draft.get(dateKey)` targeted lookup, or falls through to a fresh build |
+| 19b | Companion correctness check for #19: the `_forDate` re-tagging itself needed to *not* fire while an edit is still genuinely in progress, or it would silently relabel an active old-date edit as "today's," breaking the invariant the moment a mid-edit re-render happened | Re-tagging is skipped whenever `WS[dl]._forDate` already equals the current `editingDate` |
+
+#13/#17/#18/#18b/#19/#19b are one continuous chain: each fix was audited, and each audit pass found a
+real gap the previous fix left open, three levels deep. This is why the audit ran 13 rounds instead of
+stopping after 2 or 3 — a fix that hasn't been independently re-audited isn't trustworthy just because
+it addressed the finding it was written for.
 
 ---
 
