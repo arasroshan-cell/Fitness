@@ -13,6 +13,13 @@ function T(name, cond) {
 
 /* ---------- Static checks (grep-level) ---------- */
 T('version stamp v5.6 in header', /Roshan Fitness v5\.6/.test(src));
+T('version consistency: the <title> tag, APP_VERSION const, and the separate hardcoded .vtag header badge all agree — permanent regression test for the real bug found 2026-09-22 (vtag was silently left at v5.5 for an entire version bump since nothing checked it)', (() => {
+  const titleMatch = src.match(/<title>Roshan Fitness (v[\d.]+[a-z]?)<\/title>/);
+  const appVerMatch = src.match(/const APP_VERSION='(v[\d.]+[a-z]?)';/);
+  const vtagMatch = src.match(/<div class="vtag"[^>]*>(v[\d.]+[a-z]?)<\/div>/);
+  return !!titleMatch && !!appVerMatch && !!vtagMatch &&
+    titleMatch[1] === appVerMatch[1] && appVerMatch[1] === vtagMatch[1];
+})());
 T('N1: no slice(-52) remains', !src.includes('slice(-52)'));
 T('N1: two slice(-260) caps present', (src.match(/slice\(-260\)/g) || []).length === 2);
 T('N2: three fibreRisk flags', (src.match(/fibreRisk:true/g) || []).length === 3);
