@@ -12,13 +12,25 @@ propose better, with reasoning. Ask for explicit confirmation before any build, 
 or deletion.
 
 ## Read order at every session start — do this before anything else
-1. Read `MASTER_PLAN.md` in this repo first. It is the single source of truth for current
-   state, build rules, food database, medical constraints, open questions, and risks.
+1. Read `MASTER_PLAN.md` first. **As of 2026-09-23 it lives in a separate private repo,
+   `arasroshan-cell/Phitness` — not this one.** This repo (`arasroshan-cell/Fitness`) is
+   public and served live via GitHub Pages, so Roshan's medical/personal context was moved
+   out of it entirely. If `Phitness` is not already attached to the session, add it before
+   proceeding — do not guess at current state from this file's memory or from index.html
+   alone. It is the single source of truth for current state, build rules, food database,
+   medical constraints, open questions, and risks.
 2. If `MASTER_PLAN.md` conflicts with any other file (HANDOVER docs, old specs), MASTER_PLAN.md
    wins. Older docs are historical only.
 3. Confirm `index.html`'s actual version (title tag / `APP_VERSION` const) matches what
    MASTER_PLAN.md Section 1 claims. If it does not match, say so before building anything —
    do not assume either file is correct.
+
+## Privacy — this repo is public
+This repo is public and served live via GitHub Pages. Never commit Roshan's name, location,
+diagnosis, medication names, or other personal/medical specifics into any file here —
+that content belongs in `MASTER_PLAN.md` in the private `Phitness` repo instead. If a fix or
+feature genuinely needs personal specifics in the shipped app (e.g. profile data), keep them
+in the user's own `localStorage` profile object, never hardcoded in `index.html`'s source.
 
 ## Hard rules — non-negotiable
 - **Medical:** never suggest or enable squats, deadlifts, or any Valsalva-style
