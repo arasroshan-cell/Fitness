@@ -20,6 +20,10 @@ T('version consistency: the <title> tag, APP_VERSION const, and the separate har
   return !!titleMatch && !!appVerMatch && !!vtagMatch &&
     titleMatch[1] === appVerMatch[1] && appVerMatch[1] === vtagMatch[1];
 })());
+T('Privacy: no diagnosis name or specific medication names in the shipped public source (2026-09-23 — this repo is public and served live via GitHub Pages) — permanent regression test so a future edit cannot silently reintroduce them', (() => {
+  const lower = src.toLowerCase();
+  return !lower.includes('crohn') && !lower.includes('infliximab') && !lower.includes('azathioprine');
+})());
 T('N1: no slice(-52) remains', !src.includes('slice(-52)'));
 T('N1: two slice(-260) caps present', (src.match(/slice\(-260\)/g) || []).length === 2);
 T('N2: three fibreRisk flags', (src.match(/fibreRisk:true/g) || []).length === 3);

@@ -281,7 +281,7 @@ const DAYS=[
     {n:'Calf raises',s:4,r:'20',nt:'Pendulum squat machine, calf-raise position',priority:'optional',compound:false,inputType:'weight',wlabel:'Plates loaded (pendulum squat machine)',primaryMuscles:['Calves'],secondaryMuscles:[],tip:'Pause at the top, full stretch at the bottom \u2014 bouncing through the reps skips the actual work.'},
     {n:'Plank',s:3,r:'30\u201360s',nt:'Exhale on entry \u2014 no breath holding',priority:'must',noweight:true,inputType:'seconds',wlabel:'Seconds held',primaryMuscles:['Core'],secondaryMuscles:[],tip:'Hips level \u2014 not sagging, not piked up. Breathe normally, don\u2019t hold your breath.'},
     {n:'Side plank',s:3,r:'20\u201340s',nt:'Isometric hold, no twisting \u2014 breathe normally, do both sides each set',priority:'optional',noweight:true,inputType:'seconds',wlabel:'Seconds held (each side)',primaryMuscles:['Obliques'],secondaryMuscles:['Core'],tip:'Stack hips and shoulders in one straight line \u2014 don\u2019t let the top hip roll forward or the hips sag toward the floor.'},
-    {n:'Dead bug',s:3,r:'10 each',nt:'Best Crohn-safe core move',priority:'must',noweight:true,inputType:'reps_each',wlabel:'Reps per side',primaryMuscles:['Core'],secondaryMuscles:[],tip:'Lower back stays pressed into the floor the whole time \u2014 if it arches, you\u2019ve gone too far.'},
+    {n:'Dead bug',s:3,r:'10 each',nt:'Best gut-safe core move',priority:'must',noweight:true,inputType:'reps_each',wlabel:'Reps per side',primaryMuscles:['Core'],secondaryMuscles:[],tip:'Lower back stays pressed into the floor the whole time \u2014 if it arches, you\u2019ve gone too far.'},
     {n:'Hip abduction machine',s:3,r:'15',nt:'Glute work \u2014 light and controlled, no direct pressure needed',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Glute medius/minimus'],secondaryMuscles:[],tip:'Controlled push out, controlled return \u2014 no need to rush this one.'},
     {n:'Hip adduction machine',s:3,r:'15',nt:'Same machine as abduction, opposite direction \u2014 light and controlled',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Adductors'],secondaryMuscles:[],tip:'Same machine as abduction, opposite direction \u2014 light and controlled here too.'},
     {n:'Cable crunch',s:3,r:'12\u201315',nt:'Rope attachment, kneeling \u2014 real flexion work, unlike Plank/Dead bug',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Abs'],secondaryMuscles:[],tip:'Round through your spine, don\u2019t just pull with your arms \u2014 the crunch happens at your waist.'},
@@ -454,7 +454,7 @@ const FOODS=[
   {name:'Chickpeas masala (tinned)',cat:'Sides',per100:{k:175,p:7,c:22,f:6.5},typ:150,lbl:'1 tin drained, 2 tsp oil inclusive. Pair with protein',oilInclusive:true,fibreRisk:true,plateRole:'side'},
   {name:'Coconut rice (thengai sadam)',cat:'Sides',per100:{k:150,p:2.7,c:22,f:4.7},typ:200,lbl:'rice + desiccated coconut + coconut oil tempering',oilInclusive:true,plateRole:'base'},
   {name:'Curd / plain yogurt',cat:'Sides',per100:{k:61,p:3.5,c:5,f:3.3},typ:150,plateRole:'side'},
-  {name:'Curd rice (thayir sadam)',cat:'Sides',per100:{k:120,p:4,c:22,f:2.5},typ:200,lbl:'Crohn\u2019s rest-day staple. Rice + curd + small tempering',plateRole:'none'},
+  {name:'Curd rice (thayir sadam)',cat:'Sides',per100:{k:120,p:4,c:22,f:2.5},typ:200,lbl:'Gut-friendly rest-day staple. Rice + curd + small tempering',plateRole:'none'},
   {name:'Greek yogurt (Tesco Finest, full-fat)',cat:'Sides',per100:{k:132,p:6.5,c:3.3,f:10.3},typ:150,plateRole:'side'},
   {name:'Kootu (mixed veg + dal)',cat:'Sides',per100:{k:90,p:5,c:11,f:3},typ:150,lbl:'standard reference \u00b115%',plateRole:'curry'},
   {name:'Medu vada',cat:'Sides',per100:{k:300,p:8,c:28,f:18},typ:40,unit:'piece',lbl:'deep-fried, per vada (~40g) \u2014 rough estimate \u00b125%, oil absorption varies a lot',oilInclusive:true,plateRole:'side'},
@@ -511,7 +511,7 @@ function showStorageFailWarning(){
   document.body.insertAdjacentHTML('afterbegin','<div id="storage-fail-banner" style="position:relative;z-index:998;background:var(--rbg);color:var(--red);font-size:13px;font-weight:700;padding:9px 14px;text-align:center">&#x26A0; Your device is out of storage space \u2014 this change may NOT have saved. Free up space or export/share your data now.</div>');
 }
 function getProfile(){
-  return lsG('user_profile')||{targets:{protein:150,kcal:2100,carbs:230,fat:65},weight:85,goalWeight:82,goalBF:15,trainingDaysPerWeek:4,crohnsPhase:'pre-biologic',biologicStartDate:null};
+  return lsG('user_profile')||{targets:{protein:150,kcal:2100,carbs:230,fat:65},weight:85,goalWeight:82,goalBF:15,trainingDaysPerWeek:4,conditionPhase:'pre-biologic',biologicStartDate:null};
 }
 function saveProfile(p){lsS('user_profile',p);}
 let _adaptiveDismissed=false;
@@ -1772,7 +1772,7 @@ function gastroExport(){
     +'QUESTIONS FOR THIS APPOINTMENT\n'
     +'  - B12: currently oral \u2014 is sublingual or IM better absorbed for terminal ileum disease?\n'
     +'  - Vitamin D: Sheffield latitude + malabsorption risk \u2014 worth testing?\n'
-    +'  - Infliximab + azathioprine combination: what\'s an actual safe alcohol limit for me, and how does that interact with the LFT monitoring schedule?\n'
+    +'  - My current medication combination: what\'s an actual safe alcohol limit for me, and how does that interact with the LFT monitoring schedule?\n'
     +'  - Seton: does axial loading / bracing under load / deep hip flexion pose a specific risk here \u2014 does that include machine-guided squat variations (e.g. leverage/hack squat), not just free squats?\n';
   if(navigator.canShare&&navigator.canShare({text})){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
@@ -1877,7 +1877,7 @@ async function injectWeather(){
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div><div class="cl">Sheffield now</div><div style="font-size:20px;font-family:'Barlow',sans-serif;font-weight:900;color:var(--cyan)">${temp}&#x00B0;C Hot</div></div>
     </div>
-    <div style="font-size:13px;color:var(--mut);margin-bottom:10px">Higher dehydration risk with Crohn's in this heat. Tamil cooling foods today:</div>
+    <div style="font-size:13px;color:var(--mut);margin-bottom:10px">Higher dehydration risk with your condition in this heat. Tamil cooling foods today:</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       ${['Neer moru','Coconut water','Cucumber (raw)','Watermelon'].map(f=>`<button class="qb" onclick="quickLog('${f}',allFoods().find(x=>x.name==='${f}')?.typ||200)">${f}</button>`).join('')}
     </div></div>`;}
@@ -3792,7 +3792,7 @@ function renderFlare(){
       <div class="nt ${x.bg}">${x.action}</div>
     </div>`).join('')+
     `<div class="card warm"><div style="font-size:14px;font-weight:700;font-family:'Barlow',sans-serif;margin-bottom:8px">Pre-biologic reality</div>
-    <div style="font-size:14px;color:var(--mut);line-height:1.7">Active inflammation means your body is spending energy on disease \u2014 not weakness. Once infliximab starts working (6\u201314 weeks post first infusion), energy and recovery improve significantly. Train smart until then.</div></div>`;
+    <div style="font-size:14px;color:var(--mut);line-height:1.7">Active inflammation means your body is spending energy on disease \u2014 not weakness. Once your biologic medication starts working (6\u201314 weeks post first infusion), energy and recovery improve significantly. Train smart until then.</div></div>`;
 }
 
 /* ===== TABS + INIT ===== */
