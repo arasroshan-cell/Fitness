@@ -1034,6 +1034,20 @@ function getSkipWarnings(){
   return missing.length?missing:null;
 }
 
+/* v5.7 FEATURE 3: shared by renderToday's initial paint and updSet's keystroke-time update,
+   so the two can never disagree about which DOM id or which exercise a given set tracks
+   against for the live weight-to-reps hint. */
+function hintId(dl,ei,si){return 'wh_'+dl.replace(/[^A-Za-z0-9]/g,'_')+'_'+ei+'_'+si;}
+function getTrackName(dl,ei){
+  const ex=WS[dl]&&WS[dl].ex[ei];
+  if(!ex)return null;
+  const gd=(adHocDay&&adHocDay.label===dl)?adHocDay:DAYS.find(d=>d.label===dl);
+  const orig=gd&&gd.ex[ei];
+  const isChoice=orig&&orig.inputType==='choice';
+  const chosenOpt=isChoice&&ex.chosenType?(orig.choiceOptions||[]).find(o=>o.name===ex.chosenType):null;
+  return chosenOpt?ex.chosenType:ex.name;
+}
+
 /* ===== DRAFT ===== */
 function saveDraft(dl,dateKey){if(WS[dl])Data.draft.save(dl,WS[dl],dateKey||editingDate||todayKey());}
 function clearDraft(dateKey){Data.draft.clear(dateKey||todayKey());}
@@ -1085,7 +1099,19 @@ function initWS(dl,def){
   })());
   if(WS[dl].painNote===undefined)WS[dl].painNote='';
 }
-function updSet(dl,ei,si,f,v){if(!WS[dl])return;WS[dl].ex[ei].sets[si][f]=v;if(WS[dl].infoOpen===ei)WS[dl].infoOpen=null;saveDraft(dl);}
+function updSet(dl,ei,si,f,v){
+  if(!WS[dl])return;
+  WS[dl].ex[ei].sets[si][f]=v;
+  if(WS[dl].infoOpen===ei)WS[dl].infoOpen=null;
+  if(f==='w'){
+    /* Display-only — deliberately never writes back into set.w/set.r. updSet does not
+       call renderToday() (that would blur the input and reset the cursor on every
+       keystroke), so this hint element is updated directly instead. */
+    const hintEl=document.getElementById(hintId(dl,ei,si));
+    if(hintEl)hintEl.textContent=getWeightHintText(getTrackName(dl,ei),v);
+  }
+  saveDraft(dl);
+}
 /* Top-set-only RIR/RPE capture (Section I3). Deliberately a tap-to-pick 0/1/2/3+ control,
    not a text input, to keep this genuinely low-friction \u2014 the confirmed requirement was to
    avoid adding friction to a card that's already been decluttered multiple times. Feeds
@@ -2199,6 +2225,8 @@ function renderToday(){
             ${(effType!=='seconds'&&effType!=='reps_each')?`<span class="tx">&times;</span><div style="text-align:center;flex:1"><input class="nin" type="number" inputmode="numeric" placeholder="reps" min="0" step="1" value="${set.r}" oninput="updSet('${gd.label}',${ei},${si},'r',this.value)"><div class="nin-lbl">reps</div></div>`:''}
             <button class="dbtn${set.done?' dk':''}" onclick="togDone('${gd.label}',${ei},${si})">${set.done?'&#x2713;':'&#x25CB;'}</button>
           </div>
+          ${isDrop&&set.dropHint?`<div style="font-size:11px;color:var(--mut);padding:2px 0 6px 44px">${set.dropHint}</div>`:(isExtra&&!isDrop?`<div style="font-size:11px;color:var(--mut);padding:2px 0 6px 44px">Target: ${effR||orig.r} reps</div>`:'')}
+          ${effType==='weight'?`<div id="${hintId(gd.label,ei,si)}" style="font-size:11px;color:var(--cyan);padding:0 0 6px 44px">${getWeightHintText(trackName,set.w)}</div>`:''}
           ${(si===topSetIdx&&set.done&&effType!=='seconds')?`<div style="display:flex;align-items:center;gap:8px;padding:4px 0 10px 44px">
             <span style="font-size:11px;color:var(--mut);font-weight:600">Reps in reserve:</span>
             <div style="display:flex;gap:4px">
@@ -3255,6 +3283,31 @@ function getE1RMTrend(exerciseName){
     trending:ratePerWeek>0.5?'up':ratePerWeek<-0.5?'down':'flat',
     lowConfidence:recent.some(p=>p.confidence==='low')
   };
+}
+/* v5.7 FEATURE 3: invert estimate1RM (the same Epley/Brzycki average used above) to answer
+   "how many reps at THIS weight", instead of "what's my 1RM from this performed set". No
+   closed-form inverse exists for the averaged curve, so this searches the same 1-20 rep
+   window estimate1RM is already trusted over and picks the rep count whose estimate lands
+   closest to the known e1RM, then widens by 1 each side so the result is always a range,
+   never a single number, matching the app's existing forecast convention. */
+function estimateRepRangeAtWeight(weight,e1rm){
+  let bestR=1,bestDiff=Infinity;
+  for(let r=1;r<=20;r++){
+    const est=estimate1RM(weight,r);
+    if(!est)continue;
+    const diff=Math.abs(est.value-e1rm);
+    if(diff<bestDiff){bestDiff=diff;bestR=r;}
+  }
+  return{low:Math.max(1,bestR-1),high:Math.min(20,bestR+1)};
+}
+function getWeightHintText(trackName,weightStr){
+  const w=parseFloat(weightStr);
+  if(!w||w<=0||!trackName)return'';
+  const trend=getE1RMTrend(trackName);
+  if(!trend.available||!trend.currentE1RM)return'';
+  if(w>=trend.currentE1RM*0.97)return'Near your max — expect 1–3 reps';
+  const{low,high}=estimateRepRangeAtWeight(w,trend.currentE1RM);
+  return'Est. '+low+'–'+high+' reps at this weight, based on your trend';
 }
 /* Exercise e1RM forecast (Section I2) \u2014 built directly on getE1RMTrend above, not a separate
    calculation. "At this rate, roughly where you'd be in 4/8/12 weeks", always as a range that
