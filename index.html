@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.6</title>
+<title>Roshan Fitness v5.7</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -220,7 +220,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-09-22">v5.6</div>
+    <div class="vtag" title="build 2026-10-06">v5.7</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -1021,16 +1021,106 @@ function updateHeader(){
 }
 
 /* ===== SEQUENCE ===== */
+/* v5.7 FEATURE 4 ("sessions do not talk to each other" fix). Named per Boss's explicit
+   confirmation against his real export (2026-10-06): a 6-set/7-day threshold and a 10-day
+   skip-warning lookback, kept as named constants rather than magic numbers since he may
+   want to tune them later. */
+const DAY_COVERAGE_WINDOW_DAYS=7;
+const DAY_CREDIT_THRESHOLD=6;
+const SKIP_WARNING_LOOKBACK_DAYS=10;
+/* Legs + core is the one structured day whose own exercise list mixes lower-body AND core/
+   oblique work. Core work must not credit the Legs day — confirmed against Boss's real W38
+   fixture (2026-09-16: 3 leg sets + core work that would otherwise inflate the day past the
+   credit threshold and wrongly read as "done"). The other three days use the generic
+   exercise-list union below, since they don't mix muscle groups this way. */
+const LEGS_CORE_LOWER_BODY_MUSCLES=['Quads','Hamstrings','Glutes','Calves','Glute medius/minimus','Adductors','Lower back'];
+function anyRealSessionHistory(){
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('sess:'))return true;}
+  return false;
+}
+/* Derived at read time from the real sess: records, same as getWeeklyMuscleVolume/
+   getMuscleFreshness — no stored/migrated field, so nothing to keep in sync and nothing to
+   repair if the muscle data underneath it ever changes. */
+function getDayMuscleSets(){
+  return DAYS.map(d=>{
+    if(d.label==='Legs + core')return{label:d.label,muscles:new Set(LEGS_CORE_LOWER_BODY_MUSCLES)};
+    const muscles=new Set();
+    d.ex.forEach(e=>{
+      (e.primaryMuscles||[]).forEach(m=>muscles.add(m));
+      (e.choiceOptions||[]).forEach(o=>(o.primaryMuscles||[]).forEach(m=>muscles.add(m)));
+    });
+    return{label:d.label,muscles};
+  });
+}
+/* Which structured day(s) a single already-saved session's own completed sets would count
+   toward — written onto its mlog entry so History can show what a Free/Suggested session
+   counted toward (point 7). Deliberately does NOT apply the Upper=min(Push,Pull) correction
+   from getDayCoverage: that correction only makes sense across an aggregated window where
+   Push and Pull have their own independent numbers to compare against — a single session
+   either trained upper-body muscles or it didn't. */
+function creditedDaysFor(exercises){
+  const dayMuscles=getDayMuscleSets();
+  const credited=new Set();
+  (exercises||[]).forEach(e=>{
+    const def=findExDef(e.origName);
+    if(!def)return;
+    const completedSets=(e.sets||[]).filter(s=>s.done&&!s.isDrop).length;
+    if(!completedSets)return;
+    const exMuscles=def.primaryMuscles||[];
+    dayMuscles.forEach(dm=>{if(exMuscles.some(m=>dm.muscles.has(m)))credited.add(dm.label);});
+  });
+  return[...credited];
+}
+function getDayCoverage(windowDays){
+  windowDays=windowDays||DAY_COVERAGE_WINDOW_DAYS;
+  const cutoff=(()=>{const d=new Date();d.setDate(d.getDate()-windowDays);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
+  const dayMuscles=getDayMuscleSets();
+  const coverage={};
+  dayMuscles.forEach(dm=>{coverage[dm.label]=0;});
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(!k||!k.startsWith('sess:'))continue;
+    const sess=lsG(k);
+    if(!sess||sess.skipped||!sess.exercises||sess.date<cutoff)continue;
+    sess.exercises.forEach(e=>{
+      const def=findExDef(e.origName);
+      if(!def)return;
+      const completedSets=(e.sets||[]).filter(s=>s.done&&!s.isDrop).length;
+      if(!completedSets)return;
+      const exMuscles=def.primaryMuscles||[];
+      dayMuscles.forEach(dm=>{if(exMuscles.some(m=>dm.muscles.has(m)))coverage[dm.label]+=completedSets;});
+    });
+  }
+  /* Upper body shares muscles with both Push and Pull (front delts/triceps overlap Push,
+     lats/mid-back/biceps overlap Pull), so counting Upper's own exercise list directly
+     double-credits it whenever either parent day gets trained. Confirmed against Boss's real
+     export: naive Upper read 37 sets in the same window Push read 19 and Pull read 18 — a
+     near-2x inflation, not a hypothetical edge case. Replacing it with the lower of the two
+     (rather than capping the naive figure) is the default Boss confirmed. */
+  if(coverage['Push day']!==undefined&&coverage['Pull day']!==undefined&&coverage['Upper body']!==undefined){
+    coverage['Upper body']=Math.min(coverage['Push day'],coverage['Pull day']);
+  }
+  return coverage;
+}
 function getNextIdx(){
   const l=lsG('last_seq_idx');
-  return(l===null||l===undefined)?null:(parseInt(l)+1)%4;
+  const lastIdx=(l===null||l===undefined)?null:parseInt(l);
+  if(!anyRealSessionHistory())return lastIdx===null?null:(lastIdx+1)%4;
+  const coverage=getDayCoverage();
+  const values=DAYS.map((d,i)=>({i,v:coverage[d.label]}));
+  const minV=Math.min(...values.map(x=>x.v));
+  const tied=values.filter(x=>x.v===minV).map(x=>x.i);
+  if(tied.length===1||lastIdx===null)return tied[0];
+  for(let step=1;step<=4;step++){
+    const candidate=(lastIdx+step)%4;
+    if(tied.includes(candidate))return candidate;
+  }
+  return tied[0];
 }
 function getSkipWarnings(){
-  const mlog=mergedMlog();
-  const recent=Object.entries(mlog).sort((a,b)=>a[0].localeCompare(b[0])).map(e=>e[1]).filter(e=>e.type==='done').slice(-8).map(e=>e.seqIdx).filter(i=>i!==undefined);
-  if(recent.length<4)return null;
-  const last6=recent.slice(-6);
-  const missing=SEQ.filter((_,i)=>!last6.includes(i));
+  if(!anyRealSessionHistory())return null;
+  const coverage=getDayCoverage(SKIP_WARNING_LOOKBACK_DAYS);
+  const missing=DAYS.filter(d=>coverage[d.label]<DAY_CREDIT_THRESHOLD).map(d=>d.label);
   return missing.length?missing:null;
 }
 
@@ -1569,7 +1659,7 @@ function saveSession(dl,seqIdx,explicitDate){
   }
   lsS('last_dl',dl);
   const mlog=lsG('mlog:'+saveMonth)||{};
-  mlog[saveDate]={type:'done',dl,seqIdx:isFree?undefined:seqIdx};
+  mlog[saveDate]={type:'done',dl,seqIdx:isFree?undefined:seqIdx,credited:creditedDaysFor(exercises)};
   lsS('mlog:'+saveMonth,mlog);
   clearDraft(saveDate);showStickyBtn(false);stopTimerTick();skipRestTimer();
   adHocDay=null;adHocSeqIdx=null;editingDate=null;
@@ -1804,7 +1894,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.6';
+const APP_VERSION='v5.7';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -1928,6 +2018,7 @@ function showStickyBtn(show,dl,seqIdx){
 /* ===== RENDER TODAY ===== */
 function renderToday(){
   const nextIdx=getNextIdx();
+  const dayCoverage=getDayCoverage();
   const gd=adHocDay||(nextIdx!==null?DAYS[nextIdx]:null);
   const existing=Data.session.get();
   const sym=lsG('sym:'+todayKey())||{};
@@ -2077,13 +2168,16 @@ function renderToday(){
       <div class="cl">${isFirstTime?'First session \u2014 choose where to start':'Choose your session today'}</div>
       <div class="ct" style="margin-bottom:4px">${isFirstTime?'Pick any session. The app tracks the sequence from here.':'What are you training today?'}</div>
       <div class="cs" style="margin-bottom:14px">${isFirstTime?'Push \u2192 Pull \u2192 Legs \u2192 Upper \u2192 repeat':'Override the sequence any time. App remembers what you pick.'}</div>
-      ${DAYS.map((d,i)=>`<div class="sess-option${nextIdx!==null&&i===nextIdx?' suggested':''}" onclick="startSession(${i})">
+      ${DAYS.map((d,i)=>{
+        const cov=dayCoverage[d.label];
+        const covText=isFirstTime?'':`${cov} set${cov===1?'':'s'} this week${nextIdx!==null&&i===nextIdx?', due':''}`;
+        return`<div class="sess-option${nextIdx!==null&&i===nextIdx?' suggested':''}" onclick="startSession(${i})">
         <div>
           <div style="font-size:17px;font-weight:700;font-family:'Barlow',sans-serif">${d.label}${nextIdx!==null&&i===nextIdx?' <span style="font-size:11px;color:var(--cyan)">\u2190 suggested</span>':''}</div>
-          <div style="font-size:12px;color:var(--mut);margin-top:2px">${d.focus}</div>
+          <div style="font-size:12px;color:var(--mut);margin-top:2px">${d.focus}${covText?` &middot; ${covText}`:''}</div>
         </div>
         <div style="color:var(--cyan);font-size:22px">&#x203A;</div>
-      </div>`).join('')}
+      </div>`;}).join('')}
       <div class="sess-option" style="border-top:1px dashed var(--c3);margin-top:6px;padding-top:14px" onclick="startSuggestedSession()">
         <div>
           <div style="font-size:17px;font-weight:700;font-family:'Barlow',sans-serif">Suggested session</div>
@@ -3595,11 +3689,18 @@ function renderHistory(){
   for(let d=0;d<14;d++){const dt=new Date(now);dt.setDate(dt.getDate()-d);const dk=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');const s=Data.session.get(dk);if(s)recents.push(s);}
   if(recents.length){
     html+=`<div class="card"><div class="cl">Recent sessions</div><div class="ct" style="margin-bottom:10px">Last 14 days &mdash; tap to edit</div>
-      ${recents.map(s=>`<div class="hitem"${s.skipped?'':` onclick="editSession('${s.date}')" style="cursor:pointer"`}><div style="display:flex;justify-content:space-between;align-items:center">
+      ${recents.map(s=>{
+        /* v5.7 FEATURE 4 point 7: credited lives on the mlog entry, not the session record
+           itself, so it's looked up alongside rather than read off s directly. Only shown for
+           Free/Suggested sessions — for a structured day, dl already IS the credited day,
+           so repeating it here would just be noise. */
+        const mEntry=(lsG('mlog:'+s.date.slice(0,7))||{})[s.date];
+        const credited=(!s.skipped&&s.dl==='Free session'&&mEntry&&mEntry.credited&&mEntry.credited.length)?mEntry.credited:null;
+        return`<div class="hitem"${s.skipped?'':` onclick="editSession('${s.date}')" style="cursor:pointer"`}><div style="display:flex;justify-content:space-between;align-items:center">
         <div><div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif">${s.date}${s.duration?' <span style="font-size:12px;color:var(--dim);font-family:\'IBM Plex Sans\',sans-serif">'+s.duration+'m</span>':''}</div>
-        <div style="font-size:13px;color:var(--mut)">${s.dl}${s.newPRs&&s.newPRs.length?' &#x2605;':''}</div></div>
+        <div style="font-size:13px;color:var(--mut)">${s.dl}${s.newPRs&&s.newPRs.length?' &#x2605;':''}${credited?` <span style="color:var(--cyan)">&middot; counted toward ${credited.join(', ')}</span>`:''}</div></div>
         <div class="pill ${s.skipped?(s.skipReason==='flare'?'pr':'pa'):'pg'}">${s.skipped?(s.skipReason==='flare'?'Flare':s.skipReason==='tired'?'Tired':'Busy'):'Done &#x2713;'}</div>
-      </div>${s.note?`<div style="font-size:12px;color:var(--dim);margin-top:4px;font-style:italic">"${escHtml(s.note)}"</div>`:''}</div>`).join('')}
+      </div>${s.note?`<div style="font-size:12px;color:var(--dim);margin-top:4px;font-style:italic">"${escHtml(s.note)}"</div>`:''}</div>`;}).join('')}
     </div>`;
   }
 
