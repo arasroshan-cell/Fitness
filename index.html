@@ -1028,6 +1028,15 @@ function updateHeader(){
 const DAY_COVERAGE_WINDOW_DAYS=7;
 const DAY_CREDIT_THRESHOLD=6;
 const SKIP_WARNING_LOOKBACK_DAYS=10;
+/* Review fix (round 8, option B — Boss's explicit choice over the alternatives discussed):
+   Push/Pull's own coverage could be inflated by Upper-only training via a shared muscle tag
+   (confirmed by direct execution: 4x4 Arnold press alone read Push day as 16, "credited",
+   while Upper body — the only day actually trained — read 0 and got flagged). Capping any
+   single muscle's contribution to a day's sum at half the credit threshold blocks "spam one
+   shared muscle to fake a whole day's credit" without a full per-muscle-threshold redesign.
+   Does not fully eliminate the gap (a single exercise can still contribute up to this cap
+   per muscle — see MASTER_PLAN.md Section 6F) but removes the unbounded case. */
+const MUSCLE_CONTRIBUTION_CAP_PER_DAY=3;
 /* Review fix (round 4): core/oblique work must not credit ANY day, not just Legs+core.
    The original fix only special-cased Legs+core (confirmed against Boss's real W38 fixture:
    2026-09-16, 3 leg sets + core work that would otherwise inflate the day past the credit
@@ -1091,6 +1100,33 @@ function creditedDaysFor(exercises){
   return[...credited];
 }
 function dateDaysAgo(days){const d=new Date();d.setDate(d.getDate()-days);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+/* Review fix (round 8, option B): like matchedDayLabelsForExercise, but keeps WHICH specific
+   muscle(s) of each matched day this exercise's sets count against, so getDayCoverage/
+   computeHistorySnapshot can tally per (day,muscle) and cap each muscle's own contribution
+   before summing to the day's total — matchedDayLabelsForExercise/creditedDaysFor stay
+   uncapped on purpose, since a single session's "what did this count toward" label isn't a
+   threshold judgement the way the picker/skip-warning coverage number is. A multi-muscle
+   exercise (e.g. Face pulls: Rear delts + Traps) credits each muscle independently, matching
+   the existing convention in Coach.getWeeklyMuscleVolume (full credit to every primary
+   muscle, not split between them). */
+function dayMuscleHitsForExercise(e,dayMuscles){
+  const def=findExDef(e.origName);
+  if(!def)return null;
+  const completedSets=(e.sets||[]).filter(s=>s.done&&!s.isDrop).length;
+  if(!completedSets)return null;
+  const exMuscles=def.primaryMuscles||[];
+  const hits=[];
+  dayMuscles.forEach(dm=>{exMuscles.forEach(m=>{if(dm.muscles.has(m))hits.push({label:dm.label,muscle:m});});});
+  return hits.length?{hits,completedSets}:null;
+}
+function capMuscleTallyToCoverage(tally,dayMuscles){
+  const coverage={};
+  dayMuscles.forEach(dm=>{
+    const perMuscle=tally[dm.label]||{};
+    coverage[dm.label]=Object.values(perMuscle).reduce((sum,v)=>sum+Math.min(v,MUSCLE_CONTRIBUTION_CAP_PER_DAY),0);
+  });
+  return coverage;
+}
 /* Upper body shares muscles with both Push and Pull (front delts/triceps overlap Push,
    lats/mid-back/biceps overlap Pull), so counting Upper's own exercise list directly
    double-credits it whenever either parent day gets trained. Confirmed against Boss's real
@@ -1106,18 +1142,22 @@ function getDayCoverage(windowDays){
   windowDays=windowDays||DAY_COVERAGE_WINDOW_DAYS;
   const cutoff=dateDaysAgo(windowDays);
   const dayMuscles=getDayMuscleSets();
-  const coverage={};
-  dayMuscles.forEach(dm=>{coverage[dm.label]=0;});
+  const tally={};
   for(let i=0;i<localStorage.length;i++){
     const k=localStorage.key(i);
     if(!k||!k.startsWith('sess:'))continue;
     const sess=lsG(k);
     if(!sess||sess.skipped||!sess.exercises||sess.date<cutoff)continue;
     sess.exercises.forEach(e=>{
-      const{labels,completedSets}=matchedDayLabelsForExercise(e,dayMuscles);
-      labels.forEach(l=>{coverage[l]+=completedSets;});
+      const hit=dayMuscleHitsForExercise(e,dayMuscles);
+      if(!hit)return;
+      hit.hits.forEach(h=>{
+        tally[h.label]=tally[h.label]||{};
+        tally[h.label][h.muscle]=(tally[h.label][h.muscle]||0)+hit.completedSets;
+      });
     });
   }
+  const coverage=capMuscleTallyToCoverage(tally,dayMuscles);
   applyUpperOverride(coverage);
   return coverage;
 }
@@ -1134,8 +1174,7 @@ function computeHistorySnapshot(){
   const cutoff7=dateDaysAgo(DAY_COVERAGE_WINDOW_DAYS);
   const cutoff10=dateDaysAgo(SKIP_WARNING_LOOKBACK_DAYS);
   let historyCount=0;
-  const coverage7={},coverage10={};
-  dayMuscles.forEach(dm=>{coverage7[dm.label]=0;coverage10[dm.label]=0;});
+  const tally7={},tally10={};
   for(let i=0;i<localStorage.length;i++){
     const k=localStorage.key(i);
     if(!k||!k.startsWith('sess:'))continue;
@@ -1145,13 +1184,20 @@ function computeHistorySnapshot(){
     if(sess.skipped||!sess.exercises||sess.date<cutoff10)continue;
     const within7=sess.date>=cutoff7;
     sess.exercises.forEach(e=>{
-      const{labels,completedSets}=matchedDayLabelsForExercise(e,dayMuscles);
-      labels.forEach(l=>{
-        coverage10[l]+=completedSets;
-        if(within7)coverage7[l]+=completedSets;
+      const hit=dayMuscleHitsForExercise(e,dayMuscles);
+      if(!hit)return;
+      hit.hits.forEach(h=>{
+        tally10[h.label]=tally10[h.label]||{};
+        tally10[h.label][h.muscle]=(tally10[h.label][h.muscle]||0)+hit.completedSets;
+        if(within7){
+          tally7[h.label]=tally7[h.label]||{};
+          tally7[h.label][h.muscle]=(tally7[h.label][h.muscle]||0)+hit.completedSets;
+        }
       });
     });
   }
+  const coverage7=capMuscleTallyToCoverage(tally7,dayMuscles);
+  const coverage10=capMuscleTallyToCoverage(tally10,dayMuscles);
   applyUpperOverride(coverage7);
   applyUpperOverride(coverage10);
   return{historyCount,coverage7,coverage10};
