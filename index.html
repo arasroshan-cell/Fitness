@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.6</title>
+<title>Roshan Fitness v5.7</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -220,7 +220,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-09-22">v5.6</div>
+    <div class="vtag" title="build 2026-10-08">v5.7</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -1021,17 +1021,266 @@ function updateHeader(){
 }
 
 /* ===== SEQUENCE ===== */
-function getNextIdx(){
-  const l=lsG('last_seq_idx');
-  return(l===null||l===undefined)?null:(parseInt(l)+1)%4;
+/* v5.7 FEATURE 4 ("sessions do not talk to each other" fix). Named per Boss's explicit
+   confirmation against his real export (2026-10-06): a 6-set/7-day threshold and a 10-day
+   skip-warning lookback, kept as named constants rather than magic numbers since he may
+   want to tune them later. */
+const DAY_COVERAGE_WINDOW_DAYS=7;
+const DAY_CREDIT_THRESHOLD=6;
+const SKIP_WARNING_LOOKBACK_DAYS=10;
+/* Review fix (round 8, option B — Boss's explicit choice over the alternatives discussed):
+   Push/Pull's own coverage could be inflated by Upper-only training via a shared muscle tag
+   (confirmed by direct execution: 4x4 Arnold press alone read Push day as 16, "credited",
+   while Upper body — the only day actually trained — read 0 and got flagged). Capping any
+   single muscle's contribution to a day's sum at half the credit threshold blocks "spam one
+   shared muscle to fake a whole day's credit" without a full per-muscle-threshold redesign.
+   Does not fully eliminate the gap (a single exercise can still contribute up to this cap
+   per muscle — see MASTER_PLAN.md Section 6F) but removes the unbounded case. */
+const MUSCLE_CONTRIBUTION_CAP_PER_DAY=3;
+/* Review fix (round 4): core/oblique work must not credit ANY day, not just Legs+core.
+   The original fix only special-cased Legs+core (confirmed against Boss's real W38 fixture:
+   2026-09-16, 3 leg sets + core work that would otherwise inflate the day past the credit
+   threshold), but Upper body's OWN exercise list also includes a core finisher ("Plank or
+   dead bug"), leaking 'Core' into Upper's muscle set the exact same way. getDayCoverage's
+   Upper=min(Push,Pull) override happened to mask this for the picker/coverage numbers, but
+   creditedDaysFor (the per-session field shown in History) has no such override by design,
+   so a Free session containing only Plank/Dead bug was silently credited to "Upper body".
+   Excluding these muscles generically from every day's union, rather than hardcoding one
+   day's allowlist, fixes both the Legs+core case and the Upper leak with one rule. */
+const NON_CREDITING_CORE_MUSCLES=new Set(['Core','Obliques','Abs']);
+/* Review fix: counts non-skipped sess: records — one scan serves both "is there any real
+   history at all" (>0) and "is there enough to judge balance from" (>=4), where two separate
+   functions (anyRealSessionHistory + countRealSessions) used to each scan independently.
+   Must exclude skipped-only sessions, or a user who taps Skip before ever completing a real
+   session loses the null "first ever session" state that gates the onboarding picker card
+   in renderToday (isFirstTime=nextIdx===null). */
+function countRealSessions(){
+  let n=0;
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('sess:')){const s=lsG(k);if(s&&!s.skipped)n++;}}
+  return n;
 }
-function getSkipWarnings(){
-  const mlog=mergedMlog();
-  const recent=Object.entries(mlog).sort((a,b)=>a[0].localeCompare(b[0])).map(e=>e[1]).filter(e=>e.type==='done').slice(-8).map(e=>e.seqIdx).filter(i=>i!==undefined);
-  if(recent.length<4)return null;
-  const last6=recent.slice(-6);
-  const missing=SEQ.filter((_,i)=>!last6.includes(i));
+/* Derived at read time from the real sess: records, same as getWeeklyMuscleVolume/
+   getMuscleFreshness — no stored/migrated field, so nothing to keep in sync and nothing to
+   repair if the muscle data underneath it ever changes. */
+function getDayMuscleSets(){
+  return DAYS.map(d=>{
+    const muscles=new Set();
+    d.ex.forEach(e=>{
+      (e.primaryMuscles||[]).forEach(m=>{if(!NON_CREDITING_CORE_MUSCLES.has(m))muscles.add(m);});
+      (e.choiceOptions||[]).forEach(o=>(o.primaryMuscles||[]).forEach(m=>{if(!NON_CREDITING_CORE_MUSCLES.has(m))muscles.add(m);}));
+    });
+    return{label:d.label,muscles};
+  });
+}
+/* Review fix: shared by creditedDaysFor and getDayCoverage below, which previously
+   duplicated this exact "resolve def, count done non-drop sets, match against each day's
+   muscle set" logic almost verbatim - a future change to how substitutes/choice exercises
+   resolve for day-matching only needs to be made once now. */
+function matchedDayLabelsForExercise(e,dayMuscles){
+  const def=findExDef(e.origName);
+  if(!def)return{labels:[],completedSets:0};
+  const completedSets=(e.sets||[]).filter(s=>s.done&&!s.isDrop).length;
+  if(!completedSets)return{labels:[],completedSets:0};
+  const exMuscles=def.primaryMuscles||[];
+  const labels=dayMuscles.filter(dm=>exMuscles.some(m=>dm.muscles.has(m))).map(dm=>dm.label);
+  return{labels,completedSets};
+}
+/* Which structured day(s) a single already-saved session's own completed sets would count
+   toward — written onto its mlog entry so History can show what a Free/Suggested session
+   counted toward (point 7). Deliberately does NOT apply the Upper=min(Push,Pull) correction
+   from getDayCoverage: that correction only makes sense across an aggregated window where
+   Push and Pull have their own independent numbers to compare against — a single session
+   either trained upper-body muscles or it didn't. */
+function creditedDaysFor(exercises){
+  const dayMuscles=getDayMuscleSets();
+  const credited=new Set();
+  (exercises||[]).forEach(e=>{
+    matchedDayLabelsForExercise(e,dayMuscles).labels.forEach(l=>credited.add(l));
+  });
+  return[...credited];
+}
+function dateDaysAgo(days){const d=new Date();d.setDate(d.getDate()-days);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+/* Review fix (round 8, option B): like matchedDayLabelsForExercise, but keeps WHICH specific
+   muscle(s) of each matched day this exercise's sets count against, so getDayCoverage/
+   computeHistorySnapshot can tally per (day,muscle) and cap each muscle's own contribution
+   before summing to the day's total — matchedDayLabelsForExercise/creditedDaysFor stay
+   uncapped on purpose, since a single session's "what did this count toward" label isn't a
+   threshold judgement the way the picker/skip-warning coverage number is. A multi-muscle
+   exercise (e.g. Face pulls: Rear delts + Traps) credits each muscle independently, matching
+   the existing convention in Coach.getWeeklyMuscleVolume (full credit to every primary
+   muscle, not split between them). */
+function dayMuscleHitsForExercise(e,dayMuscles){
+  const def=findExDef(e.origName);
+  if(!def)return null;
+  const completedSets=(e.sets||[]).filter(s=>s.done&&!s.isDrop).length;
+  if(!completedSets)return null;
+  const exMuscles=def.primaryMuscles||[];
+  const hits=[];
+  dayMuscles.forEach(dm=>{exMuscles.forEach(m=>{if(dm.muscles.has(m))hits.push({label:dm.label,muscle:m});});});
+  return hits.length?{hits,completedSets}:null;
+}
+function capMuscleTallyToCoverage(tally,dayMuscles){
+  const coverage={};
+  dayMuscles.forEach(dm=>{
+    const perMuscle=tally[dm.label]||{};
+    coverage[dm.label]=Object.values(perMuscle).reduce((sum,v)=>sum+Math.min(v,MUSCLE_CONTRIBUTION_CAP_PER_DAY),0);
+  });
+  return coverage;
+}
+/* Upper body shares muscles with both Push and Pull (front delts/triceps overlap Push,
+   lats/mid-back/biceps overlap Pull), so counting Upper's own exercise list directly
+   double-credits it whenever either parent day gets trained. Confirmed against Boss's real
+   export: naive Upper read 37 sets in the same window Push read 19 and Pull read 18 — a
+   near-2x inflation, not a hypothetical edge case. Replacing it with the lower of the two
+   (rather than capping the naive figure) is the default Boss confirmed. */
+function applyUpperOverride(coverage){
+  if(coverage['Push day']!==undefined&&coverage['Pull day']!==undefined&&coverage['Upper body']!==undefined){
+    coverage['Upper body']=Math.min(coverage['Push day'],coverage['Pull day']);
+  }
+}
+function getDayCoverage(windowDays){
+  windowDays=windowDays||DAY_COVERAGE_WINDOW_DAYS;
+  const cutoff=dateDaysAgo(windowDays);
+  const dayMuscles=getDayMuscleSets();
+  const tally={};
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(!k||!k.startsWith('sess:'))continue;
+    const sess=lsG(k);
+    if(!sess||sess.skipped||!sess.exercises||sess.date<cutoff)continue;
+    sess.exercises.forEach(e=>{
+      const hit=dayMuscleHitsForExercise(e,dayMuscles);
+      if(!hit)return;
+      hit.hits.forEach(h=>{
+        tally[h.label]=tally[h.label]||{};
+        tally[h.label][h.muscle]=(tally[h.label][h.muscle]||0)+hit.completedSets;
+      });
+    });
+  }
+  const coverage=capMuscleTallyToCoverage(tally,dayMuscles);
+  applyUpperOverride(coverage);
+  return coverage;
+}
+/* Review fix (round 6): renderToday previously made 3 separate full sess: scans per render
+   (countRealSessions, getDayCoverage(7-day), getSkipWarnings' own getDayCoverage(10-day)) -
+   the round-3 fix threaded historyCount/coverage through to avoid EXTRA scans, but still left
+   3 total instead of 1. The 10-day window fully contains the 7-day one, so a single pass can
+   count real sessions AND bucket into both windows at once. Only renderToday (the hot,
+   every-tap-during-a-workout path) uses this; getDayCoverage/getNextIdx/getSkipWarnings keep
+   their own independent-scan defaults for any other caller (tests, future code) that has no
+   precomputed snapshot to pass in. */
+function computeHistorySnapshot(){
+  const dayMuscles=getDayMuscleSets();
+  const cutoff7=dateDaysAgo(DAY_COVERAGE_WINDOW_DAYS);
+  const cutoff10=dateDaysAgo(SKIP_WARNING_LOOKBACK_DAYS);
+  let historyCount=0;
+  const tally7={},tally10={};
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(!k||!k.startsWith('sess:'))continue;
+    const sess=lsG(k);
+    if(!sess)continue;
+    if(!sess.skipped)historyCount++;
+    if(sess.skipped||!sess.exercises||sess.date<cutoff10)continue;
+    const within7=sess.date>=cutoff7;
+    sess.exercises.forEach(e=>{
+      const hit=dayMuscleHitsForExercise(e,dayMuscles);
+      if(!hit)return;
+      hit.hits.forEach(h=>{
+        tally10[h.label]=tally10[h.label]||{};
+        tally10[h.label][h.muscle]=(tally10[h.label][h.muscle]||0)+hit.completedSets;
+        if(within7){
+          tally7[h.label]=tally7[h.label]||{};
+          tally7[h.label][h.muscle]=(tally7[h.label][h.muscle]||0)+hit.completedSets;
+        }
+      });
+    });
+  }
+  const coverage7=capMuscleTallyToCoverage(tally7,dayMuscles);
+  const coverage10=capMuscleTallyToCoverage(tally10,dayMuscles);
+  applyUpperOverride(coverage7);
+  applyUpperOverride(coverage10);
+  return{historyCount,coverage7,coverage10};
+}
+/* Review fix: getNextIdx takes an optional precomputed coverage AND history count so
+   renderToday (which needs the full coverage object for the day picker, and the same count
+   getSkipWarnings needs) doesn't force extra full scans over every sess: record on every
+   render - a real cost once session history grows over months. */
+function getNextIdx(coverage,historyCount){
+  const l=lsG('last_seq_idx');
+  const lastIdx=(l===null||l===undefined)?null:parseInt(l);
+  if((historyCount===undefined?countRealSessions():historyCount)===0)return lastIdx===null?null:(lastIdx+1)%4;
+  coverage=coverage||getDayCoverage();
+  const values=DAYS.map((d,i)=>({i,v:coverage[d.label]}));
+  const minV=Math.min(...values.map(x=>x.v));
+  const tied=values.filter(x=>x.v===minV).map(x=>x.i);
+  if(tied.length===1||lastIdx===null)return tied[0];
+  for(let step=1;step<=4;step++){
+    const candidate=(lastIdx+step)%4;
+    if(tied.includes(candidate))return candidate;
+  }
+  return tied[0];
+}
+function getSkipWarnings(historyCount,coverage10){
+  /* Review fix: the pre-v5.7 version required at least 4 recent done sessions before judging
+     balance, specifically so a brand-new user doesn't get warned about three day types they
+     simply haven't reached yet on day one of their first-ever rotation. */
+  if((historyCount===undefined?countRealSessions():historyCount)<4)return null;
+  const coverage=coverage10||getDayCoverage(SKIP_WARNING_LOOKBACK_DAYS);
+  const missing=DAYS.filter(d=>coverage[d.label]<DAY_CREDIT_THRESHOLD).map(d=>d.label);
   return missing.length?missing:null;
+}
+
+/* v5.7 FEATURE 3: shared by renderToday's initial paint and updSet's keystroke-time update,
+   so the two can never disagree about which DOM id or which exercise a given set tracks
+   against for the live weight-to-reps hint. Also shared with renderToday's own inline
+   chosenOpt resolution via resolveChosenOpt below (review fix: these used to be two separate
+   copies of the same choice/substitution lookup). */
+function hintId(dl,ei,si){return 'wh_'+dl.replace(/[^A-Za-z0-9]/g,'_')+'_'+ei+'_'+si;}
+function resolveChosenOpt(orig,ex){
+  if(!orig||orig.inputType!=='choice'||!ex.chosenType)return null;
+  return(orig.choiceOptions||[]).find(o=>o.name===ex.chosenType)||null;
+}
+function getTrackName(dl,ei){
+  const ex=WS[dl]&&WS[dl].ex[ei];
+  if(!ex)return null;
+  const gd=(adHocDay&&adHocDay.label===dl)?adHocDay:DAYS.find(d=>d.label===dl);
+  const orig=gd&&gd.ex[ei];
+  const chosenOpt=resolveChosenOpt(orig,ex);
+  return chosenOpt?ex.chosenType:ex.name;
+}
+/* Review fix: addDropSet's hint text needs to know the exercise's current effective
+   inputType (accounting for choice/substitution, same resolution as renderToday's own
+   inline effType) to phrase itself correctly - "aim 10-12 reps" is wrong for a Plank
+   (seconds) or Dead bug (reps_each) drop set. */
+function getEffType(dl,ei){
+  const ex=WS[dl]&&WS[dl].ex[ei];
+  if(!ex)return'weight';
+  const gd=(adHocDay&&adHocDay.label===dl)?adHocDay:DAYS.find(d=>d.label===dl);
+  const orig=gd&&gd.ex[ei];
+  if(!orig)return'weight';
+  const chosenOpt=resolveChosenOpt(orig,ex);
+  if(chosenOpt)return chosenOpt.inputType;
+  const subOverride=(ex.name!==ex.origName)?SUB_TYPE_OVERRIDE[ex.name]:null;
+  return subOverride?.inputType||orig.inputType||'weight';
+}
+function dropHintText(effType){
+  if(effType==='seconds')return'20% shorter hold — same effort';
+  if(effType==='reps_each')return'20% drop — aim 8–10 each side';
+  return'20% drop — aim 10–12 reps';
+}
+/* Review fix: orig.r/effR strings already carry their own unit phrasing where it matters
+   ("30-60s", "10 each", "Max reps") - blindly appending " reps" produced nonsense like
+   "Target: 30-60s reps" or "Target: Max reps reps". Only append it for the plain numeric
+   ranges (e.g. "6-8", "10-12") that actually need it. Round 5: "each" needed the same
+   exemption as "reps" - Single arm DB row is inputType:'weight' with r:'12 each', which
+   isn't seconds/reps_each at the type level but still carries its own per-side phrasing,
+   so it was still getting the wrong "12 each reps" result. */
+function formatRepTarget(rStr,effType){
+  if(!rStr)return rStr;
+  if(effType==='seconds'||effType==='reps_each')return rStr;
+  if(/reps|each/i.test(rStr))return rStr;
+  return rStr+' reps';
 }
 
 /* ===== DRAFT ===== */
@@ -1085,7 +1334,19 @@ function initWS(dl,def){
   })());
   if(WS[dl].painNote===undefined)WS[dl].painNote='';
 }
-function updSet(dl,ei,si,f,v){if(!WS[dl])return;WS[dl].ex[ei].sets[si][f]=v;if(WS[dl].infoOpen===ei)WS[dl].infoOpen=null;saveDraft(dl);}
+function updSet(dl,ei,si,f,v){
+  if(!WS[dl])return;
+  WS[dl].ex[ei].sets[si][f]=v;
+  if(WS[dl].infoOpen===ei)WS[dl].infoOpen=null;
+  if(f==='w'){
+    /* Display-only — deliberately never writes back into set.w/set.r. updSet does not
+       call renderToday() (that would blur the input and reset the cursor on every
+       keystroke), so this hint element is updated directly instead. */
+    const hintEl=document.getElementById(hintId(dl,ei,si));
+    if(hintEl)hintEl.textContent=getWeightHintText(getTrackName(dl,ei),v);
+  }
+  saveDraft(dl);
+}
 /* Top-set-only RIR/RPE capture (Section I3). Deliberately a tap-to-pick 0/1/2/3+ control,
    not a text input, to keep this genuinely low-friction \u2014 the confirmed requirement was to
    avoid adding friction to a card that's already been decluttered multiple times. Feeds
@@ -1201,7 +1462,7 @@ function addDropSet(dl,ei){
   if(!WS[dl])return;
   const last=WS[dl].ex[ei].sets[WS[dl].ex[ei].sets.length-1];
   const dw=last.w?String(Math.round(parseFloat(last.w)*0.8/5)*5):'';
-  WS[dl].ex[ei].sets.push({w:dw,r:'',pw:dw,pr:'',done:false,isDrop:true,dropHint:'20% drop &#x2014; aim 10&#x2013;12 reps'});
+  WS[dl].ex[ei].sets.push({w:dw,r:'',pw:dw,pr:'',done:false,isDrop:true,dropHint:dropHintText(getEffType(dl,ei))});
   saveDraft(dl);renderToday();
 }
 function chooseExType(dl,ei,choice){
@@ -1537,13 +1798,14 @@ function saveSession(dl,seqIdx,explicitDate){
   const isFree=seqIdx==='free';
   const session={date:saveDate,dl,seqIdx:isFree?null:seqIdx,exercises,note:s.note,painNote:s.painNote||'',skipped:false,duration,newPRs,totalVolume};
   Data.session.set(session,saveDate);
+  invalidateE1RMTrendCache();
   if(!editingDate){
     Data.session.setLast(dl,{date:saveDate,exercises});
     if(!isFree)lsS('last_seq_idx',seqIdx);
   }
   lsS('last_dl',dl);
   const mlog=lsG('mlog:'+saveMonth)||{};
-  mlog[saveDate]={type:'done',dl,seqIdx:isFree?undefined:seqIdx};
+  mlog[saveDate]={type:'done',dl,seqIdx:isFree?undefined:seqIdx,credited:creditedDaysFor(exercises)};
   lsS('mlog:'+saveMonth,mlog);
   clearDraft(saveDate);showStickyBtn(false);stopTimerTick();skipRestTimer();
   adHocDay=null;adHocSeqIdx=null;editingDate=null;
@@ -1604,6 +1866,7 @@ function editSession(dateKey){
     subOpen:null,note:ex.note||'',painNote:ex.painNote||'',startAt:Date.now(),lastSetAt:null,_forDate:dateKey
   };
   Data.session.delete(dateKey);
+  invalidateE1RMTrendCache();
   const mk=dateKey.slice(0,7);
   const mlog=lsG('mlog:'+mk)||{};delete mlog[dateKey];lsS('mlog:'+mk,mlog);
   if(!isFree&&isToday)lsS('last_seq_idx',(seqIdx+3)%4);
@@ -1697,6 +1960,7 @@ function repairHistoricalSessions(dryRun){
     }
   });
   if(dryRun)affectedNames.forEach(n=>Data.pr.restore(n,prBackup[n]));
+  else invalidateE1RMTrendCache();
   return changes;
 }
 function runHistoricalRepair(){
@@ -1778,7 +2042,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.6';
+const APP_VERSION='v5.7';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -1848,11 +2112,18 @@ function extendRestTimer(sec){
   tickRestTimer();
 }
 function getElapsed(ts){if(!ts)return null;const s=Math.floor((Date.now()-ts)/1000);return Math.floor(s/60)+'m '+String(s%60).padStart(2,'0')+'s';}
-function startTimerTick(){
+/* Review fix: dl is now passed in and captured by closure, rather than re-derived via
+   DAYS[getNextIdx()] on every tick. getNextIdx() now does a full getDayCoverage() scan over
+   every sess: record - calling that every 5 seconds for the whole duration of a workout
+   (up to ~1000 times over 90 minutes) recomputed a value that cannot change mid-session,
+   since it was a trivial O(1) last_seq_idx read before v5.7. The active day is already known
+   at the one call site (renderToday, where gd.label is in scope) and never changes for the
+   life of this interval - it is torn down and restarted via stopTimerTick/startTimerTick
+   whenever the active session actually changes. */
+function startTimerTick(dl){
   stopTimerTick();
   timerInterval=setInterval(()=>{
-    const gd=adHocDay||DAYS[getNextIdx()];if(!gd)return;
-    const ws=WS[gd.label];if(!ws)return;
+    const ws=WS[dl];if(!ws)return;
     const st=document.getElementById('sess-timer-num');if(st&&ws.startAt)st.textContent=getElapsed(ws.startAt);
     const rt=document.getElementById('rest-num');if(rt&&ws.lastSetAt)rt.textContent=getElapsed(ws.lastSetAt);
   },5000);
@@ -1901,7 +2172,10 @@ function showStickyBtn(show,dl,seqIdx){
 }
 /* ===== RENDER TODAY ===== */
 function renderToday(){
-  const nextIdx=getNextIdx();
+  const _hist=computeHistorySnapshot();
+  const historyCount=_hist.historyCount;
+  const dayCoverage=_hist.coverage7;
+  const nextIdx=getNextIdx(dayCoverage,historyCount);
   const gd=adHocDay||(nextIdx!==null?DAYS[nextIdx]:null);
   const existing=Data.session.get();
   const sym=lsG('sym:'+todayKey())||{};
@@ -1994,7 +2268,7 @@ function renderToday(){
   }
 
   /* -- Skip warnings -- */
-  const warnings=getSkipWarnings();
+  const warnings=getSkipWarnings(historyCount,_hist.coverage10);
   if(warnings&&warnings.length){
     html+=`<div class="card danger" style="margin-bottom:10px"><div class="cl">Balance warning</div>
       <div style="font-size:14px;font-weight:700;color:var(--red);margin-bottom:6px">&#x26A0; ${warnings.join(' and ')} not done recently</div>
@@ -2051,13 +2325,16 @@ function renderToday(){
       <div class="cl">${isFirstTime?'First session \u2014 choose where to start':'Choose your session today'}</div>
       <div class="ct" style="margin-bottom:4px">${isFirstTime?'Pick any session. The app tracks the sequence from here.':'What are you training today?'}</div>
       <div class="cs" style="margin-bottom:14px">${isFirstTime?'Push \u2192 Pull \u2192 Legs \u2192 Upper \u2192 repeat':'Override the sequence any time. App remembers what you pick.'}</div>
-      ${DAYS.map((d,i)=>`<div class="sess-option${nextIdx!==null&&i===nextIdx?' suggested':''}" onclick="startSession(${i})">
+      ${DAYS.map((d,i)=>{
+        const cov=dayCoverage[d.label];
+        const covText=isFirstTime?'':`${cov} set${cov===1?'':'s'} this week${nextIdx!==null&&i===nextIdx?', due':''}`;
+        return`<div class="sess-option${nextIdx!==null&&i===nextIdx?' suggested':''}" onclick="startSession(${i})">
         <div>
           <div style="font-size:17px;font-weight:700;font-family:'Barlow',sans-serif">${d.label}${nextIdx!==null&&i===nextIdx?' <span style="font-size:11px;color:var(--cyan)">\u2190 suggested</span>':''}</div>
-          <div style="font-size:12px;color:var(--mut);margin-top:2px">${d.focus}</div>
+          <div style="font-size:12px;color:var(--mut);margin-top:2px">${d.focus}${covText?` &middot; ${covText}`:''}</div>
         </div>
         <div style="color:var(--cyan);font-size:22px">&#x203A;</div>
-      </div>`).join('')}
+      </div>`;}).join('')}
       <div class="sess-option" style="border-top:1px dashed var(--c3);margin-top:6px;padding-top:14px" onclick="startSuggestedSession()">
         <div>
           <div style="font-size:17px;font-weight:700;font-family:'Barlow',sans-serif">Suggested session</div>
@@ -2129,12 +2406,17 @@ function renderToday(){
     function renderEx(ex,ei){
       const orig=gd.ex[ei];
       const isChoice=orig.inputType==='choice';
-      const chosenOpt=isChoice&&ex.chosenType?orig.choiceOptions?.find(o=>o.name===ex.chosenType):null;
+      const chosenOpt=resolveChosenOpt(orig,ex);
       const trackName=chosenOpt?ex.chosenType:ex.name;
       const lx=last?.exercises?.find(l=>l.name===trackName);
       const subOverride=(!chosenOpt&&ex.name!==ex.origName)?SUB_TYPE_OVERRIDE[ex.name]:null;
       const subWlabel=subOverride?.wlabel||((!chosenOpt&&ex.name!==ex.origName)?inferSubWlabel(ex.name):null);
-      const effType=chosenOpt?chosenOpt.inputType:(subOverride?subOverride.inputType:(orig.inputType||'weight'));
+      /* Review fix (round 7): delegates to the shared getEffType helper instead of keeping a
+         second, independent copy of the choice/substitution-fallback resolution inline here -
+         round 3 had to patch the SUB_TYPE_OVERRIDE-with-no-inputType case in both this line
+         and getEffType separately, which is exactly the kind of two-copies-silently-diverge
+         risk a future change could reintroduce. */
+      const effType=getEffType(gd.label,ei);
       const effR=chosenOpt?chosenOpt.r:(subOverride?.r||orig.r);
       const fmtBest=(b)=>!b?'':(effType==='seconds'?b.w+'s':effType==='reps_each'?b.w+' each side':b.w+'kg \u00d7 '+b.r);
       const histFall=(!lx?.best)?(getExHistory(trackName).slice(-1)[0]||null):null;
@@ -2199,6 +2481,8 @@ function renderToday(){
             ${(effType!=='seconds'&&effType!=='reps_each')?`<span class="tx">&times;</span><div style="text-align:center;flex:1"><input class="nin" type="number" inputmode="numeric" placeholder="reps" min="0" step="1" value="${set.r}" oninput="updSet('${gd.label}',${ei},${si},'r',this.value)"><div class="nin-lbl">reps</div></div>`:''}
             <button class="dbtn${set.done?' dk':''}" onclick="togDone('${gd.label}',${ei},${si})">${set.done?'&#x2713;':'&#x25CB;'}</button>
           </div>
+          ${isDrop&&set.dropHint?`<div style="font-size:11px;color:var(--mut);padding:2px 0 6px 44px">${set.dropHint}</div>`:(isExtra&&!isDrop?`<div style="font-size:11px;color:var(--mut);padding:2px 0 6px 44px">Target: ${formatRepTarget(effR||orig.r,effType)}</div>`:'')}
+          ${effType==='weight'?`<div id="${hintId(gd.label,ei,si)}" style="font-size:11px;color:var(--cyan);padding:0 0 6px 44px">${getWeightHintText(trackName,set.w)}</div>`:''}
           ${(si===topSetIdx&&set.done&&effType!=='seconds')?`<div style="display:flex;align-items:center;gap:8px;padding:4px 0 10px 44px">
             <span style="font-size:11px;color:var(--mut);font-weight:600">Reps in reserve:</span>
             <div style="display:flex;gap:4px">
@@ -2316,7 +2600,7 @@ function renderToday(){
       <button class="skipopt" style="color:var(--mut);font-weight:500" onclick="document.getElementById('skipsheet').style.display='none'">Cancel</button>
     </div>`;
     showStickyBtn(true,gd.label,seqIdx);
-    startTimerTick();
+    startTimerTick(gd.label);
   }
 
   /* -- Weather placeholder (filled async after DOM write) -- */
@@ -3235,19 +3519,33 @@ function estimate1RM(weight,reps){
 /* Real trend across the exercise's FULL history \u2014 every session ever logged for it,
    not a recent window. Analyzes everything the app has from when it was first used,
    growing as more sessions get logged, never frozen against a past snapshot. */
+/* Review fix (round 4): v5.7's live weight hint calls this on every single keystroke in a
+   weight input (via updSet -> getWeightHintText), each one re-scanning and JSON-parsing every
+   sess: record via getExHistory - real, visible-lag-shaped wasted work for a result that
+   cannot change while the user is mid-keystroke, since nothing writes a new sess: record
+   until the session is actually saved. Memoised by exercise name, invalidated by
+   invalidateE1RMTrendCache() at the only two places that write new sess: records
+   (saveSession, repairHistoricalSessions). */
+let _e1rmTrendCache={};
+function invalidateE1RMTrendCache(){_e1rmTrendCache={};}
 function getE1RMTrend(exerciseName){
+  if(_e1rmTrendCache[exerciseName])return _e1rmTrendCache[exerciseName];
   const hist=getExHistory(exerciseName);
   const points=hist.map(h=>{
     const est=estimate1RM(h.best.w,h.best.r);
     return est?{date:h.date,e1rm:est.value,confidence:est.confidence}:null;
   }).filter(Boolean);
-  if(points.length<2)return{available:false,points,reason:points.length===0?'no history yet':'only one data point so far'};
+  if(points.length<2){
+    const result={available:false,points,reason:points.length===0?'no history yet':'only one data point so far'};
+    _e1rmTrendCache[exerciseName]=result;
+    return result;
+  }
   const recent=points.slice(-6);
   const first=recent[0],last=recent[recent.length-1];
   const daysSpan=Math.max(1,(new Date(last.date)-new Date(first.date))/86400000);
   const totalChange=last.e1rm-first.e1rm;
   const ratePerWeek=(totalChange/daysSpan)*7;
-  return{
+  const result={
     available:true,
     points,
     currentE1RM:Math.round(last.e1rm*10)/10,
@@ -3255,6 +3553,33 @@ function getE1RMTrend(exerciseName){
     trending:ratePerWeek>0.5?'up':ratePerWeek<-0.5?'down':'flat',
     lowConfidence:recent.some(p=>p.confidence==='low')
   };
+  _e1rmTrendCache[exerciseName]=result;
+  return result;
+}
+/* v5.7 FEATURE 3: invert estimate1RM (the same Epley/Brzycki average used above) to answer
+   "how many reps at THIS weight", instead of "what's my 1RM from this performed set". No
+   closed-form inverse exists for the averaged curve, so this searches the same 1-20 rep
+   window estimate1RM is already trusted over and picks the rep count whose estimate lands
+   closest to the known e1RM, then widens by 1 each side so the result is always a range,
+   never a single number, matching the app's existing forecast convention. */
+function estimateRepRangeAtWeight(weight,e1rm){
+  let bestR=1,bestDiff=Infinity;
+  for(let r=1;r<=20;r++){
+    const est=estimate1RM(weight,r);
+    if(!est)continue;
+    const diff=Math.abs(est.value-e1rm);
+    if(diff<bestDiff){bestDiff=diff;bestR=r;}
+  }
+  return{low:Math.max(1,bestR-1),high:Math.min(20,bestR+1)};
+}
+function getWeightHintText(trackName,weightStr){
+  const w=parseFloat(weightStr);
+  if(!w||w<=0||!trackName)return'';
+  const trend=getE1RMTrend(trackName);
+  if(!trend.available||!trend.currentE1RM)return'';
+  if(w>=trend.currentE1RM*0.97)return'Near your max — expect 1–3 reps';
+  const{low,high}=estimateRepRangeAtWeight(w,trend.currentE1RM);
+  return'Est. '+low+'–'+high+' reps at this weight, based on your trend';
 }
 /* Exercise e1RM forecast (Section I2) \u2014 built directly on getE1RMTrend above, not a separate
    calculation. "At this rate, roughly where you'd be in 4/8/12 weeks", always as a range that
@@ -3542,11 +3867,18 @@ function renderHistory(){
   for(let d=0;d<14;d++){const dt=new Date(now);dt.setDate(dt.getDate()-d);const dk=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');const s=Data.session.get(dk);if(s)recents.push(s);}
   if(recents.length){
     html+=`<div class="card"><div class="cl">Recent sessions</div><div class="ct" style="margin-bottom:10px">Last 14 days &mdash; tap to edit</div>
-      ${recents.map(s=>`<div class="hitem"${s.skipped?'':` onclick="editSession('${s.date}')" style="cursor:pointer"`}><div style="display:flex;justify-content:space-between;align-items:center">
+      ${recents.map(s=>{
+        /* v5.7 FEATURE 4 point 7: credited lives on the mlog entry, not the session record
+           itself, so it's looked up alongside rather than read off s directly. Only shown for
+           Free/Suggested sessions — for a structured day, dl already IS the credited day,
+           so repeating it here would just be noise. */
+        const mEntry=(lsG('mlog:'+s.date.slice(0,7))||{})[s.date];
+        const credited=(!s.skipped&&s.dl==='Free session'&&mEntry&&mEntry.credited&&mEntry.credited.length)?mEntry.credited:null;
+        return`<div class="hitem"${s.skipped?'':` onclick="editSession('${s.date}')" style="cursor:pointer"`}><div style="display:flex;justify-content:space-between;align-items:center">
         <div><div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif">${s.date}${s.duration?' <span style="font-size:12px;color:var(--dim);font-family:\'IBM Plex Sans\',sans-serif">'+s.duration+'m</span>':''}</div>
-        <div style="font-size:13px;color:var(--mut)">${s.dl}${s.newPRs&&s.newPRs.length?' &#x2605;':''}</div></div>
+        <div style="font-size:13px;color:var(--mut)">${s.dl}${s.newPRs&&s.newPRs.length?' &#x2605;':''}${credited?` <span style="color:var(--cyan)">&middot; counted toward ${credited.join(', ')}</span>`:''}</div></div>
         <div class="pill ${s.skipped?(s.skipReason==='flare'?'pr':'pa'):'pg'}">${s.skipped?(s.skipReason==='flare'?'Flare':s.skipReason==='tired'?'Tired':'Busy'):'Done &#x2713;'}</div>
-      </div>${s.note?`<div style="font-size:12px;color:var(--dim);margin-top:4px;font-style:italic">"${escHtml(s.note)}"</div>`:''}</div>`).join('')}
+      </div>${s.note?`<div style="font-size:12px;color:var(--dim);margin-top:4px;font-style:italic">"${escHtml(s.note)}"</div>`:''}</div>`;}).join('')}
     </div>`;
   }
 
