@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.7</title>
+<title>Roshan Fitness v5.8</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -220,7 +220,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-10-08">v5.7</div>
+    <div class="vtag" title="build 2026-10-13">v5.8</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -1206,11 +1206,19 @@ function computeHistorySnapshot(){
    renderToday (which needs the full coverage object for the day picker, and the same count
    getSkipWarnings needs) doesn't force extra full scans over every sess: record on every
    render - a real cost once session history grows over months. */
+function allDaysAboveThreshold(coverage){
+  return DAYS.every(d=>coverage[d.label]>=DAY_CREDIT_THRESHOLD);
+}
 function getNextIdx(coverage,historyCount){
   const l=lsG('last_seq_idx');
   const lastIdx=(l===null||l===undefined)?null:parseInt(l);
   if((historyCount===undefined?countRealSessions():historyCount)===0)return lastIdx===null?null:(lastIdx+1)%4;
   coverage=coverage||getDayCoverage();
+  /* v5.8 fix: once every day has cleared DAY_CREDIT_THRESHOLD, ranking by raw magnitude
+     just picks whichever healthy day happens to have the smallest number (e.g. 12 vs
+     15/21/15) and calls it "due" - misleading when nothing is actually under-trained.
+     Fall back to plain rotation in that case, same as the no-history branch above. */
+  if(allDaysAboveThreshold(coverage))return lastIdx===null?0:(lastIdx+1)%4;
   const values=DAYS.map((d,i)=>({i,v:coverage[d.label]}));
   const minV=Math.min(...values.map(x=>x.v));
   const tied=values.filter(x=>x.v===minV).map(x=>x.i);
@@ -2042,7 +2050,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.7';
+const APP_VERSION='v5.8';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -2321,13 +2329,14 @@ function renderToday(){
   else if(!gd||_forcePickerOnce){
     _forcePickerOnce=false;
     const isFirstTime=nextIdx===null;
+    const isRotationPick=!isFirstTime&&allDaysAboveThreshold(dayCoverage);
     html+=`<div class="card cyan">
       <div class="cl">${isFirstTime?'First session \u2014 choose where to start':'Choose your session today'}</div>
       <div class="ct" style="margin-bottom:4px">${isFirstTime?'Pick any session. The app tracks the sequence from here.':'What are you training today?'}</div>
       <div class="cs" style="margin-bottom:14px">${isFirstTime?'Push \u2192 Pull \u2192 Legs \u2192 Upper \u2192 repeat':'Override the sequence any time. App remembers what you pick.'}</div>
       ${DAYS.map((d,i)=>{
         const cov=dayCoverage[d.label];
-        const covText=isFirstTime?'':`${cov} set${cov===1?'':'s'} this week${nextIdx!==null&&i===nextIdx?', due':''}`;
+        const covText=isFirstTime?'':`${cov} set${cov===1?'':'s'} this week${nextIdx!==null&&i===nextIdx?(isRotationPick?', up next':', due'):''}`;
         return`<div class="sess-option${nextIdx!==null&&i===nextIdx?' suggested':''}" onclick="startSession(${i})">
         <div>
           <div style="font-size:17px;font-weight:700;font-family:'Barlow',sans-serif">${d.label}${nextIdx!==null&&i===nextIdx?' <span style="font-size:11px;color:var(--cyan)">\u2190 suggested</span>':''}</div>
@@ -3625,36 +3634,64 @@ function realisticWeightRound(v){
   const step=v<20?1:2.5;
   return Math.round(v/step)*step;
 }
-function getRampPrefill(topWeight,numSets){
+/* Real bug reported by Boss (2026-10-11): the top set was hardcoded to 2 reps regardless of
+   what the exercise itself was actually programmed for — Leg press is planned at 12–15
+   reps, but its ramp prescribed a 155kg x2 top set, which has nothing to do with the plan and
+   doesn't read as a suggestion at all. Confirmed the same mismatch exists for nearly every
+   compound-tagged exercise across all four days (Incline DB press, Lat pulldown, Cable
+   pull-through, Arnold press, etc. — only Bench press's own 6–8 range was ever close to
+   what the hardcoded 2 implied). Boss's explicit call: the ramp must always land on the
+   exercise's OWN planned range, never a universal number. topReps is now the low end of
+   orig.r (the hardest point within the exercise's actual target), dropReps is the high end;
+   the ramp-up sets scale down toward topReps instead of toward a fixed 2. */
+function parseTargetRepRange(rStr){
+  if(rStr&&rStr.includes&&rStr.includes('–')){
+    const parts=rStr.split('–');
+    const low=parseInt(parts[0]),high=parseInt(parts[1]);
+    return{low:low||8,high:high||low||12};
+  }
+  const n=parseInt(rStr);
+  return{low:n||8,high:n||12};
+}
+function getRampPrefill(topWeight,numSets,orig){
   /* Round to 2.5kg, the realistic minimum increment for a plate-loaded barbell (1.25kg per
      side) and close enough for most dumbbell racks and cable stacks too. 0.5kg rounding
      produced numbers like 61.5kg that nobody can actually load. */
   const round=realisticWeightRound;
-  if(numSets<2)return[{w:String(round(topWeight)),r:'2'}];
+  const{low:topReps,high:dropReps}=parseTargetRepRange(orig&&orig.r);
+  if(numSets<2)return[{w:String(round(topWeight)),r:String(topReps)}];
   const hasDrop=numSets>=3;
   const rampSteps=hasDrop?numSets-1:numSets;
+  const startReps=topReps+6;
   return Array.from({length:numSets},(_,i)=>{
-    if(hasDrop&&i===numSets-1)return{w:String(round(topWeight*0.55)),r:'9'};
-    if(i===rampSteps-1)return{w:String(round(topWeight)),r:'2'};
+    if(hasDrop&&i===numSets-1)return{w:String(round(topWeight*0.55)),r:String(dropReps)};
+    if(i===rampSteps-1)return{w:String(round(topWeight)),r:String(topReps)};
     const frac=rampSteps<=1?0:i/(rampSteps-1);
-    const pct=0.55+frac*0.35,reps=Math.round(12-frac*8);
-    return{w:String(round(topWeight*pct)),r:String(Math.max(2,reps))};
+    const pct=0.55+frac*0.35,reps=Math.round(startReps-frac*(startReps-topReps));
+    return{w:String(round(topWeight*pct)),r:String(Math.max(topReps,reps))};
   });
 }
 /* Isolation work: still progressively loaded and still finishes with a burn/drop set, but
    deliberately never chases a 1-2 rep max \u2014 stays in a moderate-to-high rep, genuinely
    close-to-failure zone throughout. Smaller joints and tendons carry a worse risk-to-benefit
    ratio at true near-max singles than compounds do, and hypertrophy tracks with weekly
-   close-to-failure volume more reliably than with a strength peak. */
-function getModeratePrefill(targetWeight,numSets){
+   close-to-failure volume more reliably than with a strength peak.
+   v5.8 fix: same mismatch as getRampPrefill had \u2014 this used to hardcode every isolation
+   exercise's rep target to 14 down to 10, regardless of what that exercise was actually
+   planned for (e.g. Calf raises planned at 20 reps got a 10-14 prefill). Now derives its
+   range from the exercise's own orig.r via parseTargetRepRange, same as the compound ramp:
+   working sets interpolate from the range's high end (lightest weight) down to its low end
+   (heaviest working-set weight), and the drop set lands back at the high end. */
+function getModeratePrefill(targetWeight,numSets,orig){
   const round=realisticWeightRound;
+  const{low:lowReps,high:highReps}=parseTargetRepRange(orig&&orig.r);
   const hasDrop=numSets>=3;
   const workingSets=hasDrop?numSets-1:numSets;
   return Array.from({length:numSets},(_,i)=>{
-    if(hasDrop&&i===numSets-1)return{w:String(round(targetWeight*0.65)),r:'14'};
+    if(hasDrop&&i===numSets-1)return{w:String(round(targetWeight*0.65)),r:String(highReps)};
     const frac=workingSets<=1?1:i/(workingSets-1);
-    const pct=0.8+frac*0.2,reps=Math.round(14-frac*4);
-    return{w:String(round(targetWeight*pct)),r:String(Math.max(6,reps))};
+    const pct=0.8+frac*0.2,reps=Math.round(highReps-frac*(highReps-lowReps));
+    return{w:String(round(targetWeight*pct)),r:String(Math.max(lowReps,reps))};
   });
 }
 /* The actual prefill dispatcher: real numbers written into set.w/set.r, not just advisory
@@ -3741,7 +3778,7 @@ function getPrefillSets(orig,trackName,numSets){
   }
   const w=parseFloat(lastBest.w),r=parseInt(lastBest.r);
   const{recW,isCompound}=getNextTargetWeight(orig,trackName,w,r,lastBest.rir);
-  return isCompound?getRampPrefill(recW,numSets):getModeratePrefill(recW,numSets);
+  return isCompound?getRampPrefill(recW,numSets,orig):getModeratePrefill(recW,numSets,orig);
 }
 
 /* ===== FOOD COACHING ===== */
