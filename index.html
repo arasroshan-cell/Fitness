@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.8</title>
+<title>Roshan Fitness v5.9</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -220,7 +220,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-10-13">v5.8</div>
+    <div class="vtag" title="build 2026-10-14">v5.9</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -300,31 +300,39 @@ const DAYS=[
   ]}
 ];
 const SUBS={
-  'Bench press':['DB flat chest press','Machine chest press'],
+  'Bench press':['DB flat chest press','Machine chest press','Smith machine bench press'],
   'Incline DB press':['Incline machine press','Incline BB press','High-to-low cable fly','Incline press (Smith machine)'],
-  'Machine chest fly':['Cable fly','DB fly','Pec deck'],
+  'Machine chest fly':['Cable fly','DB fly','Pec deck','Low to high cable fly'],
   'Seated DB shoulder press':['Smith machine shoulder press','Machine shoulder press'],
   'Lateral raises':['Cable lateral raise','Machine lateral raise'],
-  'Cable tricep pushdown':['Rope pushdown','DB kickback','Machine tricep dip'],
+  'Cable tricep pushdown':['Rope pushdown','DB kickback','Machine tricep dip','Tricep superset','Machine tricep extension'],
   'Overhead tricep extension':['Cable overhead extension','Skull crushers','One-hand DB overhead extension','Skull crushers (EZ bar)','Skull crushers (Smith bar)'],
   'Pull-ups (unassisted)':['Assisted pull-ups (machine)','Lat pulldown','Band-assisted pull-ups'],
   'Lat pulldown':['Pull-ups','Straight arm pulldown'],
-  'Seated cable row':['DB row','Machine row','T-bar row','Smith machine row','T-bar row (machine)','T-bar row (landmine)'],
+  'Seated cable row':['DB row','Machine row','T-bar row','Smith machine row','T-bar row (machine)','T-bar row (landmine)','Cable row'],
   'Single arm DB row':['Cable single arm row','Machine row'],
   'Face pulls':['Reverse cable fly','Rear delt machine fly','Band pull-apart'],
-  'Barbell curl':['DB curl','EZ bar curl','Cable curl','Reverse EZ bar curl'],
-  'Hammer curls':['Cable hammer curl','Cross-body curl'],
+  'Barbell curl':['DB curl','EZ bar curl','Cable curl','Reverse EZ bar curl','Single arm cable curl'],
+  'Hammer curls':['Cable hammer curl','Cross-body curl','Rope hammer curl','Dual handle cable curl'],
   'Leg press':['Step-ups (bodyweight)','Wall sit (hold 60s)','Pendulum/hack squat machine (light weight only \u2014 stop on any pain)','Pendulum squat machine (light weight only \u2014 stop on any pain)','Hack squat machine (light weight only \u2014 stop on any pain)'],
   'Seated leg curl':['Lying leg curl (if ok)','Nordic curl'],
   'Calf raises':['Seated calf raise','Single-leg calf raise'],
   'Plank':['Dead bug','Bear crawl hold','Pallof press'],
-  'Dips (chest-focused, forward lean)':['Decline press (Smith machine)','Decline machine press'],
+  'Dips (chest-focused, forward lean)':['Decline press (Smith machine)','Decline machine press','Decline chest press'],
   'Dead bug':['Bird-dog','Pallof press'],
   'Hip abduction machine':['Cable kickback','Machine hip thrust'],
   'Cable pull-through':['45\u00b0 back extension','Bird dog'],
-  'Arnold press':['DB shoulder press','Machine shoulder press'],
-  'Dumbbell curl (alternating)':['EZ bar curl','Cable curl','Machine curl','Barbell curl','Reverse EZ bar curl'],
-  'Plank or dead bug':['Bear hold','Pallof press']
+  'Arnold press':['DB shoulder press','Machine shoulder press','Front dumbell raises'],
+  'Dumbbell curl (alternating)':['EZ bar curl','Cable curl','Machine curl','Barbell curl','Reverse EZ bar curl','Bicep curl (BB or DB)','Bench dumbbell curl'],
+  'Plank or dead bug':['Bear hold','Pallof press'],
+  /* v5.9 OI9: real Free-session exercise names that never resolved via findExDef, found during
+     the v5.7 real-export analysis. Roshan confirmed the DB alias for the curl, and confirmed
+     adding Cable woodchop as a real tracked exercise (see SUB_TYPE_OVERRIDE below). */
+  'Side plank':['Cable woodchop'],
+  /* v5.9 full-PR-audit follow-up (2026-10-14): 4 more real, fully-completed Free-session
+     exercises found unmapped while auditing every PR record for plausibility - unambiguous,
+     resolved without asking (same equipment, different wording Boss used). */
+  'Dumbbell wrist curls':['Cable wrist curls']
 };
 /* S2: substitutes whose natural measurement type differs from the exercise they replace.
    Applied whenever the active exercise name matches a key here, regardless of which
@@ -359,7 +367,39 @@ const SUB_TYPE_OVERRIDE={
   'T-bar row (machine)':{wlabel:'Total kg loaded (plates on the bar)'},
   'T-bar row (landmine)':{wlabel:'Total kg loaded (landmine attachment, one end anchored)'},
   'Pendulum squat machine (light weight only \u2014 stop on any pain)':{wlabel:'Total kg loaded (plates)',nt:'Light weight only \u2014 stop immediately on any pain, cleared for this specifically, not a blanket safe claim'},
-  'Hack squat machine (light weight only \u2014 stop on any pain)':{wlabel:'Total kg loaded (plates)',nt:'Light weight only \u2014 stop immediately on any pain, cleared for this specifically, not a blanket safe claim'}
+  'Hack squat machine (light weight only \u2014 stop on any pain)':{wlabel:'Total kg loaded (plates)',nt:'Light weight only \u2014 stop immediately on any pain, cleared for this specifically, not a blanket safe claim'},
+  /* v5.9 OI9: Roshan confirmed "Bicep curl (BB or DB)" (a genuinely ambiguous free-text name
+     from his real history) should alias to Dumbbell curl (alternating). Without this override,
+     inferSubWlabel's \bbb\b pattern would match the "BB" in the name and wrongly label it as a
+     barbell (total-kg) exercise - the exact equipment-label mismatch class CLAUDE.md's audit
+     rule exists to catch. Forces the correct per-dumbbell label instead. */
+  'Bicep curl (BB or DB)':{wlabel:'Per dumbbell (each hand)'},
+  /* v5.9 OI9: Cable woodchop never had a definition at all - a real exercise Roshan logged
+     twice under Free session with no canonical match. Confirmed as a genuinely new tracked
+     exercise (not an alias), aliased under Side plank for the exercise picker since both are
+     Obliques-primary, cable version is dynamic/weighted rather than isometric. */
+  'Cable woodchop':{s:3,r:'12\u201315',inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Obliques'],secondaryMuscles:['Core'],compound:false,nt:'Standing at the cable stack \u2014 rotate through your torso under control, not just your arms'},
+  /* v5.9 OI9: "Cable row" and "Tricep superset" were the other two unmapped real Free-session
+     names - unambiguous, no confirmation needed. Cable row is the generic/informal name Boss
+     used for the already-tracked Seated cable row. Tricep superset is his logged version of
+     the existing Cable tricep pushdown + Overhead tricep extension pairing (Push-2 day) - both
+     are Triceps-primary, so aliasing to one is correct for volume/freshness purposes even
+     though it was originally performed as a paired superset. */
+  'Tricep superset':{nt:'Logged as the Cable tricep pushdown + Overhead tricep extension superset pairing'},
+  /* v5.9 full-PR-audit follow-up (2026-10-14): equipment-label catches for the other 2 of the
+     4 unambiguous new names (Smith machine bench press and Cable wrist curls both already
+     infer the correct label via inferSubWlabel's existing smith-machine/cable patterns, so
+     they need no override). */
+  'Rope hammer curl':{wlabel:'Stack weight',nt:'Rope attachment, neutral grip — same as Cable hammer curl'},
+  'Decline chest press':{inputType:'weight',wlabel:'Stack weight',compound:true,nt:'Decline angle for lower chest — exhale on press, never hold breath'},
+  /* v5.9 follow-up (2026-10-14): the 6 genuinely ambiguous names from the same full-PR-audit,
+     resolved with Roshan's explicit confirmation on each (single-arm vs bilateral, pushdown vs
+     overhead movement pattern, fly direction/slot, a brand-new exercise, grip variants). */
+  'Bench dumbbell curl':{nt:'Seated or lying on a bench — same curl, no body momentum to help'},
+  /* Front dumbell raises never had a definition at all - confirmed as a genuinely new tracked
+     exercise, same treatment as Cable woodchop earlier. Front delts primary, matching Arnold
+     press's own primary muscle, which it's aliased under. */
+  'Front dumbell raises':{s:3,r:'12',inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Front delts'],secondaryMuscles:[],compound:false,nt:'Standing, slight bend in the elbow — raise to shoulder height, controlled on the way down'}
 };
 function findExDef(name){
   for(const d of DAYS){for(const e of d.ex){
@@ -1918,19 +1958,26 @@ function skipSession(reason){
 }
 
 /* ===== BACKUP + EXPORT + IMPORT ===== */
+/* v5.9 fix: last_export must be written BEFORE the snapshot is taken, not after - writing it
+   after meant every exported file's own last_export field reflected the PREVIOUS export's
+   date, not its own. A file exported 2026-10-05 would carry whatever date was already stored
+   from the export before that (e.g. 2026-08-06) - never matching the moment it was actually
+   captured. */
 function exportData(){
+  lsS('last_export',todayKey());
   const all={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&!k.startsWith('ws_draft:'))all[k]=lsG(k);}
   const blob=new Blob([JSON.stringify(all,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');
   a.href=url;a.download='roshan-fitness-'+todayKey()+'.json';
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-  lsS('last_export',todayKey());renderProgress();
+  renderProgress();
 }
 function shareBackup(){
+  lsS('last_export',todayKey());
   const data={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);data[k]=localStorage.getItem(k);}
   const file=new File([JSON.stringify(data)],'roshan-fitness-'+todayKey()+'.json',{type:'application/json'});
   if(navigator.canShare&&navigator.canShare({files:[file]})){
-    navigator.share({files:[file],title:'Fitness backup '+todayKey()}).then(()=>{lsS('last_export',todayKey());renderProgress();}).catch(()=>{exportData();});
+    navigator.share({files:[file],title:'Fitness backup '+todayKey()}).then(()=>{renderProgress();}).catch(()=>{exportData();});
   }else{exportData();}
 }
 /* One-time historical repair (v5.6 FIX 2): recomputes best/exVolume/isPR/newPRs for every
@@ -2050,7 +2097,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.8';
+const APP_VERSION='v5.9';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -2858,6 +2905,14 @@ function renderProgress(){
         <button class="btn btn-ghost btn-sm" style="flex:1" onclick="dismissAdaptiveTarget()">Not now</button>
       </div>
     </div>`;
+  }else if(!adaptiveSugg.available){
+    /* v5.9 OI3 fix: this card used to render NOTHING at all until 3+ weigh-ins existed across
+       a 14+ day span - so it never explained itself, and with real logging as sparse as
+       Roshan's (OI10: 2 entries in 3 months) it looked like the feature didn't exist rather
+       than like it needed more data. Mirrors the existing wtForecast.reason convention above
+       (Body Weight Trend card) - a quiet explanatory line instead of a dismissable action
+       card, since there's nothing to act on yet. */
+    html+=`<div style="font-size:11px;color:var(--dim);margin:4px 0 10px">Target check: ${adaptiveSugg.reason}</div>`;
   }
 
   html+=`<div class="card"><div class="cl">Body stats &mdash; weekly</div><div class="ct" style="margin-bottom:4px">Samsung Watch data</div>
