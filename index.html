@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.9</title>
+<title>Roshan Fitness v5.10</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -128,6 +128,16 @@ textarea.genin{resize:none}
 .sticky-wrap{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);width:calc(min(480px,100vw) - 28px);z-index:100;display:none}
 .sticky-save{background:linear-gradient(135deg,var(--cyan),var(--amb));color:#000;border:none;border-radius:16px;font-size:17px;font-weight:900;font-family:"Barlow",sans-serif;cursor:pointer;width:100%;padding:18px;box-shadow:0 4px 28px rgba(224,163,57,.4)}
 .sticky-save:active{transform:scale(.97)}
+/* v5.10 FEATURE: floating rest timer bubble - Roshan reported having to scroll all the way
+   back up mid-set to see the rest countdown, which lives inline at the top of the session
+   card. Fixed-position, lives outside the tab panels so it persists regardless of scroll
+   position or which tab is active, mirroring the existing sticky-save pattern. Sits above the
+   sticky-save button (bottom:84px clears its ~58px height + 16px offset) so the two never
+   overlap during an active session, when both are visible at once. */
+.rest-bubble{position:fixed;bottom:84px;right:16px;z-index:140;display:none;align-items:center;gap:6px;background:var(--cbg);border:1px solid var(--cbr);border-radius:30px;padding:8px 10px;box-shadow:0 4px 20px rgba(0,0,0,.35)}
+.rest-bubble-num{font-family:"Barlow",sans-serif;font-size:17px;font-weight:800;color:var(--cyan);min-width:42px;text-align:center}
+.rest-bubble-btn{background:var(--c2);border:1px solid var(--c3);color:var(--txt);border-radius:16px;font-size:11px;font-weight:700;padding:6px 9px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.rest-bubble-skip{color:var(--amb)}
 /* CONFBOX + SKIP */
 .confbox{background:var(--gbg);color:var(--grn);border:1px solid var(--gbr);border-radius:14px;padding:14px;font-size:15px;font-weight:700;text-align:center;display:none;margin-top:10px}
 @keyframes sealFadeIn{from{opacity:0}to{opacity:1}}
@@ -220,7 +230,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-10-14">v5.9</div>
+    <div class="vtag" title="build 2026-10-19">v5.10</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -243,6 +253,12 @@ textarea.genin{resize:none}
 <div class="pnl" id="p4"></div>
 <div class="sticky-wrap" id="sticky-wrap">
   <button class="sticky-save" id="sticky-btn">Save &amp; Finish Workout</button>
+</div>
+<div class="rest-bubble" id="rest-bubble">
+  <div class="rest-bubble-num" id="rest-bubble-num">0:00</div>
+  <button class="rest-bubble-btn" onclick="extendRestTimer(-30)">-30s</button>
+  <button class="rest-bubble-btn" onclick="extendRestTimer(30)">+30s</button>
+  <button class="rest-bubble-btn rest-bubble-skip" onclick="skipRestTimer()">Skip</button>
 </div>
 <div id="save-toast" class="confbox" style="position:fixed;left:16px;right:16px;bottom:90px;z-index:50;display:none"></div>
 <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(this)">
@@ -1278,6 +1294,62 @@ function getSkipWarnings(historyCount,coverage10){
   const missing=DAYS.filter(d=>coverage[d.label]<DAY_CREDIT_THRESHOLD).map(d=>d.label);
   return missing.length?missing:null;
 }
+/* v5.10 FEATURE (OI5): weekly check-in summary. Content confirmed by Roshan 2026-10-14 - just
+   these 4: sessions + day coverage, volume + PR trend, weight trend, nutrition adherence.
+   Placement confirmed: Progress, not Today. The 7-day window is a default (not explicitly
+   picked over a calendar Mon-Sun week) chosen to match DAY_COVERAGE_WINDOW_DAYS so "this week"
+   never disagrees with what the rest of the app already means by it. One scan over sess:
+   records for the session/volume/PR numbers (same loop shape as getDayCoverage/
+   computeHistorySnapshot above), day coverage reuses getDayCoverage directly rather than a
+   second tally, and weight trend reuses the already-tested getWeightRatePerWeek rather than a
+   third definition of "trend". */
+function getWeeklySummary(){
+  const cutoff7=dateDaysAgo(7),cutoff14=dateDaysAgo(14);
+  let doneThisWeek=0,skippedThisWeek=0,volumeThisWeek=0,volumeLastWeek=0;
+  const newPRsThisWeek=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(!k||!k.startsWith('sess:'))continue;
+    const sess=lsG(k);
+    if(!sess||!sess.date)continue;
+    if(sess.date>=cutoff7){
+      if(sess.skipped)skippedThisWeek++;
+      else{
+        doneThisWeek++;
+        volumeThisWeek+=sess.totalVolume||0;
+        (sess.newPRs||[]).forEach(n=>newPRsThisWeek.push(n));
+      }
+    }else if(sess.date>=cutoff14&&!sess.skipped){
+      volumeLastWeek+=sess.totalVolume||0;
+    }
+  }
+  const coverage=getDayCoverage(7);
+  const dayCoverage=DAYS.map(d=>({label:d.label,sets:coverage[d.label],credited:coverage[d.label]>=DAY_CREDIT_THRESHOLD}));
+  const dateStrings=Array.from({length:7},(_,i)=>dateDaysAgo(i));
+  let proteinSum=0,kcalSum=0,nutritionDays=0,symptomDays=0;
+  dateStrings.forEach(d=>{
+    const log=lsG('food:'+d);
+    if(log&&log.length){
+      nutritionDays++;
+      proteinSum+=log.reduce((s,it)=>s+(it.p||0),0);
+      kcalSum+=log.reduce((s,it)=>s+(it.k||0),0);
+    }
+    const sym=lsG('sym:'+d)||{};
+    if((sym.bowel&&sym.bowel!=='normal')||(sym.seton&&sym.seton>=4)||(sym.energy&&sym.energy<=2))symptomDays++;
+  });
+  const weightRate=getWeightRatePerWeek(lsG('bstats')||[]);
+  return{
+    doneThisWeek,skippedThisWeek,dayCoverage,
+    volumeThisWeek,volumeLastWeek,
+    volumeChangePct:volumeLastWeek>0?Math.round((volumeThisWeek-volumeLastWeek)/volumeLastWeek*100):null,
+    newPRsThisWeek,
+    nutritionDays,
+    avgProtein:nutritionDays?Math.round(proteinSum/nutritionDays):null,
+    avgKcal:nutritionDays?Math.round(kcalSum/nutritionDays):null,
+    symptomDays,
+    weightRate
+  };
+}
 
 /* v5.7 FEATURE 3: shared by renderToday's initial paint and updSet's keystroke-time update,
    so the two can never disagree about which DOM id or which exercise a given set tracks
@@ -2097,7 +2169,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.9';
+const APP_VERSION='v5.10';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -2138,10 +2210,18 @@ let timerInterval=null;
    last set" elapsed counter once the countdown naturally reaches zero \u2014 nothing about that
    older display is removed, this only adds an active phase in front of it. */
 let _restTimerEndAt=null,_restTimerDuration=null,_restTickInterval=null;
+/* v5.10: the floating bubble (#rest-bubble, fixed-position, lives outside the tab panels) is
+   shown/hidden alongside the countdown's lifecycle and updated by the same tick - one state
+   machine, two displays, so they can never disagree. */
+function showRestBubble(show){
+  const b=document.getElementById('rest-bubble');if(b)b.style.display=show?'flex':'none';
+}
 function startRestTimer(seconds){
   clearInterval(_restTickInterval);
   _restTimerEndAt=Date.now()+seconds*1000;
   _restTimerDuration=seconds;
+  showRestBubble(true);
+  tickRestTimer();
   _restTickInterval=setInterval(tickRestTimer,1000);
 }
 function tickRestTimer(){
@@ -2149,16 +2229,20 @@ function tickRestTimer(){
   const remaining=Math.max(0,Math.round((_restTimerEndAt-Date.now())/1000));
   const numEl=document.getElementById('rest-countdown-num');
   const barEl=document.getElementById('rest-countdown-bar');
+  const bubbleNumEl=document.getElementById('rest-bubble-num');
   if(remaining<=0){
     clearInterval(_restTickInterval);_restTickInterval=null;_restTimerEndAt=null;_restTimerDuration=null;
+    showRestBubble(false);
     if(navigator.vibrate)navigator.vibrate([200,100,200]);
     renderToday();
     return;
   }
-  if(numEl)numEl.textContent=Math.floor(remaining/60)+':'+String(remaining%60).padStart(2,'0');
+  const txt=Math.floor(remaining/60)+':'+String(remaining%60).padStart(2,'0');
+  if(numEl)numEl.textContent=txt;
+  if(bubbleNumEl)bubbleNumEl.textContent=txt;
   if(barEl)barEl.style.width=Math.round((remaining/_restTimerDuration)*100)+'%';
 }
-function skipRestTimer(){clearInterval(_restTickInterval);_restTickInterval=null;_restTimerEndAt=null;_restTimerDuration=null;renderToday();}
+function skipRestTimer(){clearInterval(_restTickInterval);_restTickInterval=null;_restTimerEndAt=null;_restTimerDuration=null;showRestBubble(false);renderToday();}
 function extendRestTimer(sec){
   if(!_restTimerEndAt)return;
   const minRemaining=5000;
@@ -2858,6 +2942,21 @@ function renderProgress(){
     <div class="pstat"><div class="pval" style="color:${scoreCol}">${score}%</div><div class="plbl">consistency (28d)</div></div>
     <div class="pstat"><div class="pval" style="color:var(--grn)">${flare}</div><div class="plbl">flare days</div></div>
     <div class="pstat"><div class="pval" style="color:${miss>0?'var(--red)':'var(--cyan)'}">${miss}</div><div class="plbl">missed</div></div>
+  </div>`;
+
+  /* v5.10 FEATURE (OI5): weekly check-in summary card */
+  const weekly=getWeeklySummary();
+  html+=`<div class="card" style="margin-bottom:12px">
+    <div class="cl">This week</div>
+    <div class="ct" style="margin-bottom:8px">Last 7 days</div>
+    <div class="cs" style="margin-bottom:8px">${weekly.doneThisWeek} session${weekly.doneThisWeek===1?'':'s'} done${weekly.skippedThisWeek?`, ${weekly.skippedThisWeek} skipped`:''}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+      ${weekly.dayCoverage.map(d=>`<div style="padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;border:1px solid ${d.credited?'var(--gbr)':'var(--c3)'};background:${d.credited?'var(--gbg)':'var(--c1)'};color:${d.credited?'var(--grn)':'var(--mut)'}">${d.label}: ${d.sets}</div>`).join('')}
+    </div>
+    <div class="cs" style="margin-bottom:4px">Volume: ${Math.round(weekly.volumeThisWeek).toLocaleString()}${weekly.volumeChangePct!==null?` (${weekly.volumeChangePct>=0?'+':''}${weekly.volumeChangePct}% vs last week)`:''}</div>
+    ${weekly.newPRsThisWeek.length?`<div class="cs" style="color:var(--amb);margin-bottom:4px">${weekly.newPRsThisWeek.length} new PR${weekly.newPRsThisWeek.length===1?'':'s'}: ${weekly.newPRsThisWeek.join(', ')}</div>`:''}
+    <div class="cs" style="margin-bottom:4px">${weekly.weightRate.available?`Weight trend: ${weekly.weightRate.ratePerWeek>=0?'+':''}${Math.round(weekly.weightRate.ratePerWeek*100)/100}kg/week`:'Weight trend: not enough weigh-ins yet'}</div>
+    <div class="cs">${weekly.nutritionDays?`Nutrition: ${weekly.avgProtein}g protein / ${weekly.avgKcal} kcal avg (${weekly.nutritionDays}/7 days logged)${weekly.symptomDays?`, ${weekly.symptomDays} symptom day${weekly.symptomDays===1?'':'s'}`:''}`:'Nutrition: no food logged this week'}</div>
   </div>`;
 
   html+=`<div class="card"><div class="cl">Exercise history</div>
