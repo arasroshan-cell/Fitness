@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.10</title>
+<title>Roshan Fitness v5.11</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -230,7 +230,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-10-19">v5.10</div>
+    <div class="vtag" title="build 2026-10-21">v5.11</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -324,7 +324,14 @@ const SUBS={
   'Cable tricep pushdown':['Rope pushdown','DB kickback','Machine tricep dip','Tricep superset','Machine tricep extension'],
   'Overhead tricep extension':['Cable overhead extension','Skull crushers','One-hand DB overhead extension','Skull crushers (EZ bar)','Skull crushers (Smith bar)'],
   'Pull-ups (unassisted)':['Assisted pull-ups (machine)','Lat pulldown','Band-assisted pull-ups'],
-  'Lat pulldown':['Pull-ups','Straight arm pulldown'],
+  /* v5.11: Roshan confirmed Lat pulldown had zero grip variants (its only substitutes were a
+     completely different movement, Pull-ups, and Straight arm pulldown) - adding the 3 grip
+     options he confirmed. All three keep the base exercise's own primaryMuscles/secondaryMuscles
+     (Lats/Biceps) - a grip change on the same pulling pattern doesn't warrant inventing a
+     different muscle tag without real evidence, unlike e.g. Reverse EZ bar curl's much bigger
+     biomechanical shift. inferSubWlabel's existing "pulldown" pattern already labels all three
+     correctly (Stack weight), so only the form cue needed overriding. */
+  'Lat pulldown':['Pull-ups','Straight arm pulldown','Wide grip lat pulldown','Close grip lat pulldown (V-bar)','Reverse grip lat pulldown'],
   'Seated cable row':['DB row','Machine row','T-bar row','Smith machine row','T-bar row (machine)','T-bar row (landmine)','Cable row'],
   'Single arm DB row':['Cable single arm row','Machine row'],
   'Face pulls':['Reverse cable fly','Rear delt machine fly','Band pull-apart'],
@@ -415,7 +422,13 @@ const SUB_TYPE_OVERRIDE={
   /* Front dumbell raises never had a definition at all - confirmed as a genuinely new tracked
      exercise, same treatment as Cable woodchop earlier. Front delts primary, matching Arnold
      press's own primary muscle, which it's aliased under. */
-  'Front dumbell raises':{s:3,r:'12',inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Front delts'],secondaryMuscles:[],compound:false,nt:'Standing, slight bend in the elbow — raise to shoulder height, controlled on the way down'}
+  'Front dumbell raises':{s:3,r:'12',inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Front delts'],secondaryMuscles:[],compound:false,nt:'Standing, slight bend in the elbow — raise to shoulder height, controlled on the way down'},
+  /* v5.11: Lat pulldown grip variants Roshan confirmed. Only the cue needs overriding -
+     inferSubWlabel's existing "pulldown" pattern already labels all three Stack weight, and
+     primaryMuscles/secondaryMuscles correctly fall through to Lat pulldown's own (Lats/Biceps). */
+  'Wide grip lat pulldown':{nt:'Wide overhand grip, hands just outside shoulder width — the default lat pulldown setup'},
+  'Close grip lat pulldown (V-bar)':{nt:'V-bar attachment, hands close and neutral — shorter range, more lower-lat and bicep involvement'},
+  'Reverse grip lat pulldown':{nt:'Underhand/supinated grip on the straight bar — shifts more toward lower lats and biceps'}
 };
 function findExDef(name){
   for(const d of DAYS){for(const e of d.ex){
@@ -2169,7 +2182,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.10';
+const APP_VERSION='v5.11';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -3816,7 +3829,14 @@ function getRampPrefill(topWeight,numSets,orig){
   if(numSets<2)return[{w:String(round(topWeight)),r:String(topReps)}];
   const hasDrop=numSets>=3;
   const rampSteps=hasDrop?numSets-1:numSets;
-  const startReps=topReps+6;
+  /* v5.11 fix: this used to be topReps+6, a flat offset off the low end of the range regardless
+     of how wide that range actually was. For a narrow range (Bench press 6-8) or a fixed single
+     number (Seated cable row 12, low===high), that pushed the lightest ramp set well above the
+     exercise's own stated ceiling - Bench press's "warm-up" set came out to 12 reps against a
+     plan that explicitly never goes above 8, Seated cable row's came out to 18 against a plan
+     of 12. Anchoring off the range's own high end instead means the overshoot scales with how
+     wide the exercise's own range is, never exceeding it by more than this small buffer. */
+  const startReps=dropReps+2;
   return Array.from({length:numSets},(_,i)=>{
     if(hasDrop&&i===numSets-1)return{w:String(round(topWeight*0.55)),r:String(dropReps)};
     if(i===rampSteps-1)return{w:String(round(topWeight)),r:String(topReps)};
@@ -3848,6 +3868,16 @@ function getModeratePrefill(targetWeight,numSets,orig){
     return{w:String(round(targetWeight*pct)),r:String(Math.max(lowReps,reps))};
   });
 }
+/* v5.11: shared by getNextTargetWeight's fatigue modifier below. A muscle with no recent
+   training history at all contributes a neutral 1 (fully fresh) rather than 0 - no data is
+   never evidence of fatigue, and treating it as fatigued would wrongly hold back progress the
+   very first time a muscle is trained. */
+function getAvgMuscleFreshness(muscles){
+  if(!muscles||!muscles.length)return 1;
+  const fresh=Coach.getMuscleFreshness();
+  const scores=muscles.map(m=>{const f=fresh.find(x=>x.muscle===m);return f?f.freshness:1;});
+  return scores.reduce((s,v)=>s+v,0)/scores.length;
+}
 /* The actual prefill dispatcher: real numbers written into set.w/set.r, not just advisory
    text, so accepting with one tap logs the recommended number and overwriting is just
    typing over it. Uses the existing orig.compound field \u2014 already correctly tagged across
@@ -3874,7 +3904,16 @@ function getNextTargetWeight(orig,trackName,w,r,rir){
     }
     return{recW,isCompound:false,gotTop,targetR};
   }
-  if(gotTop||isCompound){
+  /* v5.11 fix: this used to read if(gotTop||isCompound) - meaning ANY compound exercise got
+     bumped up in weight even when the rep target was missed, purely because it was a compound
+     lift. Confirmed by direct simulation (2026-10-20): Bench press logged at 60kg x4 against a
+     6-8 target - a clear miss, even with RIR 0 (failed at absolute max effort) - still
+     recommended 62.5kg. Isolation exercises correctly held weight on the same kind of miss;
+     compounds structurally could not, regardless of real performance. This is the literal
+     mechanism behind Boss's "doesn't count fatigue, assumes I'm optimum for every set" report.
+     Now gated on gotTop for every exercise type - isCompound only ever decided the bump SIZE
+     (2.5kg vs 1.0kg), which was already correct and is unchanged. */
+  if(gotTop){
     const inc=isCompound?2.5:1.0;
     const trend=getE1RMTrend(trackName);
     let bump=inc;
@@ -3895,7 +3934,23 @@ function getNextTargetWeight(orig,trackName,w,r,rir){
       if(rir<=1)bump=Math.min(bump,inc);
       else if(rir>=3)bump=Math.max(bump,inc*2);
     }
-    if(gotTop||isCompound)recW=round(w+bump);
+    /* v5.11 FEATURE: fatigue integration, confirmed 2026-10-20 in response to Boss’s "not
+       counting fatigue... assumes I'm optimum for every set" report. Reuses the exact same
+       freshness score and 0.3 "fatigued" threshold the deload signal already uses, rather than
+       inventing a third, disagreeing fatigue measure - a lift whose muscles are still showing
+       the same pattern that would trigger "consider a lighter session" cannot also be the lift
+       getting pushed to a heavier weight. Averages across every primary muscle the exercise
+       hits (Boss's confirmed choice over "worst single muscle") - compounds only, since
+       isolation work already carries a far smaller systemic-fatigue footprint by design (see
+       getModeratePrefill's own rationale above). Takes the lesser of whatever RIR and freshness
+       each separately allow - either signal can only hold the bump back, never add to it, same
+       philosophy RIR already uses on its own. */
+    if(isCompound){
+      const avgFreshness=getAvgMuscleFreshness(orig.primaryMuscles);
+      if(avgFreshness<0.3)bump=0;
+      else if(avgFreshness<0.6)bump=Math.min(bump,inc);
+    }
+    recW=round(w+bump);
   }
   /* Real ceiling: small, individually-reasonable increments can still compound into numbers
      no real lifter would hit over many sessions \u2014 confirmed by simulation (83% growth in 20
