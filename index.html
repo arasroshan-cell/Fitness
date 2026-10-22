@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.11</title>
+<title>Roshan Fitness v5.12</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -230,7 +230,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-10-21">v5.11</div>
+    <div class="vtag" title="build 2026-10-22">v5.12</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -2182,7 +2182,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.11';
+const APP_VERSION='v5.12';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -2799,14 +2799,29 @@ function startSession(dayIndex){
   initWS(adHocDay.label,adHocDay);
   renderToday();
 }
-function startFreeSession(){
+/* v5.12 fix: real data loss reported (2026-10-22) - tapping "Free session" from the picker used
+   to unconditionally wipe WS['Free session'] back to empty EVERY time, including when simply
+   returning to one already in progress (e.g. after "Change session" to look at a different day,
+   then coming back). It then immediately re-saved that empty state over the real persisted
+   draft too, so there was no recovery path once it ran. initWS already solved exactly this for
+   scheduled days (preserve in-progress state, only rebuild what's missing) - Free session never
+   got the same protection. Now resumes a same-day, non-empty Free session instead of wiping it;
+   forceReset lets startSuggestedSession still get the genuinely clean slate it needs. */
+function startFreeSession(forceReset){
   editingDate=null;
   _forcePickerOnce=false;
-  adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:[]};
   adHocSeqIdx=null;
-  WS['Free session']={ex:[],subOpen:null,note:'',painNote:'',startAt:Date.now(),lastSetAt:null,_forDate:todayKey()};
+  const existing=WS['Free session'];
+  const canResume=!forceReset&&existing&&existing._forDate===todayKey()&&existing.ex&&existing.ex.length>0;
+  if(canResume){
+    adHocDay={label:'Free session',focus:'Your combo today',time:'',
+      ex:existing.ex.map(e=>({...(getFreeSessionExerciseList().find(d=>d.n===e.origName)||{n:e.origName,s:e.sets.length,inputType:'weight'}),priority:'must'}))};
+  }else{
+    adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:[]};
+    WS['Free session']={ex:[],subOpen:null,note:'',painNote:'',startAt:Date.now(),lastSetAt:null,_forDate:todayKey()};
+    _isSuggestedSession=false;
+  }
   _freeExPickerMode='search';_freeExSelectedTags=[];
-  _isSuggestedSession=false;
   saveDraft('Free session');
   renderToday();
 }
@@ -2852,7 +2867,7 @@ function getSuggestedSessionExercises(numExercises){
   return chosen;
 }
 function startSuggestedSession(){
-  startFreeSession();
+  startFreeSession(true);
   _isSuggestedSession=true;
   const picks=getSuggestedSessionExercises(5);
   const pSubs=lsG('persisted_subs')||{};
