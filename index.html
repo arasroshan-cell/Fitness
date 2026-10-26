@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.12</title>
+<title>Roshan Fitness v5.10</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -230,7 +230,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-10-22">v5.12</div>
+    <div class="vtag" title="build 2026-10-26">v5.10</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -342,11 +342,26 @@ const SUBS={
   'Calf raises':['Seated calf raise','Single-leg calf raise'],
   'Plank':['Dead bug','Bear crawl hold','Pallof press'],
   'Dips (chest-focused, forward lean)':['Decline press (Smith machine)','Decline machine press','Decline chest press'],
-  'Dead bug':['Bird-dog','Pallof press'],
+  /* v5.13: "Bird dog" and "Bird-dog" (differed only by a hyphen) were defined as two
+     completely unrelated exercises - this one lived under Cable pull-through (Lower back/
+     Glutes/Hamstrings, hip-hinge family), the hyphenated one under Dead bug (Core, reps_each).
+     Roshan confirmed they're the same real exercise and asked to merge them - moved here so
+     both spellings share one real definition (Core/reps_each/Dead bug family) going forward. */
+  'Dead bug':['Bird-dog','Pallof press','Bird dog'],
   'Hip abduction machine':['Cable kickback','Machine hip thrust'],
-  'Cable pull-through':['45\u00b0 back extension','Bird dog'],
+  'Cable pull-through':['45\u00b0 back extension'],
   'Arnold press':['DB shoulder press','Machine shoulder press','Front dumbell raises'],
-  'Dumbbell curl (alternating)':['EZ bar curl','Cable curl','Machine curl','Barbell curl','Reverse EZ bar curl','Bicep curl (BB or DB)','Bench dumbbell curl'],
+  /* v5.13: split "Bicep curl (BB or DB)" per Roshan's confirmed decision - tracking a single
+     weight field under an ambiguous equipment name meant a barbell-total entry (realistically
+     40-60kg) could silently corrupt a per-dumbbell progression, producing an impossible
+     suggestion (55kg per hand, against his real 15-20kg working weight). Barbell already has
+     its own canonical entry; "Bicep curl (DB)" is the new explicitly-dumbbell one to use going
+     forward. The old ambiguous name is kept exactly as-is, untouched, so historical logs under
+     it still resolve - same precedent as every other FIX6-style split. Also adds "Seated
+     incline DB curl" (confirmed as a genuinely distinct variant from the existing "Bench
+     dumbbell curl" - incline angle removes even more momentum and adds a deeper stretch,
+     not the same movement just worded differently). */
+  'Dumbbell curl (alternating)':['EZ bar curl','Cable curl','Machine curl','Barbell curl','Reverse EZ bar curl','Bicep curl (BB or DB)','Bench dumbbell curl','Bicep curl (DB)','Seated incline DB curl'],
   'Plank or dead bug':['Bear hold','Pallof press'],
   /* v5.9 OI9: real Free-session exercise names that never resolved via findExDef, found during
      the v5.7 real-export analysis. Roshan confirmed the DB alias for the curl, and confirmed
@@ -376,7 +391,11 @@ const SUB_TYPE_OVERRIDE={
   'Rear delt machine fly':{nt:'Never skip \u2014 shoulder health'},
   'Band pull-apart':{nt:'Never skip \u2014 shoulder health'},
   '45\u00b0 back extension':{inputType:'bodyweight',wlabel:'Bodyweight (add plate to chest if weighted)',noweight:true,nt:'Slow and controlled \u2014 don\u2019t overarch at the top, exhale as you rise'},
-  'Bird dog':{inputType:'bodyweight',wlabel:'Bodyweight',noweight:true,nt:'Opposite arm and leg, controlled \u2014 same safe pattern as Dead bug'},
+  /* v5.13: dropped the inputType:'bodyweight'/wlabel/noweight override that used to make this
+     diverge from "Bird-dog" (hyphenated) - now inherits Dead bug's own reps_each/Core
+     definition directly, same as the hyphenated spelling always has, so both names track
+     identically going forward. */
+  'Bird dog':{nt:'Opposite arm and leg, controlled \u2014 same safe pattern as Dead bug'},
   'Skull crushers':{wlabel:'Total kg incl. bar (EZ bar or Smith bar \u2014 your call)',nt:'Elbows stay pointed at the ceiling and still \u2014 only the forearms move through the stretch'},
   'T-bar row':{wlabel:'Total kg loaded (plates on the bar, or landmine attachment)'},
   'DB kickback':{nt:'Elbow pinned high and still against your side \u2014 only the forearm moves'},
@@ -397,6 +416,10 @@ const SUB_TYPE_OVERRIDE={
      barbell (total-kg) exercise - the exact equipment-label mismatch class CLAUDE.md's audit
      rule exists to catch. Forces the correct per-dumbbell label instead. */
   'Bicep curl (BB or DB)':{wlabel:'Per dumbbell (each hand)'},
+  /* v5.13: the two new exercises confirmed above - explicitly dumbbell only (no barbell
+     ambiguity) and a genuinely distinct incline variant. */
+  'Bicep curl (DB)':{wlabel:'Per dumbbell (each hand)',nt:'Dumbbell only — use the separate Barbell curl entry if you did a barbell that day'},
+  'Seated incline DB curl':{nt:'Incline bench, arms hanging behind the body plane — deeper stretch at the bottom than a flat seated curl, and removes even more cheating momentum'},
   /* v5.9 OI9: Cable woodchop never had a definition at all - a real exercise Roshan logged
      twice under Free session with no canonical match. Confirmed as a genuinely new tracked
      exercise (not an alias), aliased under Side plank for the exercise picker since both are
@@ -2182,7 +2205,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.12';
+const APP_VERSION='v5.10';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
