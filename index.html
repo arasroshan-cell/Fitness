@@ -5,20 +5,30 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#E0A339">
+<meta name="theme-color" content="#2DD4BF">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.10</title>
+<title>Roshan Fitness v5.11</title>
 <style>
+/* v5.14 "Midnight Aurora" refresh: Roshan found the old warm-brown/single-amber theme flat
+   (83 uses of one amber tone, 33 of one burnt-orange, against one dark-brown background - real
+   monochrome, not just a feeling). Moved the whole surface stack to a cool deep navy/charcoal,
+   made --cyan an actual vivid teal (it only ever used to be a second shade of amber despite the
+   name), and added --purple as a real aurora violet. --amb/--grn/--red deliberately KEPT in
+   their original warm-amber/green/red hue family and not touched beyond a brightness tweak for
+   navy contrast - they're load-bearing for the real green/amber/red traffic-light semantics in
+   the symptom tracker ("Amber protocol applies" for a low-energy day), and swapping that to a
+   decorative color would make the safety signal harder to read at a glance, not better looking.
+   --gold is also kept warm (PR/celebration badges only - a gold-medal association is the point). */
 :root{
-  --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
-  --cyan:#E0A339;--cbg:rgba(224,163,57,.14);--cbr:rgba(224,163,57,.32);
-  --amb:#C9722E;--abg:rgba(201,114,46,.15);--abr:rgba(201,114,46,.32);
-  --txt:#F3E9D8;--mut:#A6906F;--dim:#6E5D45;
-  --grn:#8FAE63;--gbg:rgba(143,174,99,.14);--gbr:rgba(143,174,99,.32);
-  --red:#C2404A;--rbg:rgba(194,64,74,.14);--rbr:rgba(194,64,74,.32);
-  --gold:#D4AF37;--purple:#8B6F9E
+  --bg:#0A0E16;--c1:#121826;--c2:#1B2334;--c3:#2A3447;
+  --cyan:#2DD4BF;--cbg:rgba(45,212,191,.14);--cbr:rgba(45,212,191,.32);
+  --amb:#F0A23D;--abg:rgba(240,162,61,.15);--abr:rgba(240,162,61,.32);
+  --txt:#E7ECF4;--mut:#8491A8;--dim:#4D5A72;
+  --grn:#4ADE80;--gbg:rgba(74,222,128,.14);--gbr:rgba(74,222,128,.32);
+  --red:#F0526B;--rbg:rgba(240,82,107,.14);--rbr:rgba(240,82,107,.32);
+  --gold:#FFD166;--purple:#C65FE0
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--txt);font-family:"IBM Plex Sans",-apple-system,sans-serif;font-size:15px;max-width:480px;margin:0 auto;padding-bottom:90px}
@@ -26,7 +36,7 @@ body{background:var(--bg);color:var(--txt);font-family:"IBM Plex Sans",-apple-sy
 .hdr{padding:16px 16px 12px;background:var(--bg);position:sticky;top:0;z-index:20;border-bottom:1px solid var(--c3)}
 .hdr-toprow{display:flex;justify-content:space-between;align-items:center}
 .vtag{font-size:10px;color:var(--dim);background:var(--c2);border:1px solid var(--c3);border-radius:20px;padding:2px 9px;font-weight:700;letter-spacing:.5px}
-.ht{font-size:24px;font-family:"Barlow",sans-serif;font-weight:900;background:linear-gradient(90deg,var(--txt) 50%,var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.ht{font-size:24px;font-family:"Barlow",sans-serif;font-weight:900;background:linear-gradient(90deg,var(--txt) 35%,var(--cyan) 70%,var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .hs{font-size:13px;color:var(--mut);margin-top:3px}
 .mrow{display:flex;gap:6px;margin-top:10px}
 .met{flex:1;background:var(--c1);border:1px solid var(--c3);border-radius:12px;padding:9px 6px;text-align:center;position:relative;overflow:hidden}
@@ -126,7 +136,7 @@ textarea.genin{resize:none}
 .btn:active{opacity:.85;transform:scale(.98)}
 /* STICKY SAVE */
 .sticky-wrap{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);width:calc(min(480px,100vw) - 28px);z-index:100;display:none}
-.sticky-save{background:linear-gradient(135deg,var(--cyan),var(--amb));color:#000;border:none;border-radius:16px;font-size:17px;font-weight:900;font-family:"Barlow",sans-serif;cursor:pointer;width:100%;padding:18px;box-shadow:0 4px 28px rgba(224,163,57,.4)}
+.sticky-save{background:linear-gradient(135deg,var(--cyan),var(--amb));color:#000;border:none;border-radius:16px;font-size:17px;font-weight:900;font-family:"Barlow",sans-serif;cursor:pointer;width:100%;padding:18px;box-shadow:0 4px 28px rgba(45,212,191,.4)}
 .sticky-save:active{transform:scale(.97)}
 /* v5.10 FEATURE: floating rest timer bubble - Roshan reported having to scroll all the way
    back up mid-set to see the rest countdown, which lives inline at the top of the session
@@ -230,7 +240,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-10-26">v5.10</div>
+    <div class="vtag" title="build 2026-10-26">v5.11</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -2205,7 +2215,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.10';
+const APP_VERSION='v5.11';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
