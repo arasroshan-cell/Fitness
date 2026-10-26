@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.9</title>
+<title>Roshan Fitness v5.10</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -128,6 +128,16 @@ textarea.genin{resize:none}
 .sticky-wrap{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);width:calc(min(480px,100vw) - 28px);z-index:100;display:none}
 .sticky-save{background:linear-gradient(135deg,var(--cyan),var(--amb));color:#000;border:none;border-radius:16px;font-size:17px;font-weight:900;font-family:"Barlow",sans-serif;cursor:pointer;width:100%;padding:18px;box-shadow:0 4px 28px rgba(224,163,57,.4)}
 .sticky-save:active{transform:scale(.97)}
+/* v5.10 FEATURE: floating rest timer bubble - Roshan reported having to scroll all the way
+   back up mid-set to see the rest countdown, which lives inline at the top of the session
+   card. Fixed-position, lives outside the tab panels so it persists regardless of scroll
+   position or which tab is active, mirroring the existing sticky-save pattern. Sits above the
+   sticky-save button (bottom:84px clears its ~58px height + 16px offset) so the two never
+   overlap during an active session, when both are visible at once. */
+.rest-bubble{position:fixed;bottom:84px;right:16px;z-index:140;display:none;align-items:center;gap:6px;background:var(--cbg);border:1px solid var(--cbr);border-radius:30px;padding:8px 10px;box-shadow:0 4px 20px rgba(0,0,0,.35)}
+.rest-bubble-num{font-family:"Barlow",sans-serif;font-size:17px;font-weight:800;color:var(--cyan);min-width:42px;text-align:center}
+.rest-bubble-btn{background:var(--c2);border:1px solid var(--c3);color:var(--txt);border-radius:16px;font-size:11px;font-weight:700;padding:6px 9px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.rest-bubble-skip{color:var(--amb)}
 /* CONFBOX + SKIP */
 .confbox{background:var(--gbg);color:var(--grn);border:1px solid var(--gbr);border-radius:14px;padding:14px;font-size:15px;font-weight:700;text-align:center;display:none;margin-top:10px}
 @keyframes sealFadeIn{from{opacity:0}to{opacity:1}}
@@ -220,7 +230,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-10-14">v5.9</div>
+    <div class="vtag" title="build 2026-10-26">v5.10</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -243,6 +253,12 @@ textarea.genin{resize:none}
 <div class="pnl" id="p4"></div>
 <div class="sticky-wrap" id="sticky-wrap">
   <button class="sticky-save" id="sticky-btn">Save &amp; Finish Workout</button>
+</div>
+<div class="rest-bubble" id="rest-bubble">
+  <div class="rest-bubble-num" id="rest-bubble-num">0:00</div>
+  <button class="rest-bubble-btn" onclick="extendRestTimer(-30)">-30s</button>
+  <button class="rest-bubble-btn" onclick="extendRestTimer(30)">+30s</button>
+  <button class="rest-bubble-btn rest-bubble-skip" onclick="skipRestTimer()">Skip</button>
 </div>
 <div id="save-toast" class="confbox" style="position:fixed;left:16px;right:16px;bottom:90px;z-index:50;display:none"></div>
 <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(this)">
@@ -308,7 +324,14 @@ const SUBS={
   'Cable tricep pushdown':['Rope pushdown','DB kickback','Machine tricep dip','Tricep superset','Machine tricep extension'],
   'Overhead tricep extension':['Cable overhead extension','Skull crushers','One-hand DB overhead extension','Skull crushers (EZ bar)','Skull crushers (Smith bar)'],
   'Pull-ups (unassisted)':['Assisted pull-ups (machine)','Lat pulldown','Band-assisted pull-ups'],
-  'Lat pulldown':['Pull-ups','Straight arm pulldown'],
+  /* v5.11: Roshan confirmed Lat pulldown had zero grip variants (its only substitutes were a
+     completely different movement, Pull-ups, and Straight arm pulldown) - adding the 3 grip
+     options he confirmed. All three keep the base exercise's own primaryMuscles/secondaryMuscles
+     (Lats/Biceps) - a grip change on the same pulling pattern doesn't warrant inventing a
+     different muscle tag without real evidence, unlike e.g. Reverse EZ bar curl's much bigger
+     biomechanical shift. inferSubWlabel's existing "pulldown" pattern already labels all three
+     correctly (Stack weight), so only the form cue needed overriding. */
+  'Lat pulldown':['Pull-ups','Straight arm pulldown','Wide grip lat pulldown','Close grip lat pulldown (V-bar)','Reverse grip lat pulldown'],
   'Seated cable row':['DB row','Machine row','T-bar row','Smith machine row','T-bar row (machine)','T-bar row (landmine)','Cable row'],
   'Single arm DB row':['Cable single arm row','Machine row'],
   'Face pulls':['Reverse cable fly','Rear delt machine fly','Band pull-apart'],
@@ -319,11 +342,26 @@ const SUBS={
   'Calf raises':['Seated calf raise','Single-leg calf raise'],
   'Plank':['Dead bug','Bear crawl hold','Pallof press'],
   'Dips (chest-focused, forward lean)':['Decline press (Smith machine)','Decline machine press','Decline chest press'],
-  'Dead bug':['Bird-dog','Pallof press'],
+  /* v5.13: "Bird dog" and "Bird-dog" (differed only by a hyphen) were defined as two
+     completely unrelated exercises - this one lived under Cable pull-through (Lower back/
+     Glutes/Hamstrings, hip-hinge family), the hyphenated one under Dead bug (Core, reps_each).
+     Roshan confirmed they're the same real exercise and asked to merge them - moved here so
+     both spellings share one real definition (Core/reps_each/Dead bug family) going forward. */
+  'Dead bug':['Bird-dog','Pallof press','Bird dog'],
   'Hip abduction machine':['Cable kickback','Machine hip thrust'],
-  'Cable pull-through':['45\u00b0 back extension','Bird dog'],
+  'Cable pull-through':['45\u00b0 back extension'],
   'Arnold press':['DB shoulder press','Machine shoulder press','Front dumbell raises'],
-  'Dumbbell curl (alternating)':['EZ bar curl','Cable curl','Machine curl','Barbell curl','Reverse EZ bar curl','Bicep curl (BB or DB)','Bench dumbbell curl'],
+  /* v5.13: split "Bicep curl (BB or DB)" per Roshan's confirmed decision - tracking a single
+     weight field under an ambiguous equipment name meant a barbell-total entry (realistically
+     40-60kg) could silently corrupt a per-dumbbell progression, producing an impossible
+     suggestion (55kg per hand, against his real 15-20kg working weight). Barbell already has
+     its own canonical entry; "Bicep curl (DB)" is the new explicitly-dumbbell one to use going
+     forward. The old ambiguous name is kept exactly as-is, untouched, so historical logs under
+     it still resolve - same precedent as every other FIX6-style split. Also adds "Seated
+     incline DB curl" (confirmed as a genuinely distinct variant from the existing "Bench
+     dumbbell curl" - incline angle removes even more momentum and adds a deeper stretch,
+     not the same movement just worded differently). */
+  'Dumbbell curl (alternating)':['EZ bar curl','Cable curl','Machine curl','Barbell curl','Reverse EZ bar curl','Bicep curl (BB or DB)','Bench dumbbell curl','Bicep curl (DB)','Seated incline DB curl'],
   'Plank or dead bug':['Bear hold','Pallof press'],
   /* v5.9 OI9: real Free-session exercise names that never resolved via findExDef, found during
      the v5.7 real-export analysis. Roshan confirmed the DB alias for the curl, and confirmed
@@ -353,7 +391,11 @@ const SUB_TYPE_OVERRIDE={
   'Rear delt machine fly':{nt:'Never skip \u2014 shoulder health'},
   'Band pull-apart':{nt:'Never skip \u2014 shoulder health'},
   '45\u00b0 back extension':{inputType:'bodyweight',wlabel:'Bodyweight (add plate to chest if weighted)',noweight:true,nt:'Slow and controlled \u2014 don\u2019t overarch at the top, exhale as you rise'},
-  'Bird dog':{inputType:'bodyweight',wlabel:'Bodyweight',noweight:true,nt:'Opposite arm and leg, controlled \u2014 same safe pattern as Dead bug'},
+  /* v5.13: dropped the inputType:'bodyweight'/wlabel/noweight override that used to make this
+     diverge from "Bird-dog" (hyphenated) - now inherits Dead bug's own reps_each/Core
+     definition directly, same as the hyphenated spelling always has, so both names track
+     identically going forward. */
+  'Bird dog':{nt:'Opposite arm and leg, controlled \u2014 same safe pattern as Dead bug'},
   'Skull crushers':{wlabel:'Total kg incl. bar (EZ bar or Smith bar \u2014 your call)',nt:'Elbows stay pointed at the ceiling and still \u2014 only the forearms move through the stretch'},
   'T-bar row':{wlabel:'Total kg loaded (plates on the bar, or landmine attachment)'},
   'DB kickback':{nt:'Elbow pinned high and still against your side \u2014 only the forearm moves'},
@@ -374,6 +416,10 @@ const SUB_TYPE_OVERRIDE={
      barbell (total-kg) exercise - the exact equipment-label mismatch class CLAUDE.md's audit
      rule exists to catch. Forces the correct per-dumbbell label instead. */
   'Bicep curl (BB or DB)':{wlabel:'Per dumbbell (each hand)'},
+  /* v5.13: the two new exercises confirmed above - explicitly dumbbell only (no barbell
+     ambiguity) and a genuinely distinct incline variant. */
+  'Bicep curl (DB)':{wlabel:'Per dumbbell (each hand)',nt:'Dumbbell only — use the separate Barbell curl entry if you did a barbell that day'},
+  'Seated incline DB curl':{nt:'Incline bench, arms hanging behind the body plane — deeper stretch at the bottom than a flat seated curl, and removes even more cheating momentum'},
   /* v5.9 OI9: Cable woodchop never had a definition at all - a real exercise Roshan logged
      twice under Free session with no canonical match. Confirmed as a genuinely new tracked
      exercise (not an alias), aliased under Side plank for the exercise picker since both are
@@ -399,7 +445,13 @@ const SUB_TYPE_OVERRIDE={
   /* Front dumbell raises never had a definition at all - confirmed as a genuinely new tracked
      exercise, same treatment as Cable woodchop earlier. Front delts primary, matching Arnold
      press's own primary muscle, which it's aliased under. */
-  'Front dumbell raises':{s:3,r:'12',inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Front delts'],secondaryMuscles:[],compound:false,nt:'Standing, slight bend in the elbow — raise to shoulder height, controlled on the way down'}
+  'Front dumbell raises':{s:3,r:'12',inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Front delts'],secondaryMuscles:[],compound:false,nt:'Standing, slight bend in the elbow — raise to shoulder height, controlled on the way down'},
+  /* v5.11: Lat pulldown grip variants Roshan confirmed. Only the cue needs overriding -
+     inferSubWlabel's existing "pulldown" pattern already labels all three Stack weight, and
+     primaryMuscles/secondaryMuscles correctly fall through to Lat pulldown's own (Lats/Biceps). */
+  'Wide grip lat pulldown':{nt:'Wide overhand grip, hands just outside shoulder width — the default lat pulldown setup'},
+  'Close grip lat pulldown (V-bar)':{nt:'V-bar attachment, hands close and neutral — shorter range, more lower-lat and bicep involvement'},
+  'Reverse grip lat pulldown':{nt:'Underhand/supinated grip on the straight bar — shifts more toward lower lats and biceps'}
 };
 function findExDef(name){
   for(const d of DAYS){for(const e of d.ex){
@@ -1278,6 +1330,62 @@ function getSkipWarnings(historyCount,coverage10){
   const missing=DAYS.filter(d=>coverage[d.label]<DAY_CREDIT_THRESHOLD).map(d=>d.label);
   return missing.length?missing:null;
 }
+/* v5.10 FEATURE (OI5): weekly check-in summary. Content confirmed by Roshan 2026-10-14 - just
+   these 4: sessions + day coverage, volume + PR trend, weight trend, nutrition adherence.
+   Placement confirmed: Progress, not Today. The 7-day window is a default (not explicitly
+   picked over a calendar Mon-Sun week) chosen to match DAY_COVERAGE_WINDOW_DAYS so "this week"
+   never disagrees with what the rest of the app already means by it. One scan over sess:
+   records for the session/volume/PR numbers (same loop shape as getDayCoverage/
+   computeHistorySnapshot above), day coverage reuses getDayCoverage directly rather than a
+   second tally, and weight trend reuses the already-tested getWeightRatePerWeek rather than a
+   third definition of "trend". */
+function getWeeklySummary(){
+  const cutoff7=dateDaysAgo(7),cutoff14=dateDaysAgo(14);
+  let doneThisWeek=0,skippedThisWeek=0,volumeThisWeek=0,volumeLastWeek=0;
+  const newPRsThisWeek=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(!k||!k.startsWith('sess:'))continue;
+    const sess=lsG(k);
+    if(!sess||!sess.date)continue;
+    if(sess.date>=cutoff7){
+      if(sess.skipped)skippedThisWeek++;
+      else{
+        doneThisWeek++;
+        volumeThisWeek+=sess.totalVolume||0;
+        (sess.newPRs||[]).forEach(n=>newPRsThisWeek.push(n));
+      }
+    }else if(sess.date>=cutoff14&&!sess.skipped){
+      volumeLastWeek+=sess.totalVolume||0;
+    }
+  }
+  const coverage=getDayCoverage(7);
+  const dayCoverage=DAYS.map(d=>({label:d.label,sets:coverage[d.label],credited:coverage[d.label]>=DAY_CREDIT_THRESHOLD}));
+  const dateStrings=Array.from({length:7},(_,i)=>dateDaysAgo(i));
+  let proteinSum=0,kcalSum=0,nutritionDays=0,symptomDays=0;
+  dateStrings.forEach(d=>{
+    const log=lsG('food:'+d);
+    if(log&&log.length){
+      nutritionDays++;
+      proteinSum+=log.reduce((s,it)=>s+(it.p||0),0);
+      kcalSum+=log.reduce((s,it)=>s+(it.k||0),0);
+    }
+    const sym=lsG('sym:'+d)||{};
+    if((sym.bowel&&sym.bowel!=='normal')||(sym.seton&&sym.seton>=4)||(sym.energy&&sym.energy<=2))symptomDays++;
+  });
+  const weightRate=getWeightRatePerWeek(lsG('bstats')||[]);
+  return{
+    doneThisWeek,skippedThisWeek,dayCoverage,
+    volumeThisWeek,volumeLastWeek,
+    volumeChangePct:volumeLastWeek>0?Math.round((volumeThisWeek-volumeLastWeek)/volumeLastWeek*100):null,
+    newPRsThisWeek,
+    nutritionDays,
+    avgProtein:nutritionDays?Math.round(proteinSum/nutritionDays):null,
+    avgKcal:nutritionDays?Math.round(kcalSum/nutritionDays):null,
+    symptomDays,
+    weightRate
+  };
+}
 
 /* v5.7 FEATURE 3: shared by renderToday's initial paint and updSet's keystroke-time update,
    so the two can never disagree about which DOM id or which exercise a given set tracks
@@ -2097,7 +2205,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.9';
+const APP_VERSION='v5.10';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -2138,10 +2246,18 @@ let timerInterval=null;
    last set" elapsed counter once the countdown naturally reaches zero \u2014 nothing about that
    older display is removed, this only adds an active phase in front of it. */
 let _restTimerEndAt=null,_restTimerDuration=null,_restTickInterval=null;
+/* v5.10: the floating bubble (#rest-bubble, fixed-position, lives outside the tab panels) is
+   shown/hidden alongside the countdown's lifecycle and updated by the same tick - one state
+   machine, two displays, so they can never disagree. */
+function showRestBubble(show){
+  const b=document.getElementById('rest-bubble');if(b)b.style.display=show?'flex':'none';
+}
 function startRestTimer(seconds){
   clearInterval(_restTickInterval);
   _restTimerEndAt=Date.now()+seconds*1000;
   _restTimerDuration=seconds;
+  showRestBubble(true);
+  tickRestTimer();
   _restTickInterval=setInterval(tickRestTimer,1000);
 }
 function tickRestTimer(){
@@ -2149,16 +2265,20 @@ function tickRestTimer(){
   const remaining=Math.max(0,Math.round((_restTimerEndAt-Date.now())/1000));
   const numEl=document.getElementById('rest-countdown-num');
   const barEl=document.getElementById('rest-countdown-bar');
+  const bubbleNumEl=document.getElementById('rest-bubble-num');
   if(remaining<=0){
     clearInterval(_restTickInterval);_restTickInterval=null;_restTimerEndAt=null;_restTimerDuration=null;
+    showRestBubble(false);
     if(navigator.vibrate)navigator.vibrate([200,100,200]);
     renderToday();
     return;
   }
-  if(numEl)numEl.textContent=Math.floor(remaining/60)+':'+String(remaining%60).padStart(2,'0');
+  const txt=Math.floor(remaining/60)+':'+String(remaining%60).padStart(2,'0');
+  if(numEl)numEl.textContent=txt;
+  if(bubbleNumEl)bubbleNumEl.textContent=txt;
   if(barEl)barEl.style.width=Math.round((remaining/_restTimerDuration)*100)+'%';
 }
-function skipRestTimer(){clearInterval(_restTickInterval);_restTickInterval=null;_restTimerEndAt=null;_restTimerDuration=null;renderToday();}
+function skipRestTimer(){clearInterval(_restTickInterval);_restTickInterval=null;_restTimerEndAt=null;_restTimerDuration=null;showRestBubble(false);renderToday();}
 function extendRestTimer(sec){
   if(!_restTimerEndAt)return;
   const minRemaining=5000;
@@ -2702,14 +2822,29 @@ function startSession(dayIndex){
   initWS(adHocDay.label,adHocDay);
   renderToday();
 }
-function startFreeSession(){
+/* v5.12 fix: real data loss reported (2026-10-22) - tapping "Free session" from the picker used
+   to unconditionally wipe WS['Free session'] back to empty EVERY time, including when simply
+   returning to one already in progress (e.g. after "Change session" to look at a different day,
+   then coming back). It then immediately re-saved that empty state over the real persisted
+   draft too, so there was no recovery path once it ran. initWS already solved exactly this for
+   scheduled days (preserve in-progress state, only rebuild what's missing) - Free session never
+   got the same protection. Now resumes a same-day, non-empty Free session instead of wiping it;
+   forceReset lets startSuggestedSession still get the genuinely clean slate it needs. */
+function startFreeSession(forceReset){
   editingDate=null;
   _forcePickerOnce=false;
-  adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:[]};
   adHocSeqIdx=null;
-  WS['Free session']={ex:[],subOpen:null,note:'',painNote:'',startAt:Date.now(),lastSetAt:null,_forDate:todayKey()};
+  const existing=WS['Free session'];
+  const canResume=!forceReset&&existing&&existing._forDate===todayKey()&&existing.ex&&existing.ex.length>0;
+  if(canResume){
+    adHocDay={label:'Free session',focus:'Your combo today',time:'',
+      ex:existing.ex.map(e=>({...(getFreeSessionExerciseList().find(d=>d.n===e.origName)||{n:e.origName,s:e.sets.length,inputType:'weight'}),priority:'must'}))};
+  }else{
+    adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:[]};
+    WS['Free session']={ex:[],subOpen:null,note:'',painNote:'',startAt:Date.now(),lastSetAt:null,_forDate:todayKey()};
+    _isSuggestedSession=false;
+  }
   _freeExPickerMode='search';_freeExSelectedTags=[];
-  _isSuggestedSession=false;
   saveDraft('Free session');
   renderToday();
 }
@@ -2755,7 +2890,7 @@ function getSuggestedSessionExercises(numExercises){
   return chosen;
 }
 function startSuggestedSession(){
-  startFreeSession();
+  startFreeSession(true);
   _isSuggestedSession=true;
   const picks=getSuggestedSessionExercises(5);
   const pSubs=lsG('persisted_subs')||{};
@@ -2858,6 +2993,21 @@ function renderProgress(){
     <div class="pstat"><div class="pval" style="color:${scoreCol}">${score}%</div><div class="plbl">consistency (28d)</div></div>
     <div class="pstat"><div class="pval" style="color:var(--grn)">${flare}</div><div class="plbl">flare days</div></div>
     <div class="pstat"><div class="pval" style="color:${miss>0?'var(--red)':'var(--cyan)'}">${miss}</div><div class="plbl">missed</div></div>
+  </div>`;
+
+  /* v5.10 FEATURE (OI5): weekly check-in summary card */
+  const weekly=getWeeklySummary();
+  html+=`<div class="card" style="margin-bottom:12px">
+    <div class="cl">This week</div>
+    <div class="ct" style="margin-bottom:8px">Last 7 days</div>
+    <div class="cs" style="margin-bottom:8px">${weekly.doneThisWeek} session${weekly.doneThisWeek===1?'':'s'} done${weekly.skippedThisWeek?`, ${weekly.skippedThisWeek} skipped`:''}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+      ${weekly.dayCoverage.map(d=>`<div style="padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;border:1px solid ${d.credited?'var(--gbr)':'var(--c3)'};background:${d.credited?'var(--gbg)':'var(--c1)'};color:${d.credited?'var(--grn)':'var(--mut)'}">${d.label}: ${d.sets}</div>`).join('')}
+    </div>
+    <div class="cs" style="margin-bottom:4px">Volume: ${Math.round(weekly.volumeThisWeek).toLocaleString()}${weekly.volumeChangePct!==null?` (${weekly.volumeChangePct>=0?'+':''}${weekly.volumeChangePct}% vs last week)`:''}</div>
+    ${weekly.newPRsThisWeek.length?`<div class="cs" style="color:var(--amb);margin-bottom:4px">${weekly.newPRsThisWeek.length} new PR${weekly.newPRsThisWeek.length===1?'':'s'}: ${weekly.newPRsThisWeek.join(', ')}</div>`:''}
+    <div class="cs" style="margin-bottom:4px">${weekly.weightRate.available?`Weight trend: ${weekly.weightRate.ratePerWeek>=0?'+':''}${Math.round(weekly.weightRate.ratePerWeek*100)/100}kg/week`:'Weight trend: not enough weigh-ins yet'}</div>
+    <div class="cs">${weekly.nutritionDays?`Nutrition: ${weekly.avgProtein}g protein / ${weekly.avgKcal} kcal avg (${weekly.nutritionDays}/7 days logged)${weekly.symptomDays?`, ${weekly.symptomDays} symptom day${weekly.symptomDays===1?'':'s'}`:''}`:'Nutrition: no food logged this week'}</div>
   </div>`;
 
   html+=`<div class="card"><div class="cl">Exercise history</div>
@@ -3717,7 +3867,14 @@ function getRampPrefill(topWeight,numSets,orig){
   if(numSets<2)return[{w:String(round(topWeight)),r:String(topReps)}];
   const hasDrop=numSets>=3;
   const rampSteps=hasDrop?numSets-1:numSets;
-  const startReps=topReps+6;
+  /* v5.11 fix: this used to be topReps+6, a flat offset off the low end of the range regardless
+     of how wide that range actually was. For a narrow range (Bench press 6-8) or a fixed single
+     number (Seated cable row 12, low===high), that pushed the lightest ramp set well above the
+     exercise's own stated ceiling - Bench press's "warm-up" set came out to 12 reps against a
+     plan that explicitly never goes above 8, Seated cable row's came out to 18 against a plan
+     of 12. Anchoring off the range's own high end instead means the overshoot scales with how
+     wide the exercise's own range is, never exceeding it by more than this small buffer. */
+  const startReps=dropReps+2;
   return Array.from({length:numSets},(_,i)=>{
     if(hasDrop&&i===numSets-1)return{w:String(round(topWeight*0.55)),r:String(dropReps)};
     if(i===rampSteps-1)return{w:String(round(topWeight)),r:String(topReps)};
@@ -3749,6 +3906,16 @@ function getModeratePrefill(targetWeight,numSets,orig){
     return{w:String(round(targetWeight*pct)),r:String(Math.max(lowReps,reps))};
   });
 }
+/* v5.11: shared by getNextTargetWeight's fatigue modifier below. A muscle with no recent
+   training history at all contributes a neutral 1 (fully fresh) rather than 0 - no data is
+   never evidence of fatigue, and treating it as fatigued would wrongly hold back progress the
+   very first time a muscle is trained. */
+function getAvgMuscleFreshness(muscles){
+  if(!muscles||!muscles.length)return 1;
+  const fresh=Coach.getMuscleFreshness();
+  const scores=muscles.map(m=>{const f=fresh.find(x=>x.muscle===m);return f?f.freshness:1;});
+  return scores.reduce((s,v)=>s+v,0)/scores.length;
+}
 /* The actual prefill dispatcher: real numbers written into set.w/set.r, not just advisory
    text, so accepting with one tap logs the recommended number and overwriting is just
    typing over it. Uses the existing orig.compound field \u2014 already correctly tagged across
@@ -3775,7 +3942,16 @@ function getNextTargetWeight(orig,trackName,w,r,rir){
     }
     return{recW,isCompound:false,gotTop,targetR};
   }
-  if(gotTop||isCompound){
+  /* v5.11 fix: this used to read if(gotTop||isCompound) - meaning ANY compound exercise got
+     bumped up in weight even when the rep target was missed, purely because it was a compound
+     lift. Confirmed by direct simulation (2026-10-20): Bench press logged at 60kg x4 against a
+     6-8 target - a clear miss, even with RIR 0 (failed at absolute max effort) - still
+     recommended 62.5kg. Isolation exercises correctly held weight on the same kind of miss;
+     compounds structurally could not, regardless of real performance. This is the literal
+     mechanism behind Boss's "doesn't count fatigue, assumes I'm optimum for every set" report.
+     Now gated on gotTop for every exercise type - isCompound only ever decided the bump SIZE
+     (2.5kg vs 1.0kg), which was already correct and is unchanged. */
+  if(gotTop){
     const inc=isCompound?2.5:1.0;
     const trend=getE1RMTrend(trackName);
     let bump=inc;
@@ -3796,7 +3972,23 @@ function getNextTargetWeight(orig,trackName,w,r,rir){
       if(rir<=1)bump=Math.min(bump,inc);
       else if(rir>=3)bump=Math.max(bump,inc*2);
     }
-    if(gotTop||isCompound)recW=round(w+bump);
+    /* v5.11 FEATURE: fatigue integration, confirmed 2026-10-20 in response to Boss’s "not
+       counting fatigue... assumes I'm optimum for every set" report. Reuses the exact same
+       freshness score and 0.3 "fatigued" threshold the deload signal already uses, rather than
+       inventing a third, disagreeing fatigue measure - a lift whose muscles are still showing
+       the same pattern that would trigger "consider a lighter session" cannot also be the lift
+       getting pushed to a heavier weight. Averages across every primary muscle the exercise
+       hits (Boss's confirmed choice over "worst single muscle") - compounds only, since
+       isolation work already carries a far smaller systemic-fatigue footprint by design (see
+       getModeratePrefill's own rationale above). Takes the lesser of whatever RIR and freshness
+       each separately allow - either signal can only hold the bump back, never add to it, same
+       philosophy RIR already uses on its own. */
+    if(isCompound){
+      const avgFreshness=getAvgMuscleFreshness(orig.primaryMuscles);
+      if(avgFreshness<0.3)bump=0;
+      else if(avgFreshness<0.6)bump=Math.min(bump,inc);
+    }
+    recW=round(w+bump);
   }
   /* Real ceiling: small, individually-reasonable increments can still compound into numbers
      no real lifter would hit over many sessions \u2014 confirmed by simulation (83% growth in 20
