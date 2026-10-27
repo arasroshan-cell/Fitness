@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.11</title>
+<title>Roshan Fitness v5.12</title>
 <style>
 /* v5.14 "Midnight Aurora" refresh: Roshan found the old warm-brown/single-amber theme flat
    (83 uses of one amber tone, 33 of one burnt-orange, against one dark-brown background - real
@@ -240,7 +240,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-10-26">v5.11</div>
+    <div class="vtag" title="build 2026-10-27">v5.12</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -1824,11 +1824,17 @@ const Coach={
       });
       const trailing=entries.slice(-4);
       const avgContribution=trailing.reduce((s,e)=>s+e.contribution,0)/trailing.length;
+      /* Real fix for a real reported case: the very first time a muscle is ever hit, there's
+         nothing yet to compare it against, so ratio would default to exactly 1 regardless of
+         how light or heavy that first hit actually was — wrongly forcing the full ~3-day
+         window on day one. With no baseline to say otherwise, a brand-new muscle gets the
+         floor window instead, so it reads as mostly fresh rather than falsely fatigued. */
+      const isFirstEverHit=entries.length===1;
       let totalResidual=0;
       recentEntries.forEach(e=>{
         const daysSince=Math.max(0,Math.floor((today-new Date(e.date))/86400000));
         const ratio=avgContribution>0?e.contribution/avgContribution:1;
-        const window=Math.min(6,Math.max(1.5,3*ratio))*combinedModifier;
+        const window=(isFirstEverHit?1.5:Math.min(6,Math.max(1.5,3*ratio)))*combinedModifier;
         totalResidual+=Math.max(0,1-daysSince/window);
       });
       const freshness=Math.min(1,Math.max(0,1-totalResidual));
@@ -2215,7 +2221,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.11';
+const APP_VERSION='v5.12';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
