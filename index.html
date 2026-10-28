@@ -86,7 +86,10 @@ body{background:var(--bg);color:var(--txt);font-family:"IBM Plex Sans",-apple-sy
    text divider between sections, nothing told your eye where to land first on a page with 8-11
    cards. A MUST card now gets a left accent border matching the same cyan the section label
    already uses; an optional one stays visually quieter instead of competing equally. */
-.exb.must{border-left:3px solid var(--cyan)}
+/* Bumped from 3px to 4px + a faint background tint after visual verification flagged the
+   plain 3px border as too subtle to read as real hierarchy on an actual phone screen, not just
+   a desktop screenshot thumbnail. */
+.exb.must{border-left:4px solid var(--cyan);background:linear-gradient(90deg,var(--cbg),var(--c1) 12%)}
 .exb.opt{opacity:.88}
 .exhd{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px}
 .exn{font-size:18px;font-weight:700;font-family:"Barlow",sans-serif;line-height:1.2}
