@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.14</title>
+<title>Roshan Fitness v5.15</title>
 <style>
 /* v5.14 "Midnight Aurora" refresh: Roshan found the old warm-brown/single-amber theme flat
    (83 uses of one amber tone, 33 of one burnt-orange, against one dark-brown background - real
@@ -81,6 +81,13 @@ body{background:var(--bg);color:var(--txt);font-family:"IBM Plex Sans",-apple-sy
 /* EXERCISES */
 .exb{background:var(--c1);border:1px solid var(--c3);border-radius:16px;padding:16px;margin-bottom:12px}
 .exb:last-child{border-bottom:none;padding-bottom:0;margin-bottom:0}
+/* Real gap found via review (confirmed on real screenshots, not guessed): every exercise card
+   used identical visual weight regardless of Must/Optional - the only hierarchy cue was a thin
+   text divider between sections, nothing told your eye where to land first on a page with 8-11
+   cards. A MUST card now gets a left accent border matching the same cyan the section label
+   already uses; an optional one stays visually quieter instead of competing equally. */
+.exb.must{border-left:3px solid var(--cyan)}
+.exb.opt{opacity:.88}
 .exhd{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px}
 .exn{font-size:18px;font-weight:700;font-family:"Barlow",sans-serif;line-height:1.2}
 .exn.done{color:var(--grn)}
@@ -240,7 +247,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-10-28">v5.14</div>
+    <div class="vtag" title="build 2026-10-28">v5.15</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -643,6 +650,38 @@ function getProfile(){
   return lsG('user_profile')||{targets:{protein:150,kcal:2100,carbs:230,fat:65},weight:85,goalWeight:82,goalBF:15,trainingDaysPerWeek:4,conditionPhase:'pre-biologic',biologicStartDate:null};
 }
 function saveProfile(p){lsS('user_profile',p);}
+/* Real gap found via review: conditionPhase/biologicStartDate have sat in the profile's
+   default object since this app's early days with nothing ever reading or writing them — a
+   half-built feature. Worse: the Flare tab's "pre-biologic" framing was hardcoded regardless
+   of that field, so it kept telling Boss he was "pre-biologic" even now that he's actually
+   mid-induction on a real biologic + immunosuppressant combo. Boss's explicit choice: record-keeping and
+   symptom-correlation only, nothing here ever touches training-suggestion logic. */
+function getMeds(){return lsG('meds')||[];}
+function saveMeds(m){lsS('meds',m);}
+function addMed(name,startDate,isInfusion){
+  name=(name||'').trim();if(!name||!startDate)return;
+  const meds=getMeds();
+  if(meds.some(m=>m.name.toLowerCase()===name.toLowerCase()))return;
+  meds.push({name,startDate,isInfusion:!!isInfusion,infusionDates:isInfusion?[startDate]:[]});
+  saveMeds(meds);
+  const p=getProfile();
+  if(isInfusion&&p.conditionPhase==='pre-biologic'){
+    p.conditionPhase='on-biologic';p.biologicStartDate=p.biologicStartDate||startDate;saveProfile(p);
+  }
+}
+function logInfusionDate(name,date){
+  const meds=getMeds();
+  const m=meds.find(x=>x.name===name);
+  if(m&&date&&!m.infusionDates.includes(date)){m.infusionDates.push(date);m.infusionDates.sort();}
+  saveMeds(meds);
+}
+function removeMed(name){
+  saveMeds(getMeds().filter(m=>m.name!==name));
+  if(!getMeds().some(m=>m.isInfusion)){
+    const p=getProfile();
+    if(p.conditionPhase==='on-biologic'){p.conditionPhase='pre-biologic';saveProfile(p);}
+  }
+}
 let _adaptiveDismissed=false;
 function applyAdaptiveTarget(newKcal){
   const p=getProfile();
@@ -797,6 +836,8 @@ function mountBodyDiagram(frontElId,backElId,bodyState,onMuscleClick,prevInstanc
 }
 let _freshCharts={front:null,back:null},_freshSelectedTags=[];
 let _weightGraphPeriod='week';
+let _progressSubTab='training';
+function setProgressSubTab(t){_progressSubTab=t;renderProgress();}
 function setWeightGraphPeriod(p){_weightGraphPeriod=p;renderProgress();}
 /* Freshness diagram \u2014 relocated here from Progress (Section G). Volume mode was retired
    entirely: it answered the exact same question ("how much have I trained each muscle this
@@ -2320,7 +2361,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.14';
+const APP_VERSION='v5.15';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -2461,6 +2502,8 @@ function showStickyBtn(show,dl,seqIdx){
   }
 }
 /* ===== RENDER TODAY ===== */
+let _todayMoreOpen=false;
+function toggleTodayMore(){_todayMoreOpen=!_todayMoreOpen;renderToday();}
 function renderToday(){
   const _hist=computeHistorySnapshot();
   const historyCount=_hist.historyCount;
@@ -2748,7 +2791,7 @@ function renderToday(){
       const freshNote=(freshEntry&&freshEntry.freshness<0.4)
         ?`${freshTag} is still recovering \u2014 trained ${freshEntry.daysSince===0?'today':freshEntry.daysSince===1?'yesterday':freshEntry.daysSince+' days ago'}. Everything else on this day is unaffected; sub this one if you want a different angle.`
         :null;
-      let h=`<div class="exb">
+      let h=`<div class="exb${orig.priority==='must'?' must':orig.priority==='optional'?' opt':''}">
         <div class="exhd">
           <div style="flex:1">
             <div class="exn${allDone?' done':''}" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-weight:700">
@@ -2909,29 +2952,40 @@ function renderToday(){
   /* -- Weather placeholder (filled async after DOM write) -- */
   html+=`<div id="wx-slot"></div>`;
 
-  /* -- Water -- */
+  /* Real gap found via review (confirmed on real screenshots): utility widgets (water, bar
+     weight reference) sat permanently visible with the same card weight as the actual workout,
+     competing with it for attention on a page that's already 8-11 cards long. Collapsed behind
+     one toggle - still one tap away, no longer competing by default. Water's own "glasses
+     today" pill still shows on the toggle itself so the one number worth seeing at a glance
+     doesn't require opening it. */
   const wp=Math.min(water/8*100,100);
-  html+=`<div class="card" style="margin-top:8px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div><div class="cl">Water</div><div style="font-size:13px;color:var(--mut)">8 glasses target</div></div>
-      ${water>=8?`<span class="pill pg">&#x2713; Done</span>`:''}
-    </div>
-    <div class="water-row">
-      <button class="water-btn" onclick="adjWater(-1)">&minus;</button>
-      <div style="text-align:center"><div id="water-num" class="water-count${water>=8?' full':''}">${water}</div><div style="font-size:10px;color:var(--mut);font-weight:600">glasses</div></div>
-      <button class="water-btn" onclick="adjWater(1)">+</button>
-    </div>
-    <div class="prog-bar" style="margin-top:8px"><div id="water-bar" class="prog-fill" style="width:${wp}%;background:var(--cyan)"></div></div>
-  </div>`;
+  html+=`<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px;display:flex;justify-content:space-between;align-items:center" onclick="toggleTodayMore()">
+    <span>${_todayMoreOpen?'− Less':'+ More'} &middot; water, bar weights</span>
+    <span style="color:${water>=8?'var(--grn)':'var(--mut)'};font-weight:700">${water}/8 glasses</span>
+  </button>`;
+  if(_todayMoreOpen){
+    html+=`<div class="card" style="margin-top:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div><div class="cl">Water</div><div style="font-size:13px;color:var(--mut)">8 glasses target</div></div>
+        ${water>=8?`<span class="pill pg">&#x2713; Done</span>`:''}
+      </div>
+      <div class="water-row">
+        <button class="water-btn" onclick="adjWater(-1)">&minus;</button>
+        <div style="text-align:center"><div id="water-num" class="water-count${water>=8?' full':''}">${water}</div><div style="font-size:10px;color:var(--mut);font-weight:600">glasses</div></div>
+        <button class="water-btn" onclick="adjWater(1)">+</button>
+      </div>
+      <div class="prog-bar" style="margin-top:8px"><div id="water-bar" class="prog-fill" style="width:${wp}%;background:var(--cyan)"></div></div>
+    </div>`;
 
-  const barWts=lsG('bar_weights')||{};
-  html+=`<div class="card" style="margin-top:12px"><div class="cl">Bar Weight Reference</div><div class="ct" style="margin-bottom:10px">For when the gym's labels are worn off</div>
-    <div class="statrow"><div style="font-size:13px;color:var(--txt)">Olympic barbell</div><div style="font-size:13px;color:var(--grn);font-weight:700">20kg &middot; confirmed standard</div></div>
-    <div class="statrow"><div style="font-size:13px;color:var(--txt)">Standard EZ curl bar</div><div style="font-size:13px;color:var(--grn);font-weight:700">10kg &middot; confirmed at your gym</div></div>
-    <div class="statrow"><div style="font-size:13px;color:var(--txt)">Smith machine bar</div><input class="sinput" type="text" id="bar-smith" placeholder="not confirmed yet" value="${barWts.smith}" style="width:130px;text-align:right"></div>
-    <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px" onclick="saveBarWeight()">Save Smith machine weight</button>
-    <div class="cs" style="margin-top:8px">No universal standard for Smith machines &mdash; counterweighting varies by model. Check a stamped weight on the bar, ask staff, or the bathroom-scale method, then save it here once.</div>
-  </div>`;
+    const barWts=lsG('bar_weights')||{};
+    html+=`<div class="card" style="margin-top:12px"><div class="cl">Bar Weight Reference</div><div class="ct" style="margin-bottom:10px">For when the gym's labels are worn off</div>
+      <div class="statrow"><div style="font-size:13px;color:var(--txt)">Olympic barbell</div><div style="font-size:13px;color:var(--grn);font-weight:700">20kg &middot; confirmed standard</div></div>
+      <div class="statrow"><div style="font-size:13px;color:var(--txt)">Standard EZ curl bar</div><div style="font-size:13px;color:var(--grn);font-weight:700">10kg &middot; confirmed at your gym</div></div>
+      <div class="statrow"><div style="font-size:13px;color:var(--txt)">Smith machine bar</div><input class="sinput" type="text" id="bar-smith" placeholder="not confirmed yet" value="${barWts.smith}" style="width:130px;text-align:right"></div>
+      <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px" onclick="saveBarWeight()">Save Smith machine weight</button>
+      <div class="cs" style="margin-top:8px">No universal standard for Smith machines &mdash; counterweighting varies by model. Check a stamped weight on the bar, ask staff, or the bathroom-scale method, then save it here once.</div>
+    </div>`;
+  }
 
   document.getElementById('p0').innerHTML=html;
   injectWeather();
@@ -3095,6 +3149,14 @@ function removeFromFreeSession(ei){
   renderToday();
 }
 /* ===== RENDER PROGRESS ===== */
+/* Real gap found via review: Progress used to be 9 unrelated concerns (sequence, stats, weekly
+   summary, exercise search, muscle volume, weight chart, a body-stats form, a tape-measure
+   form, data export) stacked on one flat scroll, all identical card weight - confirmed via
+   real screenshots to read like a dashboard, a settings page and a logging form merged into
+   one. Split into three sub-tabs grouped by what they're actually for, using the same
+   pill-toggle pattern already established elsewhere (Weekly/Monthly, Search/By muscle) rather
+   than inventing a new visual component. No card's content or logic changed, only where it
+   lives. */
 function renderProgress(){
   const cutoff=(()=>{const d=new Date();d.setDate(d.getDate()-28);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
   const entries=Object.entries(mergedMlog()).filter(([k])=>k>=cutoff).map(e=>e[1]);
@@ -3111,23 +3173,23 @@ function renderProgress(){
   const deload=Coach.getDeloadSignal();
   const plannedDeload=Coach.getPlannedDeloadSignal();
 
-  let html='';
+  let trainingHtml='';
   if(deload.available&&deload.suggestDeload){
-    html+=`<div class="card warm" style="margin-bottom:12px">
+    trainingHtml+=`<div class="card warm" style="margin-bottom:12px">
       <div class="cl">Consider a lighter session</div>
       <div class="cs" style="margin-bottom:6px">${deload.fatiguedCount} of ${deload.totalMuscles} muscles you\u2019ve trained recently (${deload.ratioPercent}%) are still running meaningfully harder than their own normal \u2014 not just one muscle sore from yesterday, a pattern across the week.</div>
       <div class="cs">${deload.fatiguedMuscles.join(', ')}</div>
     </div>`;
   }
   if(plannedDeload.available&&plannedDeload.suggestDeload){
-    html+=`<div class="card warm" style="margin-bottom:12px">
+    trainingHtml+=`<div class="card warm" style="margin-bottom:12px">
       <div class="cl">Worth a planned deload week</div>
       <div class="cs" style="margin-bottom:10px">${plannedDeload.weeksSince} weeks of consistent training since your last deload (or since your earliest logged session, if you've never marked one) \u2014 this isn\u2019t about feeling fatigued right now, a scheduled lighter week every 6\u20138 weeks (cut load ~40\u201350%, higher reps in reserve) helps long-term progress and joint health on its own, condition included.</div>
       <button class="btn btn-ghost btn-sm" style="width:100%" onclick="markDeloadTaken()">Mark this week as my deload</button>
     </div>`;
   }
   if(nextIdx!==null){
-    html+=`<div class="card" style="margin-bottom:12px">
+    trainingHtml+=`<div class="card" style="margin-bottom:12px">
       <div class="cl">Training sequence</div>
       <div class="ct" style="margin-bottom:8px">Next: <span style="color:var(--cyan)">${SEQ[nextIdx]}</span></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -3136,7 +3198,7 @@ function renderProgress(){
     </div>`;
   }
 
-  html+=`<div class="pgrid">
+  trainingHtml+=`<div class="pgrid">
     <div class="pstat"><div class="pval">${done}</div><div class="plbl">sessions done</div></div>
     <div class="pstat"><div class="pval" style="color:${scoreCol}">${score}%</div><div class="plbl">consistency (28d)</div></div>
     <div class="pstat"><div class="pval" style="color:var(--grn)">${flare}</div><div class="plbl">flare days</div></div>
@@ -3145,7 +3207,7 @@ function renderProgress(){
 
   /* v5.10 FEATURE (OI5): weekly check-in summary card */
   const weekly=getWeeklySummary();
-  html+=`<div class="card" style="margin-bottom:12px">
+  trainingHtml+=`<div class="card" style="margin-bottom:12px">
     <div class="cl">This week</div>
     <div class="ct" style="margin-bottom:8px">Last 7 days</div>
     <div class="cs" style="margin-bottom:8px">${weekly.doneThisWeek} session${weekly.doneThisWeek===1?'':'s'} done${weekly.skippedThisWeek?`, ${weekly.skippedThisWeek} skipped`:''}</div>
@@ -3158,8 +3220,14 @@ function renderProgress(){
     <div class="cs">${weekly.nutritionDays?`Nutrition: ${weekly.avgProtein}g protein / ${weekly.avgKcal} kcal avg (${weekly.nutritionDays}/7 days logged)${weekly.symptomDays?`, ${weekly.symptomDays} symptom day${weekly.symptomDays===1?'':'s'}`:''}`:'Nutrition: no food logged this week'}</div>
   </div>`;
 
-  html+=`<div class="card"><div class="cl">Exercise history</div>
-    <div class="ct" style="margin-bottom:10px">Search any exercise &mdash; best ever, last session, trend</div>
+  /* Real gap found via review: the graph+facts single-exercise view Boss wants to show someone
+     already existed in here (best-ever, chart, e1RM forecast, history, next-session suggestion)
+     but was buried as item #5 of 9 and visually identical to a tape-measure input field - not
+     presentable to screenshot and share. Given its own distinct "progress" card treatment
+     (cyan border, matching the app's existing accent-card convention) so it reads as the
+     centrepiece of this sub-tab, not just another list item. */
+  trainingHtml+=`<div class="card cyan"><div class="cl">Exercise progress</div>
+    <div class="ct" style="margin-bottom:10px">Search any exercise &mdash; best ever, trend, next target. Built to screenshot and share.</div>
     <input class="ex-search" type="text" id="prog-ex-search-input" placeholder="e.g. Pull-ups, Bench press..." oninput="searchExHistory(this.value,'prog-ex-result')">
     <div id="prog-ex-result">
       <div style="display:flex;flex-wrap:wrap;gap:6px">
@@ -3170,7 +3238,7 @@ function renderProgress(){
   </div>`;
 
   const muscleVol=Coach.getWeeklyMuscleVolume();
-  html+=`<div class="card"><div class="cl">Weekly Sets Per Muscle</div><div class="ct" style="margin-bottom:4px">Last 7 days</div>
+  trainingHtml+=`<div class="card"><div class="cl">Weekly Sets Per Muscle</div><div class="ct" style="margin-bottom:4px">Last 7 days</div>
     <div class="cs" style="margin-bottom:10px">Primary work counts as a full set, secondary (incidental) work counts as half a set. Roughly 10\u201320 sets a week per muscle is the commonly-cited range for growth \u2014 not a hard rule, just a reference point.</div>
     ${muscleVol.length?muscleVol.map(m=>`
       <div style="margin-bottom:8px">
@@ -3179,8 +3247,9 @@ function renderProgress(){
       </div>`).join(''):`<div class="cs">No sessions logged in the last 7 days yet.</div>`}
   </div>`;
 
+  let bodyHtml='';
   const wtForecast=getWeightForecast(stats);
-  html+=`<div class="card"><div class="cl">Body Weight Trend</div><div class="ct" style="margin-bottom:8px">From your logged weigh-ins</div>
+  bodyHtml+=`<div class="card"><div class="cl">Body Weight Trend</div><div class="ct" style="margin-bottom:8px">From your logged weigh-ins</div>
     <div style="display:flex;gap:8px;margin-bottom:10px">
       <button class="btn ${_weightGraphPeriod==='week'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setWeightGraphPeriod('week')">Weekly</button>
       <button class="btn ${_weightGraphPeriod==='month'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setWeightGraphPeriod('month')">Monthly</button>
@@ -3196,7 +3265,7 @@ function renderProgress(){
 
   const adaptiveSugg=getAdaptiveNutritionSuggestion(stats);
   if(!_adaptiveDismissed&&adaptiveSugg.available&&adaptiveSugg.suggestion){
-    html+=`<div class="card cyan"><div class="cl">Target check</div><div class="ct" style="margin-bottom:8px">Real trend vs. current kcal target</div>
+    bodyHtml+=`<div class="card cyan"><div class="cl">Target check</div><div class="ct" style="margin-bottom:8px">Real trend vs. current kcal target</div>
       <div style="font-size:13px;color:var(--txt);line-height:1.5;margin-bottom:12px">${adaptiveSugg.suggestion}</div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-amb btn-sm" style="flex:1" onclick="applyAdaptiveTarget(${adaptiveSugg.newTarget})">Update to ${adaptiveSugg.newTarget} kcal</button>
@@ -3210,10 +3279,10 @@ function renderProgress(){
        than like it needed more data. Mirrors the existing wtForecast.reason convention above
        (Body Weight Trend card) - a quiet explanatory line instead of a dismissable action
        card, since there's nothing to act on yet. */
-    html+=`<div style="font-size:11px;color:var(--dim);margin:4px 0 10px">Target check: ${adaptiveSugg.reason}</div>`;
+    bodyHtml+=`<div style="font-size:11px;color:var(--dim);margin:4px 0 10px">Target check: ${adaptiveSugg.reason}</div>`;
   }
 
-  html+=`<div class="card"><div class="cl">Body stats &mdash; weekly</div><div class="ct" style="margin-bottom:4px">Samsung Watch data</div>
+  bodyHtml+=`<div class="card"><div class="cl">Body stats &mdash; weekly</div><div class="ct" style="margin-bottom:4px">Samsung Watch data</div>
     <div class="cs" style="margin-bottom:12px">Log once a week, same day and time</div>
     ${latest?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
       ${[['Weight',latest.wt,'kg'],['Body fat',latest.bf,'%'],['Muscle',latest.mm,'kg'],['Fat mass',latest.fm,'kg'],['Body water',latest.bw,latest.bwUnit||'%']].filter(([,v])=>v).map(([l,v,u])=>`<div style="background:var(--c2);border:1px solid var(--c3);border-radius:12px;padding:10px;text-align:center;flex:1;min-width:70px"><div style="font-size:18px;font-weight:800;font-family:'Barlow',sans-serif;color:var(--cyan)">${v}${u}</div><div style="font-size:10px;color:var(--mut);margin-top:2px;font-weight:600">${l}</div></div>`).join('')}
@@ -3223,7 +3292,7 @@ function renderProgress(){
     <div id="stconf" class="confbox">Stats saved &#x2713;</div>
   </div>`;
 
-  html+=`<div class="card"><div class="cl">Body measurements &mdash; tape measure</div><div class="ct" style="margin-bottom:4px">Track love handles here</div>
+  bodyHtml+=`<div class="card"><div class="cl">Body measurements &mdash; tape measure</div><div class="ct" style="margin-bottom:4px">Track love handles here</div>
     <div class="cs" style="margin-bottom:12px">Waist is your love handle metric. Measure weekly at same time.</div>
     ${latestM?`<div class="meas-grid">
       ${[['Waist',latestM.waist,'cm'],['Chest',latestM.chest,'cm'],['Left arm',latestM.lArm,'cm'],['Right arm',latestM.rArm,'cm']].filter(([,v])=>v).map(([l,v,u])=>`<div class="meas-stat"><div class="meas-val">${v}${u}</div><div class="meas-lbl">${l}</div></div>`).join('')}
@@ -3236,7 +3305,7 @@ function renderProgress(){
   const correlation=getFoodSymptomCorrelation();
   if(correlation.available){
     const diff=correlation.avgEnergyHighProteinDays-correlation.avgEnergyLowProteinDays;
-    html+=`<div class="card"><div class="cl">Food &amp; how you felt</div>
+    bodyHtml+=`<div class="card"><div class="cl">Food &amp; how you felt</div>
       <div class="cs" style="margin-bottom:10px">Comparing your ${correlation.lowProteinDayCount} lower-protein days against your ${correlation.highProteinDayCount} higher-protein days, across ${correlation.sampleSize} days with both logged</div>
       <div style="display:flex;justify-content:space-between;font-size:13px">
         <span>Lower-protein days: avg energy <b>${correlation.avgEnergyLowProteinDays}/5</b></span>
@@ -3248,11 +3317,12 @@ function renderProgress(){
     </div>`;
   }
 
+  let dataHtml='';
   const expDays=lastExport?Math.floor((new Date()-new Date(lastExport))/86400000):null;
   const expCol=expDays===null?'var(--red)':expDays<=7?'var(--grn)':expDays<=14?'var(--amb)':'var(--red)';
   const expTxt=expDays===null?'&#x26A0; Never exported &mdash; data at risk':expDays===0?'&#x2713; Exported today':expDays<=7?'&#x2713; Last export: '+expDays+'d ago':'&#x26A0; Last export: '+expDays+'d ago &mdash; export now';
   const notPersisted=lsG('storage_persisted')===false;
-  html+=`<div class="card"><div class="cl">Data backup</div><div class="ct" style="margin-bottom:4px">Export &amp; Import</div>
+  dataHtml+=`<div class="card"><div class="cl">Data backup</div><div class="ct" style="margin-bottom:4px">Export &amp; Import</div>
     <div class="cs" style="margin-bottom:10px">Export monthly and after every few sessions.</div>
     ${notPersisted?`<div class="nt na" style="margin-bottom:10px">&#x26A0; Your browser has not granted persistent storage \u2014 data could be cleared if your phone runs low on space. Export regularly, and consider installing this as an app (Add to Home Screen) to reduce that risk.</div>`:''}
     <div style="font-size:13px;color:${expCol};margin-bottom:10px;font-weight:600">${expTxt}</div>
@@ -3262,7 +3332,12 @@ function renderProgress(){
     <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="runHistoricalRepair()">Repair ghost-recorded PRs (one-time)</button>
   </div>`;
 
-  document.getElementById('p1').innerHTML=html;
+  const subTabHtml=`<div style="display:flex;gap:8px;margin-bottom:14px">
+    <button class="btn ${_progressSubTab==='training'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setProgressSubTab('training')">Training</button>
+    <button class="btn ${_progressSubTab==='body'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setProgressSubTab('body')">Body</button>
+    <button class="btn ${_progressSubTab==='data'?'btn-grn':'btn-ghost'} btn-sm" style="flex:1" onclick="setProgressSubTab('data')">Data</button>
+  </div>`;
+  document.getElementById('p1').innerHTML=subTabHtml+(_progressSubTab==='training'?trainingHtml:_progressSubTab==='body'?bodyHtml:dataHtml);
 }
 
 function saveStats(){
@@ -3963,6 +4038,69 @@ function getE1RMForecast(exerciseName){
     })
   };
 }
+/* Real gap Boss asked about directly: "is there a way to judge weights compared to world, like
+   top 20%." Researched real sources before building anything (2026-10-28) \u2014 deliberately
+   scoped to only the two lifts where credible population data actually exists:
+   - Bench press: StrengthLevel's community dataset (~10.9M qualifying results, male/kg).
+     Sources disagree with each other by 5\u201315% even here (StrengthLog, FitnessVolt give
+     different numbers for the same bodyweight), so this is a rough band, never a precise rank.
+   - Pull-ups: StrengthLevel's rep-count tiers (not bodyweight-adjusted in what was verified).
+   Every other exercise in this program (machine presses, cable work, dumbbell isolation) has
+   NO credible cross-gym population data \u2014 leverage and resistance curves vary too much by
+   equipment brand to compare. Deliberately not building a percentile for those rather than
+   inventing numbers; getStrengthStandard() below only ever returns {available:true} for these
+   two exercise names. Only 3 verified bodyweight anchors exist for bench (70/80/90kg) \u2014
+   interpolates between them, clamps rather than extrapolates past verified data. */
+const BENCH_1RM_STANDARDS_KG=[
+  {bw:70,tiers:{Beginner:47,Novice:64,Intermediate:85,Advanced:110,Elite:136}},
+  {bw:80,tiers:{Beginner:56,Novice:75,Intermediate:98,Advanced:124,Elite:151}},
+  {bw:90,tiers:{Beginner:65,Novice:85,Intermediate:109,Advanced:137,Elite:165}}
+];
+function getBenchStandardTiers(bodyweight){
+  const pts=BENCH_1RM_STANDARDS_KG;
+  const clamped=bodyweight<pts[0].bw||bodyweight>pts[pts.length-1].bw;
+  const bw=Math.max(pts[0].bw,Math.min(pts[pts.length-1].bw,bodyweight));
+  let lo=pts[0],hi=pts[pts.length-1];
+  for(let i=0;i<pts.length-1;i++){if(bw>=pts[i].bw&&bw<=pts[i+1].bw){lo=pts[i];hi=pts[i+1];break;}}
+  const frac=hi.bw===lo.bw?0:(bw-lo.bw)/(hi.bw-lo.bw);
+  const tiers={};
+  Object.keys(lo.tiers).forEach(k=>{tiers[k]=Math.round((lo.tiers[k]+(hi.tiers[k]-lo.tiers[k])*frac)*10)/10;});
+  return{tiers,clamped};
+}
+function tierFromValue(value,tiers,order){
+  let level='Untrained (below Beginner)';
+  order.forEach(t=>{if(value>=tiers[t])level=t;});
+  return level;
+}
+function getStrengthStandard(exerciseName,trackName){
+  const profile=getProfile();
+  const stats=lsG('bstats')||[];
+  const bw=(stats.length&&stats[stats.length-1].wt)?parseFloat(stats[stats.length-1].wt):profile.weight;
+  if(exerciseName==='Bench press'){
+    const trend=getE1RMTrend(trackName||exerciseName);
+    if(!trend.available||!trend.currentE1RM)return{available:false};
+    const{tiers,clamped}=getBenchStandardTiers(bw);
+    const order=['Beginner','Novice','Intermediate','Advanced','Elite'];
+    return{available:true,exercise:exerciseName,basis:'estimated 1RM',value:Math.round(trend.currentE1RM*10)/10,unit:'kg',bodyweight:bw,level:tierFromValue(trend.currentE1RM,tiers,order),tiers,order,clamped,
+      source:'Community lifting data (StrengthLevel, ~10.9M qualifying results, male/kg)',
+      caveat:'Sources disagree by 5\u201315% even for bench \u2014 a rough band, not a verified rank. Genetics and limb length affect this too, not just training.'};
+  }
+  if(exerciseName==='Pull-ups (unassisted)'){
+    const hist=getExHistory(trackName||exerciseName);
+    const lastBest=hist.length?hist[hist.length-1].best:null;
+    if(!lastBest||!lastBest.r)return{available:false};
+    const reps=parseInt(lastBest.r);
+    const tiers={Novice:7,Intermediate:13,Advanced:21};
+    const order=['Novice','Intermediate','Advanced'];
+    let level=tierFromValue(reps,tiers,order);
+    if(level==='Untrained (below Beginner)')level='Building up (below Novice)';
+    if(reps>=21)level='Advanced or beyond (Elite is rare, generally cited around the top ~5%)';
+    return{available:true,exercise:exerciseName,basis:'max unbroken reps',value:reps,unit:'reps',bodyweight:bw,level,tiers,order,clamped:false,
+      source:'Community rep-count tiers (StrengthLevel)',
+      caveat:'Not adjusted for bodyweight or age in what\u2019s verified here \u2014 a rough band, not a verified rank.'};
+  }
+  return{available:false};
+}
 /* Reps decline across sets at a FIXED weight (not weight declining \u2014 that's what drop sets
    already do separately). Curve is category-specific: bodyweight fatigues fastest, isolation
    holds up best, compound sits between. */
@@ -4527,6 +4665,18 @@ function searchExHistory(query,targetId){
           </div><div style="font-size:11px;color:var(--dim);margin-top:6px">At this rate, roughly \u2014 a range, not a promise.</div>`}
       </div>`;
     })():''}
+    ${(()=>{
+      const std=getStrengthStandard(name,name);
+      if(!std.available)return'';
+      const pct=std.order.indexOf(std.level);
+      return `<div style="margin:10px 0;padding:10px 12px;background:var(--c2);border-radius:10px;border:1px solid var(--cbr)">
+        <div style="font-size:11px;color:var(--cyan);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">How you compare</div>
+        <div style="font-size:15px;font-weight:700;color:var(--txt)">${std.level}</div>
+        <div style="display:flex;gap:3px;margin:6px 0">${std.order.map((t,i)=>`<div style="flex:1;height:4px;border-radius:2px;background:${i<=pct?'var(--cyan)':'var(--c3)'}"></div>`).join('')}</div>
+        <div style="font-size:12px;color:var(--mut)">${std.value}${std.unit==='kg'?'kg':' reps'} (${std.basis}) at ~${std.bodyweight}kg bodyweight</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:6px">${std.source}. ${std.caveat}${std.clamped?' Your bodyweight is outside the directly-verified 70\u201390kg range, so this is an even rougher estimate.':''}</div>
+      </div>`;
+    })()}
     <div style="margin-top:12px">
       ${hist.slice().reverse().map(h=>`<div class="hist-ex-row">
         <div class="hist-date">${h.date}</div>
@@ -4542,21 +4692,72 @@ function searchExHistory(query,targetId){
 }
 
 /* ===== FLARE GUIDE ===== */
+function daysWeeksSince(dateStr){
+  const days=Math.max(0,Math.floor((new Date()-new Date(dateStr))/86400000));
+  return{days,weeks:Math.floor(days/7)};
+}
+function renderMedsCard(){
+  const meds=getMeds();
+  const rows=meds.map(m=>{
+    const{days,weeks}=daysWeeksSince(m.startDate);
+    const infusionList=m.isInfusion?`<div style="font-size:12px;color:var(--mut);margin-top:4px">${m.infusionDates.length} dose${m.infusionDates.length===1?'':'s'} logged: ${m.infusionDates.join(', ')}</div>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <input class="genin" type="date" id="inf-date-${m.name.replace(/[^a-zA-Z0-9]/g,'')}" style="flex:1" value="${todayKey()}">
+        <button class="btn btn-ghost btn-sm" onclick="logInfusionDate('${m.name.replace(/'/g,"\\'")}',document.getElementById('inf-date-${m.name.replace(/[^a-zA-Z0-9]/g,'')}').value);renderFlare()">+ Log dose</button>
+      </div>`:'';
+    return `<div style="padding:10px 0;border-bottom:1px solid var(--c3)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:700;font-size:14px">${m.name}</div>
+        <button style="font-size:11px;color:var(--dim);background:none;border:none;cursor:pointer" onclick="if(confirm('Remove ${m.name.replace(/'/g,"\\'")} from your medication log?'))removeMed('${m.name.replace(/'/g,"\\'")}');renderFlare()">Remove</button>
+      </div>
+      <div style="font-size:12px;color:var(--mut);margin-top:2px">Since ${m.startDate} \u2014 ${weeks>0?weeks+' week'+(weeks===1?'':'s'):days+' day'+(days===1?'':'s')}</div>
+      ${infusionList}
+    </div>`;
+  }).join('');
+  return `<div class="card" style="margin-bottom:12px">
+    <div class="cl">Medications</div>
+    <div class="cs" style="margin-bottom:10px">Record-keeping only \u2014 purely for your own reference and for spotting patterns against your energy/symptom log over time. Never changes any training suggestion.</div>
+    ${rows||'<div class="cs">Nothing logged yet.</div>'}
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--c3)">
+      <input class="genin" type="text" id="med-name" placeholder="Medication name" style="margin-bottom:6px">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+        <input class="genin" type="date" id="med-date" style="flex:1" value="${todayKey()}">
+        <label style="font-size:12px;color:var(--mut);display:flex;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" id="med-infusion" checked> Periodic infusion</label>
+      </div>
+      <button class="btn btn-grn btn-sm" style="width:100%" onclick="addMed(document.getElementById('med-name').value,document.getElementById('med-date').value,document.getElementById('med-infusion').checked);document.getElementById('med-name').value='';renderFlare()">+ Add medication</button>
+    </div>
+  </div>`;
+}
 function renderFlare(){
   const t=[
     {col:'var(--grn)',bg:'ng',label:'Green \u2014 train as planned',signs:['Normal energy','No pain beyond baseline','Normal bowel habits','No fever or chills','Seton: normal drainage'],action:'Full session. Stick to the plan.'},
     {col:'var(--amb)',bg:'na',label:'Amber \u2014 modified session',signs:['More tired than usual','Mild bloating or cramps','Energy 60\u201370% of normal','Seton slightly more uncomfortable','Bowel habits slightly off'],action:'Drop weight 20%, cut 1 set per exercise, rest 2\u20133 min. Leave before exhaustion.'},
     {col:'var(--red)',bg:'nr',label:'Red \u2014 rest today. No gym.',signs:['Cannot imagine exercising','Abdominal pain or cramping','Fever even 37.5\u00b0C+','Increased seton discharge or pain','More frequent or loose stools','Joint aches flaring'],action:'Rest, hydrate, eat gentle. One red day does not break progress.'}
   ];
+  const p=getProfile();
+  const onBiologic=p.conditionPhase==='on-biologic'&&p.biologicStartDate;
+  /* Real bug found via review: this used to hardcode "pre-biologic" regardless of the actual
+     conditionPhase field, so it kept saying "Non-negotiable while pre-biologic" and showing the
+     "Pre-biologic reality" card even once Boss was actually mid-induction on a real biologic. Now
+     reads the real phase, set automatically by addMed() the first time an infusion-type
+     medication is logged. */
+  const phaseLine=onBiologic
+    ?(()=>{const{days,weeks}=daysWeeksSince(p.biologicStartDate);return `On biologic treatment since ${p.biologicStartDate} (${weeks>0?weeks+' week'+(weeks===1?'':'s'):days+' day'+(days===1?'':'s')}). Check this before every session. 30 seconds. Non-negotiable regardless of treatment phase.`;})()
+    :'Check this before every session. 30 seconds. Non-negotiable while pre-biologic.';
+  const realityCard=onBiologic
+    ?`<div class="card warm"><div style="font-size:14px;font-weight:700;font-family:'Barlow',sans-serif;margin-bottom:8px">On-biologic reality</div>
+      <div style="font-size:14px;color:var(--mut);line-height:1.7">Energy and recovery can take time to improve as the medication takes effect \u2014 6\u201314 weeks post first infusion is the usual range, but individual timelines vary, this isn\u2019t a fixed countdown. Keep using the traffic light above exactly as before \u2014 "on biologic" doesn\u2019t mean "no longer flares."</div></div>`
+    :`<div class="card warm"><div style="font-size:14px;font-weight:700;font-family:'Barlow',sans-serif;margin-bottom:8px">Pre-biologic reality</div>
+      <div style="font-size:14px;color:var(--mut);line-height:1.7">Active inflammation means your body is spending energy on disease \u2014 not weakness. Once your biologic medication starts working (6\u201314 weeks post first infusion), energy and recovery improve significantly. Train smart until then.</div></div>`;
   document.getElementById('p4').innerHTML=
-    `<p style="font-size:14px;color:var(--mut);line-height:1.6;margin-bottom:14px">Check this before every session. 30 seconds. Non-negotiable while pre-biologic.</p>`+
+    `<p style="font-size:14px;color:var(--mut);line-height:1.6;margin-bottom:14px">${phaseLine}</p>`+
     t.map(x=>`<div class="card" style="border-color:${x.col};margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><div class="dot" style="background:${x.col}"></div><div style="font-size:17px;font-weight:700;font-family:'Barlow',sans-serif">${x.label}</div></div>
       <div style="font-size:14px;color:var(--mut);line-height:1.9">${x.signs.join('<br>')}</div>
       <div class="nt ${x.bg}">${x.action}</div>
     </div>`).join('')+
-    `<div class="card warm"><div style="font-size:14px;font-weight:700;font-family:'Barlow',sans-serif;margin-bottom:8px">Pre-biologic reality</div>
-    <div style="font-size:14px;color:var(--mut);line-height:1.7">Active inflammation means your body is spending energy on disease \u2014 not weakness. Once your biologic medication starts working (6\u201314 weeks post first infusion), energy and recovery improve significantly. Train smart until then.</div></div>`;
+    realityCard+
+    renderMedsCard();
 }
 
 /* ===== TABS + INIT ===== */
@@ -4571,6 +4772,7 @@ document.querySelectorAll('.tab').forEach(btn=>{
     if(t===1)renderProgress();
     if(t===2)renderFood();
     if(t===3)renderHistory();
+    if(t===4)renderFlare();
   });
 });
 
