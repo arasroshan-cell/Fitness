@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.15</title>
+<title>Roshan Fitness v5.16</title>
 <style>
 /* v5.14 "Midnight Aurora" refresh: Roshan found the old warm-brown/single-amber theme flat
    (83 uses of one amber tone, 33 of one burnt-orange, against one dark-brown background - real
@@ -250,7 +250,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-10-28">v5.15</div>
+    <div class="vtag" title="build 2026-10-29">v5.16</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -2364,7 +2364,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.15';
+const APP_VERSION='v5.16';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -2520,38 +2520,44 @@ function renderToday(){
   const _freshList=Coach.getMuscleFreshness();
   let html='';
 
-  if(_staleDraftPending){
-    html+=`<div class="card warm" style="margin-bottom:10px">
-      <div class="cl">Unfinished session found</div>
-      <div class="cs" style="margin-bottom:10px">Looks like ${_staleDraftPending.dl} from ${_staleDraftPending.date} never got saved \u2014 probably forgot to tap Save &amp; Finish. Save it with that real date, or discard it if it didn't happen.</div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-grn btn-sm" style="flex:1" onclick="resolveStaleDraftSave()">Save for ${_staleDraftPending.date}</button>
-        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="discardStaleDraft()">Discard</button>
-      </div>
-    </div>`;
-  }
-
+  /* Real request from Boss: "a welcome card saying what can we hit today and relevant info for
+     the day." Proposed back (and he confirmed) folding the three previously-SEPARATE top-of-Today
+     cards below \u2014 stale draft, worth-a-minute reminder, reactive deload warning \u2014 into this ONE
+     consolidated read, rather than stacking a new card on top of them (which would have undone
+     the clutter fix from the layout redesign). The muscle diagram (interactive) and the health
+     check (an input form) deliberately stay separate below \u2014 folding those in would lose real
+     functionality, not just repeat text. */
+  const deload=Coach.getDeloadSignal();
   const statsGapDays=getBodyStatsReminderDays();
   const foodGapDays=getFoodLoggingGapDays();
-  if(statsGapDays||foodGapDays){
-    html+=`<div class="card warm" style="margin-bottom:10px">
-      <div class="cl">Worth a minute today</div>
-      ${statsGapDays?`<div class="cs" style="margin-bottom:4px">&#x2696; It's been ${statsGapDays} days since your last weigh-in \u2014 log this week's stats in Progress when you get a chance.</div>`:''}
-      ${foodGapDays?`<div class="cs">&#x1F374; No food logged in ${foodGapDays} days \u2014 even a rough log beats none, your targets are only as good as what's tracked against them.</div>`:''}
-    </div>`;
-  }
-
-  const deload=Coach.getDeloadSignal();
-  /* Real bug reported by Boss: this used to render unconditionally, so reopening Today AFTER
-     you'd already saved today's workout still greeted you with "Before you pick today's
-     session" \u2014 nothing left to pick, the copy no longer matched reality. Scoped to only show
-     before today's session is actually saved. */
-  if(deload.available&&deload.suggestDeload&&!existing){
-    html+=`<div class="card warm" style="margin-bottom:10px">
-      <div class="cl">Before you pick today's session</div>
-      <div class="cs">${deload.fatiguedCount} of ${deload.totalMuscles} recently-trained muscles are still running meaningfully harder than normal (${deload.ratioPercent}%) \u2014 ${deload.fatiguedMuscles.join(', ')}. Worth considering a lighter session or Suggested Session, which already accounts for this.</div>
-    </div>`;
-  }
+  const dayName=new Date().toLocaleDateString('en-GB',{weekday:'long'});
+  const planLine=existing?`${gd?gd.label:'Today'}\u2019s session is already saved \u2014 nice work.`
+    :gd?`Planned: <span style="color:var(--cyan)">${gd.label}</span>${gd.focus?' \u2014 '+gd.focus:''}`
+    :'No session planned yet \u2014 pick one below.';
+  const recovering=_freshList.filter(f=>f.freshness<0.4);
+  const freshLine=recovering.length
+    ?`${recovering.length} muscle${recovering.length===1?'':'s'} still recovering: ${recovering.slice(0,4).map(f=>f.muscle).join(', ')}${recovering.length>4?'\u2026':''}`
+    :_freshList.length?'Everything you\u2019ve trained recently is reading fresh.':'No recent training history yet \u2014 full freshness picture below as you log sessions.';
+  const flags=[];
+  if(sym.energy&&sym.energy<=2)flags.push(isAmberActiveToday()?'Amber protocol active \u2014 weight and sets are already trimmed below':'Amber protocol overridden \u2014 going full intensity by your own choice today');
+  /* Real bug reported by Boss (already fixed, re-confirmed here): this used to render
+     unconditionally, so reopening Today AFTER you'd already saved today's workout still
+     greeted you with "before you pick" copy that no longer matched reality. Still gated on
+     !existing. */
+  if(deload.available&&deload.suggestDeload&&!existing)flags.push(`${deload.fatiguedCount} of ${deload.totalMuscles} recently-trained muscles still running harder than normal \u2014 worth a lighter session or Suggested Session`);
+  if(statsGapDays)flags.push(`${statsGapDays} days since your last weigh-in`);
+  if(foodGapDays)flags.push(`No food logged in ${foodGapDays} days`);
+  html+=`<div class="card cyan" style="margin-bottom:10px">
+    <div class="cl">${dayName}</div>
+    <div class="ct" style="margin-bottom:6px">${planLine}</div>
+    <div class="cs">${freshLine}</div>
+    ${flags.length?flags.map(f=>`<div class="cs" style="margin-top:4px">&#x1F536; ${f}</div>`).join(''):''}
+    ${_staleDraftPending?`<div class="cs" style="margin-top:8px">&#x1F536; ${_staleDraftPending.dl} from ${_staleDraftPending.date} was never saved</div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-grn btn-sm" style="flex:1" onclick="resolveStaleDraftSave()">Save for ${_staleDraftPending.date}</button>
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="discardStaleDraft()">Discard</button>
+    </div>`:''}
+  </div>`;
 
   html+=`<div class="card" style="margin-bottom:10px"><div class="cl">Muscle freshness</div><div class="ct" style="margin-bottom:8px">What's ready right now</div>
     <div class="cs" style="margin-bottom:10px">Deeper red means trained harder and more recently, relative to that muscle\u2019s own normal \u2014 fading toward grey as it recovers. Check this before picking today's session, not after.</div>
@@ -2706,9 +2712,11 @@ function renderToday(){
     const restElapsed=ws.lastSetAt?getElapsed(ws.lastSetAt):null;
     const hasDraft=!!lsG('ws_draft:'+todayKey());
     if(sym.energy&&sym.energy<=2){
+      const overridden=!isAmberActiveToday();
       html+=`<div class="card na" style="margin-bottom:10px;border-left:3px solid var(--amb)">
-        <div class="cl" style="color:var(--amb)">Energy ${sym.energy}/5 \u2014 Amber protocol applies</div>
-        <div style="font-size:13px;line-height:1.5;margin-top:4px">Drop weight 20%, cut 1 set per exercise, rest 2\u20133 min. Leave before exhaustion. Full guide: Flare tab.</div>
+        <div class="cl" style="color:var(--amb)">Energy ${sym.energy}/5 \u2014 Amber protocol ${overridden?'overridden':'applies'}</div>
+        <div style="font-size:13px;line-height:1.5;margin-top:4px">${overridden?'Going full intensity today by your own choice \u2014 numbers below are NOT reduced.':'Weight and the last set on each exercise are already trimmed below \u2014 not just advice, the real numbers. Rest 2\u20133 min, leave before exhaustion. Full guide: Flare tab.'}</div>
+        <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="setAmberOverride(${overridden?'false':'true'})">${overridden?'Back to Amber-reduced numbers':'I feel okay \u2014 full intensity today'}</button>
       </div>`;
     }
 
@@ -4301,20 +4309,40 @@ function getNextTargetWeight(orig,trackName,w,r,rir){
    typing over it. Uses the existing orig.compound field \u2014 already correctly tagged across
    every exercise \u2014 to route compounds through the ramp-to-top-set model and isolation work
    through the moderate, no-1RM-chase model, rather than one flat scheme for everything. */
+/* Real gap found via review: the "Amber protocol applies" card told Boss to "drop weight 20%,
+   cut 1 set" but was text-only advice — the actual prefilled numbers stayed at full normal-day
+   values regardless, trusting him to do that math himself on the one kind of day he's least
+   equipped to (tired, possibly in pain). Uses the exact same sym.energy<=2 condition the
+   existing visible Amber card already checks, not a third disagreeing definition of "when is
+   Amber active". A one-tap override (setAmberOverride) lets him go full intensity that day if
+   he genuinely feels fine despite a logged low-energy day — this reduces, it never blocks. */
+function isAmberActiveToday(){
+  if(lsG('amber_override:'+todayKey()))return false;
+  const sym=lsG('sym:'+todayKey())||{};
+  return!!(sym.energy&&sym.energy<=2);
+}
+function setAmberOverride(off){lsS('amber_override:'+todayKey(),off);renderToday();}
 function getPrefillSets(orig,trackName,numSets){
   const hist=getExHistory(trackName);
   const lastBest=hist.length?hist[hist.length-1].best:null;
   if(!lastBest||!lastBest.w||orig.inputType==='seconds'||orig.inputType==='reps_each')return null;
+  const amber=isAmberActiveToday();
+  /* Trims the LAST set rather than deleting the row outright - the row stays visible (and
+     usable if he adds a number himself) but comes in blank rather than prescribed, reading as
+     "not asked for today" without forcing anything. */
+  const effSets=amber?Math.max(1,numSets-1):numSets;
   if(orig.inputType==='bodyweight'){
     const curve=getFatigueCurve(orig),r=parseInt(lastBest.r);
-    return Array.from({length:numSets},(_,i)=>{
+    const targetR=amber?Math.max(1,Math.round(r*0.8)):r;
+    return Array.from({length:effSets},(_,i)=>{
       const pct=curve[i]!==undefined?curve[i]:curve[curve.length-1];
-      return{w:'',r:String(Math.max(1,Math.round(r*pct)))};
+      return{w:'',r:String(Math.max(1,Math.round(targetR*pct)))};
     });
   }
   const w=parseFloat(lastBest.w),r=parseInt(lastBest.r);
   const{recW,isCompound}=getNextTargetWeight(orig,trackName,w,r,lastBest.rir);
-  return isCompound?getRampPrefill(recW,numSets,orig):getModeratePrefill(recW,numSets,orig);
+  const targetW=amber?realisticWeightRound(recW*0.8):recW;
+  return isCompound?getRampPrefill(targetW,effSets,orig):getModeratePrefill(targetW,effSets,orig);
 }
 
 /* ===== FOOD COACHING ===== */
