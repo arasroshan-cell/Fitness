@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.16</title>
+<title>Roshan Fitness v5.17</title>
 <style>
 /* v5.14 "Midnight Aurora" refresh: Roshan found the old warm-brown/single-amber theme flat
    (83 uses of one amber tone, 33 of one burnt-orange, against one dark-brown background - real
@@ -250,7 +250,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-10-29">v5.16</div>
+    <div class="vtag" title="build 2026-11-04">v5.17</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -375,7 +375,14 @@ const SUBS={
      correctly (Stack weight), so only the form cue needed overriding. */
   'Lat pulldown':['Pull-ups','Straight arm pulldown','Wide grip lat pulldown','Close grip lat pulldown (V-bar)','Reverse grip lat pulldown'],
   'Seated cable row':['DB row','Machine row','T-bar row','Smith machine row','T-bar row (machine)','T-bar row (landmine)','Cable row'],
-  'Single arm DB row':['Cable single arm row','Machine row'],
+  /* Real structural bug found via review (2026-11-04): 'Machine row' was listed as a substitute
+     under BOTH this exercise and Seated cable row above. findExDef resolves on the first SUBS
+     key that contains the name, so 'Machine row' silently always resolved to Seated cable row's
+     profile, never this one, regardless of which slot it was actually subbed from. Same FIX6-
+     style precedent as every other split in this file: old name kept exactly as-is under Seated
+     cable row so historical logs still resolve there unchanged; this slot gets its own new,
+     distinctly-named entry instead of fighting over the ambiguous shared one. */
+  'Single arm DB row':['Cable single arm row','Machine row (single-arm)'],
   'Face pulls':['Reverse cable fly','Rear delt machine fly','Band pull-apart'],
   'Barbell curl':['DB curl','EZ bar curl','Cable curl','Reverse EZ bar curl','Single arm cable curl'],
   'Hammer curls':['Cable hammer curl','Cross-body curl','Rope hammer curl','Dual handle cable curl'],
@@ -397,7 +404,14 @@ const SUBS={
      review, out of scope. */
   'Hip abduction machine':['Cable kickback'],
   'Cable pull-through':['45\u00b0 back extension'],
-  'Arnold press':['DB shoulder press','Machine shoulder press','Front dumbell raises'],
+  /* Real structural bug found via review (2026-11-04): same name-collision class as 'Machine
+     row' above - 'Machine shoulder press' was listed under BOTH Arnold press and Seated DB
+     shoulder press, so it always silently resolved to the latter (first match wins), regardless
+     of which slot it was actually subbed from. Old name kept exactly as-is under Seated DB
+     shoulder press for historical continuity; this slot gets its own distinctly-named entry -
+     named for the real distinction that matters (Arnold press is defined by its rotating grip,
+     a fixed-grip machine press is the simpler substitute for that specifically). */
+  'Arnold press':['DB shoulder press','Machine shoulder press (fixed grip)','Front dumbell raises'],
   /* v5.13: split "Bicep curl (BB or DB)" per Roshan's confirmed decision - tracking a single
      weight field under an ambiguous equipment name meant a barbell-total entry (realistically
      40-60kg) could silently corrupt a per-dumbbell progression, producing an impossible
@@ -448,6 +462,15 @@ const SUB_TYPE_OVERRIDE={
   'DB kickback':{nt:'Elbow pinned high and still against your side \u2014 only the forearm moves'},
   'Machine tricep dip':{nt:'Full lockout at the bottom of the press'},
   'Nordic curl':{inputType:'bodyweight',wlabel:'Bodyweight (add kg held at chest if weighted)',noweight:true,nt:'GHD footplate locks your feet, hips right at the pad edge \u2014 lower under control and catch yourself with your hands at the bottom, don\u2019t free-fall'},
+  /* Real gap found via review (2026-11-04): both of these silently inherited their compound
+     origin's near-max ramp structure and rep range with no override - Incline DB press's
+     10\u201312 ramp for the fly, Lat pulldown's 10\u201312 ramp for the straight-arm version. Unlike the
+     "Machine X" cases (genuinely ambiguous, left for Boss to confirm per-exercise), these two
+     are a defensible, low-personal-variance call: fly and straight-arm-pulldown PATTERNS are
+     near-universally trained as isolation work in real gym practice, essentially never as a
+     heavy near-max ramp, regardless of who's doing them. */
+  'High-to-low cable fly':{compound:false,r:'12\u201315',nt:'Isolation fly, not a press \u2014 not trained as a heavy near-max ramp the way the exercise it\u2019s subbing for is'},
+  'Straight arm pulldown':{compound:false,r:'12\u201315',nt:'Isolates lats without biceps taking over \u2014 a lighter, higher-rep movement, not a heavy pulling ramp'},
   /* v5.6 FIX 6: split-out replacements for combined-equipment entries above. Old entries kept
      untouched for history \u2014 these are the ones to actually pick going forward. */
   'One-hand DB overhead extension':{wlabel:'DB weight (one hand)',nt:'Single dumbbell held in one hand behind your head \u2014 lower under control, opposite hand can support your elbow'},
@@ -498,7 +521,14 @@ const SUB_TYPE_OVERRIDE={
      primaryMuscles/secondaryMuscles correctly fall through to Lat pulldown's own (Lats/Biceps). */
   'Wide grip lat pulldown':{nt:'Wide overhand grip, hands just outside shoulder width — the default lat pulldown setup'},
   'Close grip lat pulldown (V-bar)':{nt:'V-bar attachment, hands close and neutral — shorter range, more lower-lat and bicep involvement'},
-  'Reverse grip lat pulldown':{nt:'Underhand/supinated grip on the straight bar — shifts more toward lower lats and biceps'}
+  'Reverse grip lat pulldown':{nt:'Underhand/supinated grip on the straight bar — shifts more toward lower lats and biceps'},
+  /* 2026-11-04: the two new disambiguated names from the 'Machine row'/'Machine shoulder press'
+     collision fix above - only the form cue needs overriding, everything else (r/compound/
+     primaryMuscles/wlabel) correctly falls through to the real origin it's actually subbing
+     for now (Single arm DB row / Arnold press respectively), not whichever happened to win
+     the old name clash. */
+  'Machine row (single-arm)':{nt:'Unilateral machine row station — same single-arm pattern as the dumbbell version, one side at a time'},
+  'Machine shoulder press (fixed grip)':{nt:'Fixed vertical press path, no rotation — the simpler substitute for Arnold press’s twisting grip'}
 };
 function findExDef(name){
   for(const d of DAYS){for(const e of d.ex){
@@ -2364,7 +2394,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.16';
+const APP_VERSION='v5.17';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -2825,7 +2855,7 @@ function renderToday(){
         h+=`<div class="choice-pick">${orig.choiceOptions.map(o=>`<button class="choice-btn" onclick="chooseExType('${gd.label}',${ei},'${o.name}')">${o.name}<div style="font-size:11px;margin-top:4px;color:var(--mut)">${o.r}</div></button>`).join('')}</div>`;
       }
       if(!isChoice||ex.chosenType){
-        const topSetIdx=ex.sets.reduce((last,s,idx)=>s.isDrop?last:idx,-1);
+        const topSetIdx=getTopSetIdx(ex,effType);
         ex.sets.forEach((set,si)=>{
           const isDrop=set.isDrop;
           const isExtra=isDrop||si>=(subOverride?.s||orig.s||3);
@@ -2839,7 +2869,14 @@ function renderToday(){
             <button class="dbtn${set.done?' dk':''}" onclick="togDone('${gd.label}',${ei},${si})">${set.done?'&#x2713;':'&#x25CB;'}</button>
           </div>
           ${isDrop&&set.dropHint?`<div style="font-size:11px;color:var(--mut);padding:2px 0 6px 44px">${set.dropHint}</div>`:(isExtra&&!isDrop?`<div style="font-size:11px;color:var(--mut);padding:2px 0 6px 44px">Target: ${formatRepTarget(effR||orig.r,effType)}</div>`:'')}
-          ${effType==='weight'?`<div id="${hintId(gd.label,ei,si)}" style="font-size:11px;color:var(--cyan);padding:0 0 6px 44px">${getWeightHintText(trackName,set.w)}</div>`:''}
+          ${/* Real bug found via live-use + review: this used to show on EVERY weight-type set
+                unconditionally, including a ramp's deliberately-light ramp-up/backoff sets -
+                confirmed a real 47.5kg prescribed set showing "Est. 19-20 reps at this weight"
+                right underneath it, since the hint has no concept of a set being intentionally
+                submaximal. Now only shown on the real top set (per the getTopSetIdx fix above)
+                or a set you added/subbed yourself, where "how close to failure" is actually a
+                meaningful question to ask. */''}
+          ${(effType==='weight'&&(si===topSetIdx||isExtra))?`<div id="${hintId(gd.label,ei,si)}" style="font-size:11px;color:var(--cyan);padding:0 0 6px 44px">${getWeightHintText(trackName,set.w)}</div>`:''}
           ${(si===topSetIdx&&set.done&&effType!=='seconds')?`<div style="display:flex;align-items:center;gap:8px;padding:4px 0 10px 44px">
             <span style="font-size:11px;color:var(--mut);font-weight:600">Reps in reserve:</span>
             <div style="display:flex;gap:4px">
@@ -4115,6 +4152,38 @@ function getStrengthStandard(exerciseName,trackName){
 /* Reps decline across sets at a FIXED weight (not weight declining \u2014 that's what drop sets
    already do separately). Curve is category-specific: bodyweight fatigues fastest, isolation
    holds up best, compound sits between. */
+/* Real bug found via live-use + review (2026-11-04): the old topSetIdx picked the LAST set
+   that isn't flagged isDrop - but a ramp/moderate prefill's own internal backoff set is never
+   flagged isDrop at generation time (only a manually-added "+Drop" set gets that flag), so for
+   any 3+ set exercise the RIR picker landed on the deliberately light finishing set instead of
+   the real top set. Confirmed via direct reproduction: getRampPrefill(100,4,{r:'6–8'}) puts
+   the true top set (100kg) at index 2, the old logic read index 3 (55kg, the backoff set) as
+   "the top set" - meaning the one subjective input the whole fatigue/RIR progression system
+   runs on was reading the wrong set nearly every session for any 3+ set exercise, which is
+   most of them. Deliberately NOT fixed by flagging the backoff set isDrop=true at generation
+   time - isDrop also drives weekly-volume and muscle-freshness crediting
+   (completedSets filters on !isDrop), so that shortcut would have silently stopped crediting
+   real completed volume. This is a separate, additive concept instead: find the real top set
+   directly, without touching what isDrop already means elsewhere. */
+function getTopSetIdx(ex,effType){
+  const sets=ex.sets||[];
+  if(effType==='bodyweight'||effType==='reps_each'){
+    /* Effort declines across these by design (getFatigueCurve starts at 1.0 and drops) - the
+       real hardest set is the first prescribed, non-drop one, not the last. */
+    return sets.findIndex(s=>!s.isDrop);
+  }
+  /* Weight-type (compound ramp or isolation moderate): the real top set is whichever
+     prescribed set actually carries the heaviest PLANNED weight (pw) - true regardless of
+     ramp shape, and stable against the user editing what's currently typed in afterward since
+     it reads the original plan, not the live value. */
+  let topIdx=-1,topW=-1;
+  sets.forEach((s,i)=>{
+    if(s.isDrop)return;
+    const w=parseFloat(s.pw);
+    if(!isNaN(w)&&w>topW){topW=w;topIdx=i;}
+  });
+  return topIdx;
+}
 function getFatigueCurve(orig){
   if(orig.inputType==='bodyweight')return[1,0.65,0.5];
   if(orig.inputType==='seconds'||orig.inputType==='reps_each')return[1,0.85,0.75];
