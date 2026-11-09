@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.18</title>
+<title>Roshan Fitness v5.19</title>
 <style>
 /* v5.14 "Midnight Aurora" refresh: Roshan found the old warm-brown/single-amber theme flat
    (83 uses of one amber tone, 33 of one burnt-orange, against one dark-brown background - real
@@ -250,7 +250,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-11-09">v5.18</div>
+    <div class="vtag" title="build 2026-11-09">v5.19</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -2394,7 +2394,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.18';
+const APP_VERSION='v5.19';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -4067,9 +4067,23 @@ function estimateRepRangeAtWeight(weight,e1rm){
   }
   return{low:Math.max(1,bestR-1),high:Math.min(20,bestR+1)};
 }
+/* Real bug reported by Boss: "Assisted pull-up still wrong. Weights means more assist right.
+   I put 35kg and it says 1 to 3 reps" - exactly backwards. This whole function (and the
+   estimate1RM/e1RM-trend machinery it's built on) assumes more weight = more resistance = harder
+   = fewer reps, which is true for every exercise except assist machines, where MORE weight on
+   the stack means MORE help and therefore EASIER/more reps - the literal opposite direction.
+   getNextTargetWeight and liveCoachAdjust already handle this correctly elsewhere (assistWeight
+   inverts their math); this function never checked for it at all. Rather than bolt on a
+   same-formula-but-inverted estimate (would need his real bodyweight to mean anything honest -
+   true resistance on an assist machine is bodyweight minus assist, not the assist number
+   itself), this just stays silent for assist exercises - no estimate is better than a
+   confidently backwards one. getNextTargetWeight's own dedicated, correctly-directioned assist
+   logic is what actually drives the real prefilled number either way. */
 function getWeightHintText(trackName,weightStr){
   const w=parseFloat(weightStr);
   if(!w||w<=0||!trackName)return'';
+  const def=findExDef(trackName);
+  if(def&&def.assistWeight)return'';
   const trend=getE1RMTrend(trackName);
   if(!trend.available||!trend.currentE1RM)return'';
   if(w>=trend.currentE1RM*0.97)return'Near your max — expect 1–3 reps';
@@ -4764,7 +4778,14 @@ function searchExHistory(query,targetId){
       ${tag?`<div id="${diagId}" style="width:70px;flex-shrink:0"></div>`:''}
     </div>
     ${chartPts.length>=2?`<div class="chart-wrap"><div class="chart-label">${chartLabel}</div>${buildSVG(chartPts,'var(--cyan)',chartUnit)}<div style="font-size:11px;color:var(--dim);margin-top:4px">&#x25CF; Yellow dots = personal records</div></div>`:''}
-    ${itype==='weight'?(()=>{
+    ${/* Same assistWeight gap as the live weight-hint fix above, caught while in here: the
+         "more weight" direction this whole e1RM-trend machinery assumes is backwards for an
+         assist machine (more weight = more help = easier), so a projected-kg forecast built on
+         it doesn't carry a real meaning for these exercises either. Checked via findExDef
+         directly rather than the local getExDef helper above, which only looks at DAYS and
+         falls through to a generic fallback (missing assistWeight entirely) for any SUBS-only
+         exercise name like this one. */''}
+    ${(itype==='weight'&&!findExDef(name)?.assistWeight)?(()=>{
       const fc=getE1RMForecast(name);
       if(!fc.available)return '';
       return `<div style="margin:10px 0;padding:10px 12px;background:var(--c2);border-radius:10px">
