@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.17</title>
+<title>Roshan Fitness v5.18</title>
 <style>
 /* v5.14 "Midnight Aurora" refresh: Roshan found the old warm-brown/single-amber theme flat
    (83 uses of one amber tone, 33 of one burnt-orange, against one dark-brown background - real
@@ -250,7 +250,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-11-04">v5.17</div>
+    <div class="vtag" title="build 2026-11-09">v5.18</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -2394,7 +2394,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.17';
+const APP_VERSION='v5.18';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -2876,7 +2876,17 @@ function renderToday(){
                 submaximal. Now only shown on the real top set (per the getTopSetIdx fix above)
                 or a set you added/subbed yourself, where "how close to failure" is actually a
                 meaningful question to ask. */''}
-          ${(effType==='weight'&&(si===topSetIdx||isExtra))?`<div id="${hintId(gd.label,ei,si)}" style="font-size:11px;color:var(--cyan);padding:0 0 6px 44px">${getWeightHintText(trackName,set.w)}</div>`:''}
+          ${/* Real bug reported by Boss: this hint estimates reps from FRESH e1RM trend, with
+                zero concept of fatigue — kept showing on drop sets after the previous fix,
+                reasoning that's where "how close to failure" matters most. Wrong for drop sets
+                specifically: a drop set happens seconds after exhausting the muscle on a
+                near-max top set, so a fresh-capacity estimate there is backwards by
+                construction. Confirmed exactly: 100kg×4 → drop to 80kg, hint estimated
+                ~18-20 reps (fresh-strength math), he could manage 5 — the estimate was never
+                going to be realistic there, fatigue isn't in the formula at all. Still shown on
+                a genuinely free-standing added extra set (isExtra&&!isDrop), where "how close
+                to failure" is still a reasonable question; still shown on the real top set. */''}
+          ${(effType==='weight'&&(si===topSetIdx||(isExtra&&!isDrop)))?`<div id="${hintId(gd.label,ei,si)}" style="font-size:11px;color:var(--cyan);padding:0 0 6px 44px">${getWeightHintText(trackName,set.w)}</div>`:''}
           ${(si===topSetIdx&&set.done&&effType!=='seconds')?`<div style="display:flex;align-items:center;gap:8px;padding:4px 0 10px 44px">
             <span style="font-size:11px;color:var(--mut);font-weight:600">Reps in reserve:</span>
             <div style="display:flex;gap:4px">
