@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.20</title>
+<title>Roshan Fitness v5.21</title>
 <style>
 /* v5.14 "Midnight Aurora" refresh: Roshan found the old warm-brown/single-amber theme flat
    (83 uses of one amber tone, 33 of one burnt-orange, against one dark-brown background - real
@@ -250,7 +250,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-11-09">v5.20</div>
+    <div class="vtag" title="build 2026-11-14">v5.21</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -354,7 +354,12 @@ const DAYS=[
     {n:'Leg extension (machine)',s:2,r:'15',nt:'Light second touch for quads \u2014 keep it controlled, this isn\u2019t meant to be a second leg day',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Quads'],secondaryMuscles:[],tip:'Controlled tempo, brief pause at the top \u2014 momentum here just skips the muscle doing the work.'},
     {n:'Seated leg curl',s:2,r:'15',nt:'Light second touch for hamstrings \u2014 seated preferred',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Hamstrings'],secondaryMuscles:[],tip:'Full range, controlled tempo \u2014 don\u2019t bounce out of the stretch at the bottom.'},
     {n:'Plank or dead bug',s:3,r:'\u2014',nt:'Core finisher \u2014 pick one below',priority:'must',noweight:true,inputType:'choice',primaryMuscles:['Core'],secondaryMuscles:[],
-     choiceOptions:[{name:'Plank',r:'30\u201360s',inputType:'seconds',primaryMuscles:['Core'],secondaryMuscles:[]},{name:'Dead bug',r:'10 each side',inputType:'reps_each',primaryMuscles:['Core'],secondaryMuscles:[]}]}
+     choiceOptions:[{name:'Plank',r:'30\u201360s',inputType:'seconds',primaryMuscles:['Core'],secondaryMuscles:[]},{name:'Dead bug',r:'10 each side',inputType:'reps_each',primaryMuscles:['Core'],secondaryMuscles:[]},
+       /* Added at Boss's request (2026-11-14): captain's chair over hanging (no grip/swing limit)
+          or lying (lower back arches as you tire). Typographic apostrophe on purpose - the choice
+          button inlines o.name into an onclick string, where an ASCII ' would break it. */
+       {name:'Captain\u2019s chair leg raise',r:'10\u201315',inputType:'bodyweight',primaryMuscles:['Abs'],secondaryMuscles:['Core'],
+        nt:'Back flat against the pad \u2014 exhale as you lift, never hold your breath \u00b7 lower slowly, no swinging'}]}
   ]}
 ];
 const SUBS={
@@ -2417,7 +2422,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.20';
+const APP_VERSION='v5.21';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -2868,7 +2873,7 @@ function renderToday(){
             ${isSubbed?`<div class="subbed">SUB for ${ex.origName}</div>`:''}
             <div style="font-size:12px;color:var(--mut);margin-top:3px">${contextParts.join(' &middot; ')}</div>
             <div style="font-size:12px;color:var(--txt);margin-top:2px">${subOverride?.s||orig.s} sets &times; ${effR||orig.r}${(subWlabel||orig.wlabel)?` &middot; ${subWlabel||orig.wlabel}`:''}</div>
-            ${(subOverride?.nt!==undefined?subOverride.nt:orig.nt)?`<div style="font-size:11px;color:var(--amb);font-style:italic;margin-top:3px">${subOverride?.nt!==undefined?subOverride.nt:orig.nt}</div>`:''}
+            ${(chosenOpt?.nt||(subOverride?.nt!==undefined?subOverride.nt:orig.nt))?`<div style="font-size:11px;color:var(--amb);font-style:italic;margin-top:3px">${chosenOpt?.nt||(subOverride?.nt!==undefined?subOverride.nt:orig.nt)}</div>`:''}
             ${freshNote?`<div style="font-size:11px;color:var(--cyan);margin-top:4px;padding:6px 8px;background:var(--c2);border-radius:8px">&#x21BB; ${freshNote}</div>`:''}
           </div>
         </div>
