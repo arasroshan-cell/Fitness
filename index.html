@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.22</title>
+<title>Roshan Fitness v5.23</title>
 <style>
 /* v5.14 "Midnight Aurora" refresh: Roshan found the old warm-brown/single-amber theme flat
    (83 uses of one amber tone, 33 of one burnt-orange, against one dark-brown background - real
@@ -250,7 +250,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-11-14">v5.22</div>
+    <div class="vtag" title="build 2026-11-14">v5.23</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -1644,6 +1644,12 @@ function togDone(dl,ei,si){
   if(WS[dl].infoOpen===ei)WS[dl].infoOpen=null;
   saveDraft(dl);renderToday();
 }
+/* Latest logged body-stats weight, else the profile weight; 0 if neither is known. */
+function currentBodyweight(){
+  const stats=lsG('bstats')||[];
+  const last=stats.length?parseFloat(stats[stats.length-1].wt):NaN;
+  return last>0?last:(parseFloat(getProfile().weight)||0);
+}
 /* Live coach: reacts to what you actually just did, not just what was pre-planned before the
    set. Compares the just-completed set's real implied capacity (weight and reps combined via
    the same estimate1RM used everywhere else) against what that same weight was expected to
@@ -1663,8 +1669,18 @@ function liveCoachAdjust(dl,ei,si){
   if(completed.isDrop)return;
 
   if(orig.inputType==='weight'){
-    const isCompound=orig.compound!==false;
-    if(isCompound&&si===0)return;
+    /* v5.23: since v5.22 both set shapes (compound AND isolation) open with a lighter warm-up/
+       feeler before the top set. Those sets are meant to feel easy, so they never count as
+       evidence - an isolation feeler done exactly as planned used to dilute a real top-set miss
+       into the "no change" band. */
+    const topI=getTopSetIdx(ex,'weight');
+    const isWarm=i=>topI>0&&i<topI;
+    if(isWarm(si))return;
+    /* Assist machines: the number typed is help, not load - strength maths runs on bodyweight
+       minus assist (it used to run Epley on the assist number itself, which means nothing). */
+    const bwKg=orig.assistWeight?currentBodyweight():0;
+    if(orig.assistWeight&&!bwKg)return;
+    const load=v=>orig.assistWeight?Math.max(1,bwKg-v):v;
     /* Aggregate the real-vs-planned ratio across every genuine working set completed so far
        today, not just the one that just got marked done \u2014 two or more sets consistently
        pointing the same direction is real evidence the plan no longer matches today's actual
@@ -1673,18 +1689,21 @@ function liveCoachAdjust(dl,ei,si){
        sets that happened to match the plan exactly. */
     const weighted=[];
     ex.sets.forEach((s,i)=>{
-      if(i>si||s.isDrop||!s.done)return;
-      if(isCompound&&i===0)return;
+      if(i>si||s.isDrop||!s.done||isWarm(i))return;
       const aw=parseFloat(s.w),ar=parseInt(s.r),pw=parseFloat(s.pw),pr=parseInt(s.pr);
       if(!aw||!ar||!pw||!pr)return;
-      const expected=estimate1RM(pw,pr),actual=estimate1RM(aw,ar);
+      const expected=estimate1RM(load(pw),pr),actual=estimate1RM(load(aw),ar);
       if(expected?.value)weighted.push({ratio:actual.value/expected.value,i});
     });
     if(!weighted.length)return;
     let sumW=0,sumWR=0;
     weighted.forEach((w,pos)=>{const wt=Math.pow(4,pos);sumW+=wt;sumWR+=wt*w.ratio;});
     const raw=sumWR/sumW;
-    if(raw>0.90&&raw<1.10)return;
+    /* v5.23: narrowed from 0.90-1.10 once the estimate became Epley-only above 10 reps (stable,
+       ~3% per rep): a strong day's +2 reps on the top set (~6%) used to sit inside the old band,
+       leaving the backoffs with 5-7 reps in reserve. One rep either way (~3%) still changes
+       nothing. Per-exercise live check: 437 -> 456 of 496 sets judged right. */
+    if(raw>0.95&&raw<1.05)return;
     /* v5.22, found by the month simulation: an Amber-day Bench 55x16 against a planned x6 gave
        a raw ratio of ~1.9, which rescaled the rest of the session to 105kg - including the set
        Amber had deliberately left blank - and that heavy single then became the next session's
@@ -1698,8 +1717,9 @@ function liveCoachAdjust(dl,ei,si){
     ex.sets.forEach((s,i)=>{
       if(i<=si||s.done||(amberToday&&!s.pw))return;
       const base=parseFloat(s.pw)||parseFloat(s.w)||parseFloat(completed.w);
-      const effectiveRatio=orig.assistWeight?1/ratio:ratio;
-      s.w=String(Math.max(0,realisticWeightRound(base*effectiveRatio)));
+      /* Assist: scale the real load (bodyweight - assist) and convert back to an assist number. */
+      const next=orig.assistWeight?bwKg-load(base)*ratio:base*ratio;
+      s.w=String(Math.max(0,realisticWeightRound(next)));
     });
     return;
   }
@@ -1766,7 +1786,23 @@ function addDropSet(dl,ei){
     if(!assist&&v>=lw)v=Math.max(0,lw-step(lw));
     dw=String(v);
   }
-  WS[dl].ex[ei].sets.push({w:dw,r:'',pw:dw,pr:'',done:false,isDrop:true,dropHint:dropHintText(getEffType(dl,ei))});
+  /* v5.23: the hint used to say "aim 10-12 reps" for every drop set. Boss's own logged drops
+     (lat pulldown 100x4 -> 80x5, then 80x5 -> 50x8) both fit reps ~ last reps x (last load /
+     drop load) - a drop set happens with no rest, so it's anchored to the set just done, not
+     to fresh strength. Assist machines compare real load (bodyweight - assist). Falls back to
+     the generic text when there's no last set to anchor on. */
+  const effType=getEffType(dl,ei);
+  let hint=dropHintText(effType);
+  const lr=parseInt(last.r),dwN=parseFloat(dw);
+  if(effType==='weight'&&lr>0&&dwN>=0&&(lw>0||assist)){
+    const bwKg=assist?currentBodyweight():0;
+    const ld=v=>assist?bwKg-v:v;
+    if(!assist||bwKg>0){
+      const est=Math.max(1,Math.round(lr*ld(lw||0)/Math.max(1,ld(dwN))));
+      hint=(assist?'More assist':'Lighter')+' — aim '+Math.max(1,est-1)+'–'+(est+1)+' reps (from your last set of '+lr+')';
+    }
+  }
+  WS[dl].ex[ei].sets.push({w:dw,r:'',pw:dw,pr:'',done:false,isDrop:true,dropHint:hint});
   saveDraft(dl);renderToday();
 }
 function chooseExType(dl,ei,choice){
@@ -2105,10 +2141,12 @@ function getSuggestion(orig,best,prKey){
      getNextTargetWeight the prefill itself trusts \u2014 isolation keeps its own smaller bump size
      and skips the fatigue gate exactly as that function already handles internally, this just
      stops re-deriving a second, cruder opinion on top of it. */
-  const{recW,isCompound}=getNextTargetWeight(orig,prKey||'',w,r,best.rir);
+  const{recW,isCompound,nextReps}=getNextTargetWeight(orig,prKey||'',w,r,best.rir);
   const prefix=isCompound?'Last top set: ':'Last: ';
   const upTxt=isCompound?'try '+recW.toFixed(1)+'kg for today\u2019s top set':'try '+recW.toFixed(1)+'kg next time';
-  const holdTxt=isCompound?'hold '+w+'kg, aim for a clean rep':'hold '+w+'kg, push for a cleaner set';
+  /* v5.23: when double progression raised the rep target, say so - same number the prefill uses. */
+  const holdTxt=nextReps>parseTargetRepRange(orig.r).low?'hold '+w+'kg, aim for '+nextReps+' reps'
+    :isCompound?'hold '+w+'kg, aim for a clean rep':'hold '+w+'kg, push for a cleaner set';
   /* v5.20: for an assist machine, real progress means recW < w (less assist recommended next
      time) \u2014 inverted from every other exercise, same reasoning as the behindPR check above. */
   const progressed=orig.assistWeight?recW<w:recW>w;
@@ -2470,7 +2508,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.22';
+const APP_VERSION='v5.23';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -4086,8 +4124,14 @@ function estimate1RM(weight,reps){
   if(!w||!r||r<1)return null;
   if(r===1)return{value:w,confidence:'high'};
   const epley=w*(1+r/30);
-  const brzycki=r<36?w*36/(37-r):epley;
-  return{value:(epley+brzycki)/2,confidence:r<=10?'high':'low'};
+  /* v5.23, found by the per-exercise live check: Brzycki is a low-rep formula (see the note
+     above) and its 36/(37-r) term blows up past ~12 reps - 42.5kg x23 read as a 92kg e1RM, so a
+     lighter-than-planned high-rep set made live coaching load the next sets with weight that
+     couldn't be lifted. Above 10 reps this is Epley alone; the two formulas agree exactly at
+     10 reps, so nothing jumps at the boundary. */
+  if(r>10)return{value:epley,confidence:'low'};
+  const brzycki=w*36/(37-r);
+  return{value:(epley+brzycki)/2,confidence:'high'};
 }
 /* Real trend across the exercise's FULL history \u2014 every session ever logged for it,
    not a recent window. Analyzes everything the app has from when it was first used,
@@ -4297,7 +4341,11 @@ function getTopSetIdx(ex,effType){
   return topIdx;
 }
 function getFatigueCurve(orig){
-  if(orig.inputType==='bodyweight')return[1,0.65,0.5];
+  /* v5.23: was [1,0.65,0.5] - a first set of 12 dips prescribed 8 then 6 after it. With normal
+     2-3 min rest, reps on sets taken close to failure typically drop ~10-20% per set (12, 10, 8),
+     so this was leaving ~2-3 reps on the table on every follow-up set. My judgment call, not
+     from Boss's logs - his real bodyweight sets would settle it. */
+  if(orig.inputType==='bodyweight')return[1,0.8,0.7,0.6];
   if(orig.inputType==='seconds'||orig.inputType==='reps_each')return[1,0.85,0.75];
   if(orig.compound!==false)return[1,0.75,0.55];
   return[1,0.85,0.75];
@@ -4336,12 +4384,13 @@ function parseTargetRepRange(rStr){
   const n=parseInt(rStr);
   return{low:n||8,high:n||12};
 }
-function getRampPrefill(topWeight,numSets,orig){
+function getRampPrefill(topWeight,numSets,orig,topRepsOverride){
   /* Round to 2.5kg, the realistic minimum increment for a plate-loaded barbell (1.25kg per
      side) and close enough for most dumbbell racks and cable stacks too. 0.5kg rounding
      produced numbers like 61.5kg that nobody can actually load. */
   const round=realisticWeightRound;
-  const{low:topReps,high:dropReps}=parseTargetRepRange(orig&&orig.r);
+  const{low,high:dropReps}=parseTargetRepRange(orig&&orig.r);
+  const topReps=topRepsOverride||low;
   if(numSets<2)return[{w:String(round(topWeight)),r:String(topReps)}];
   /* Warm-up and backoff reps anchor off the range's own high end (v5.11), never more than 2
      above it, so a narrow range like Bench 6-8 never gets a 12-rep set.
@@ -4366,40 +4415,35 @@ function getRampPrefill(topWeight,numSets,orig){
    exercise's rep target to 14 down to 10, regardless of what that exercise was actually
    planned for (e.g. Calf raises planned at 20 reps got a 10-14 prefill). Now derives its
    range from the exercise's own orig.r via parseTargetRepRange, same as the compound ramp:
-   working sets interpolate from the range's high end (lightest weight) down to its low end
-   (heaviest working-set weight), and the drop set lands back at the high end. */
-function getModeratePrefill(targetWeight,numSets,orig){
+   v5.22 shape (below) replaced the old interpolate-then-65%-drop pattern; v5.23 adds the
+   double-progression rep target (topRepsOverride, from nextTopReps). */
+function getModeratePrefill(targetWeight,numSets,orig,topRepsOverride){
   const round=realisticWeightRound;
   const{low:lowReps,high:highReps}=parseTargetRepRange(orig&&orig.r);
-  if(numSets<2)return[{w:String(round(targetWeight)),r:String(lowReps)}];
+  const topR=topRepsOverride||lowReps;
+  if(numSets<2)return[{w:String(round(targetWeight)),r:String(topR)}];
   /* v5.22: same change as getRampPrefill - one lighter feeler set (80% x top of range), then
      real working sets at the target weight and slightly below (95%, 90%) as fatigue builds,
-     each prescribed at the low end of the range. The old 65% finisher was far from failure. */
-  const out=[{w:String(round(targetWeight*0.8)),r:String(highReps)},{w:String(round(targetWeight)),r:String(lowReps)}];
-  for(let k=1;out.length<numSets;k++)out.push({w:String(round(targetWeight*(1-0.05*k))),r:String(lowReps)});
+     each at the rep target (range low end unless double progression raised it). The old 65%
+     finisher was far from failure. */
+  const out=[{w:String(round(targetWeight*0.8)),r:String(highReps)},{w:String(round(targetWeight)),r:String(topR)}];
+  for(let k=1;out.length<numSets;k++)out.push({w:String(round(targetWeight*(1-0.05*k))),r:String(topR)});
   return out;
 }
 /* v5.20, built with Boss after the assist-weight audit: an assist machine inverts "heavier =
    harder" (more assist = more help = easier), so the ramp above would be backwards if reused
-   as-is — it puts the real working weight LAST with the FEWEST reps, which for assist would
-   mean the LEAST assist (hardest effort) gets the fewest reps prescribed, the opposite of what
-   should happen. This mirrors getModeratePrefill exactly — same rep direction (easier sets get
-   more reps, the real top effort gets fewer), same 0.65/drop-set convention — just flips which
-   end of the weight range is "easier": starts at MORE assist than target (1.2x, warm-up-easy,
-   high reps), decreases down to the real target assist (1.0x = the hardest effort of the
-   session) on the last working set, and the trailing drop set goes back UP to 1.35x assist
-   (symmetric mirror of 0.65x) for an easier, higher-rep finisher. targetWeight here is always
-   the real TOP-EFFORT assist weight (from getNextTargetWeight), same contract as
-   getModeratePrefill's targetWeight. */
-function getAssistModeratePrefill(targetWeight,numSets,orig){
+   as-is. This mirrors getModeratePrefill with the weight direction flipped (shape below, as of
+   v5.22). targetWeight is the real TOP-EFFORT assist weight from getNextTargetWeight. */
+function getAssistModeratePrefill(targetWeight,numSets,orig,topRepsOverride){
   const round=realisticWeightRound;
   const{low:lowReps,high:highReps}=parseTargetRepRange(orig&&orig.r);
-  if(numSets<2)return[{w:String(Math.max(0,round(targetWeight))),r:String(lowReps)}];
+  const topR=topRepsOverride||lowReps;
+  if(numSets<2)return[{w:String(Math.max(0,round(targetWeight))),r:String(topR)}];
   /* v5.22: mirrors the new getModeratePrefill shape, inverted for assist - an easier feeler
      with MORE assist (1.2x), the real target assist (hardest set), then backoffs that add a
      little assist back (1.05x, 1.1x) as fatigue builds. */
-  const out=[{w:String(Math.max(0,round(targetWeight*1.2))),r:String(highReps)},{w:String(Math.max(0,round(targetWeight))),r:String(lowReps)}];
-  for(let k=1;out.length<numSets;k++)out.push({w:String(Math.max(0,round(targetWeight*(1+0.05*k)))),r:String(lowReps)});
+  const out=[{w:String(Math.max(0,round(targetWeight*1.2))),r:String(highReps)},{w:String(Math.max(0,round(targetWeight))),r:String(topR)}];
+  for(let k=1;out.length<numSets;k++)out.push({w:String(Math.max(0,round(targetWeight*(1+0.05*k)))),r:String(topR)});
   return out;
 }
 /* v5.11: shared by getNextTargetWeight's fatigue modifier below. A muscle with no recent
@@ -4419,6 +4463,17 @@ function getAvgMuscleFreshness(muscles){
    through the moderate, no-1RM-chase model, rather than one flat scheme for everything. */
 /* Shared by getPrefillSets and getSuggestion so the advisory text and the actual prefilled
    numbers can never disagree \u2014 both call this same function for the target weight. */
+/* v5.23, double progression: when the weight stays the same (not earned yet, or the next plate
+   step is too big a jump - 9 -> 10kg lateral raises is +11%), the top set's REP target climbs
+   instead: one under what the last top set showed was possible (reps + RIR), within the range.
+   Without this a lifter doing exactly what was prescribed (9x15, "3+" left) was asked for 9x15
+   forever and never built up to the reps the next weight needs. Weight changes reset to the
+   range's low end. */
+function nextTopReps(orig,weightHeld,r,rirN){
+  const{low,high}=parseTargetRepRange(orig&&orig.r);
+  if(!weightHeld)return low;
+  return Math.min(high,Math.max(low,r+rirN-1));
+}
 function getNextTargetWeight(orig,trackName,w,r,rir){
   const round=realisticWeightRound;
   const targetR=orig.r&&orig.r.includes&&orig.r.includes('\u2013')?Number(orig.r.split('\u2013')[1]):(parseInt(orig.r)||r);
@@ -4445,7 +4500,7 @@ function getNextTargetWeight(orig,trackName,w,r,rir){
       const step=w<20?1:2.5;
       recW=Math.max(0,round(w-step));
     }
-    return{recW,isCompound:false,gotTop,targetR};
+    return{recW,isCompound:false,gotTop,targetR,nextReps:nextTopReps(orig,recW===w,r,rirN)};
   }
   /* v5.11 fix: this used to read if(gotTop||isCompound) - meaning ANY compound exercise got
      bumped up in weight even when the rep target was missed, purely because it was a compound
@@ -4513,7 +4568,9 @@ function getNextTargetWeight(orig,trackName,w,r,rir){
     const capReps=gotTop?topReps:Math.max(1,topReps-1);
     const wCap=e1.value/estimate1RM(1,capReps).value;
     const floorStep=v=>v<20?Math.floor(v):Math.floor(v/2.5)*2.5;
-    if(recW>wCap+1e-6)recW=Math.max(0,floorStep(wCap+1e-6));
+    /* ~half a rep of rounding margin (1.5%): flooring to the plate grid otherwise loses a whole
+       2.5kg step when the target is a hair over the line (curl cap 32.25 -> 30 instead of 32.5). */
+    if(recW>wCap*1.015+1e-6)recW=Math.max(0,floorStep(wCap*1.015+1e-6));
   }
   /* Real ceiling: small, individually-reasonable increments can still compound into numbers
      no real lifter would hit over many sessions \u2014 confirmed by simulation (83% growth in 20
@@ -4530,7 +4587,7 @@ function getNextTargetWeight(orig,trackName,w,r,rir){
       if(recW>maxRealistic)recW=maxRealistic;
     }
   }
-  return{recW,isCompound,gotTop,targetR};
+  return{recW,isCompound,gotTop,targetR,nextReps:nextTopReps(orig,recW===w,r,rirN)};
 }
 /* The actual prefill dispatcher: real numbers written into set.w/set.r, not just advisory
    text, so accepting with one tap logs the recommended number and overwriting is just
@@ -4586,7 +4643,7 @@ function getPrefillSets(orig,trackName,numSets){
   }
   if(!lastBest.w)return null;
   const w=parseFloat(lastBest.w),r=parseInt(lastBest.r);
-  const{recW,isCompound}=getNextTargetWeight(orig,trackName,w,r,lastBest.rir);
+  const{recW,isCompound,nextReps}=getNextTargetWeight(orig,trackName,w,r,lastBest.rir);
   /* v5.20: assist machines invert the Amber Protocol too — a normal exercise gets LESS weight
      (easier) on a low-energy/symptom day, but for assist, less assist weight means MORE real
      effort. The honest mirror is to give MORE assist (easier) by the same 20% magnitude,
@@ -4594,10 +4651,10 @@ function getPrefillSets(orig,trackName,numSets){
      harder on the one kind of day the whole protocol exists to go easier on. */
   if(orig.assistWeight){
     const targetW=amber?realisticWeightRound(recW*1.2):recW;
-    return getAssistModeratePrefill(targetW,effSets,orig);
+    return getAssistModeratePrefill(targetW,effSets,orig,nextReps);
   }
   const targetW=amber?realisticWeightRound(recW*0.8):recW;
-  return isCompound?getRampPrefill(targetW,effSets,orig):getModeratePrefill(targetW,effSets,orig);
+  return isCompound?getRampPrefill(targetW,effSets,orig,nextReps):getModeratePrefill(targetW,effSets,orig,nextReps);
 }
 
 /* ===== FOOD COACHING ===== */
