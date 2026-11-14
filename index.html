@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.21</title>
+<title>Roshan Fitness v5.22</title>
 <style>
 /* v5.14 "Midnight Aurora" refresh: Roshan found the old warm-brown/single-amber theme flat
    (83 uses of one amber tone, 33 of one burnt-orange, against one dark-brown background - real
@@ -250,7 +250,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-11-14">v5.21</div>
+    <div class="vtag" title="build 2026-11-14">v5.22</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -1469,7 +1469,7 @@ function getWeeklySummary(){
       else{
         doneThisWeek++;
         volumeThisWeek+=sess.totalVolume||0;
-        (sess.newPRs||[]).forEach(n=>newPRsThisWeek.push(n));
+        (sess.newPRs||[]).forEach(n=>{if(!newPRsThisWeek.includes(n))newPRsThisWeek.push(n);});
       }
     }else if(sess.date>=cutoff14&&!sess.skipped){
       volumeLastWeek+=sess.totalVolume||0;
@@ -1566,6 +1566,9 @@ let adHocSeqIdx=null;
 let editingDate=null;
 let _forcePickerOnce=false;
 
+/* v5.22: a persisted sub is prefilled with the SUB's own rules (findExDef merges its
+   SUB_TYPE_OVERRIDE), not the day template's - Assisted pull-ups used to get Pull-ups'
+   bodyweight rep curve and blank weights every session. */
 function initWS(dl,def){
   const pSubs=lsG('persisted_subs')||{};
   if(WS[dl]&&WS[dl]._forDate&&WS[dl]._forDate!==todayKey()&&WS[dl]._forDate!==editingDate){
@@ -1582,7 +1585,7 @@ function initWS(dl,def){
   if(!WS[dl]){
     WS[dl]={
       ex:def.ex.map(e=>{
-        const prefill=getPrefillSets(e,pSubs[e.n]||e.n,e.s);
+        const prefill=getPrefillSets((pSubs[e.n]&&findExDef(pSubs[e.n]))||e,pSubs[e.n]||e.n,e.s);
         return{
           name:pSubs[e.n]||e.n,origName:e.n,chosenType:null,
           sets:Array.from({length:e.s},(_,si)=>({w:prefill?.[si]?.w||'',r:prefill?.[si]?.r||'',pw:prefill?.[si]?.w||'',pr:prefill?.[si]?.r||'',done:false,isDrop:false}))
@@ -1598,7 +1601,7 @@ function initWS(dl,def){
      exercises that still exist, instead of crashing on index misalignment for new ones. */
   const old=WS[dl].ex||[];
   WS[dl].ex=def.ex.map(e=>old.find(o=>o&&o.origName===e.n)||(()=>{
-    const prefill=getPrefillSets(e,pSubs[e.n]||e.n,e.s);
+    const prefill=getPrefillSets((pSubs[e.n]&&findExDef(pSubs[e.n]))||e,pSubs[e.n]||e.n,e.s);
     return{
       name:pSubs[e.n]||e.n,origName:e.n,chosenType:null,
       sets:Array.from({length:e.s},(_,si)=>({w:prefill?.[si]?.w||'',r:prefill?.[si]?.r||'',pw:prefill?.[si]?.w||'',pr:prefill?.[si]?.r||'',done:false,isDrop:false}))
@@ -1633,7 +1636,7 @@ function togDone(dl,ei,si){
     if(!WS[dl].startAt)WS[dl].startAt=Date.now();
     liveCoachAdjust(dl,ei,si);
     if(!set.isDrop){
-      const orig=findExDef(WS[dl].ex[ei].origName);
+      const orig=findExDef(getTrackName(dl,ei))||findExDef(WS[dl].ex[ei].origName);
       const isCompound=orig?orig.compound!==false:true;
       startRestTimer(isCompound?150:75);
     }
@@ -1652,7 +1655,9 @@ function togDone(dl,ei,si){
    number; bodyweight, timed and per-side exercises need a different mechanism entirely. */
 function liveCoachAdjust(dl,ei,si){
   const ex=WS[dl].ex[ei];
-  const orig=findExDef(ex.origName);
+  /* v5.22: the exercise actually being done (sub or chosen option), not the day template's
+     slot - Assisted pull-ups used to be live-coached with Pull-ups' bodyweight rules. */
+  const orig=findExDef(getTrackName(dl,ei))||findExDef(ex.origName);
   if(!orig)return;
   const completed=ex.sets[si];
   if(completed.isDrop)return;
@@ -1678,10 +1683,20 @@ function liveCoachAdjust(dl,ei,si){
     if(!weighted.length)return;
     let sumW=0,sumWR=0;
     weighted.forEach((w,pos)=>{const wt=Math.pow(4,pos);sumW+=wt;sumWR+=wt*w.ratio;});
-    const ratio=sumWR/sumW;
-    if(ratio>0.90&&ratio<1.10)return;
+    const raw=sumWR/sumW;
+    if(raw>0.90&&raw<1.10)return;
+    /* v5.22, found by the month simulation: an Amber-day Bench 55x16 against a planned x6 gave
+       a raw ratio of ~1.9, which rescaled the rest of the session to 105kg - including the set
+       Amber had deliberately left blank - and that heavy single then became the next session's
+       baseline. Now: never scale UP on an Amber day (that is the whole point of Amber), one
+       set can move the rest by at most +15%/-20%, and on an Amber day a row with no planned
+       weight (the set Amber deliberately left blank) is never filled in. Sets added with +Set
+       on a normal day still get populated, as designed. */
+    const amberToday=isAmberActiveToday();
+    if(raw>1&&amberToday)return;
+    const ratio=Math.min(1.15,Math.max(0.8,raw));
     ex.sets.forEach((s,i)=>{
-      if(i<=si||s.done)return;
+      if(i<=si||s.done||(amberToday&&!s.pw))return;
       const base=parseFloat(s.pw)||parseFloat(s.w)||parseFloat(completed.w);
       const effectiveRatio=orig.assistWeight?1/ratio:ratio;
       s.w=String(Math.max(0,realisticWeightRound(base*effectiveRatio)));
@@ -1713,9 +1728,14 @@ function liveCoachAdjust(dl,ei,si){
   ratios.forEach((r,pos)=>{const wt=Math.pow(4,pos);sumW+=wt;sumWR+=wt*r;});
   const ratio=sumWR/sumW;
   if(ratio>0.8&&ratio<1.2)return;
+  const amberToday=isAmberActiveToday();
+  if(ratio>1&&amberToday)return;
   const baseline=firstVal*ratio;
+  /* On an Amber day, an exercise that came with a plan keeps its Amber-blanked row empty;
+     seconds/reps_each never get a plan, so their first set still sets it for the rest. */
+  const hadPlan=ex.sets.some(s=>s.pr);
   ex.sets.forEach((s,i)=>{
-    if(i<=si||s.done)return;
+    if(i<=si||s.done||(amberToday&&hadPlan&&!s.pr))return;
     const projected=Math.max(1,Math.round(baseline*curveAt(i)));
     s[valueField]=String(projected);
   });
@@ -1733,7 +1753,19 @@ function removeSet(dl,ei,si){
 function addDropSet(dl,ei){
   if(!WS[dl])return;
   const last=WS[dl].ex[ei].sets[WS[dl].ex[ei].sets.length-1];
-  const dw=last.w?String(Math.round(parseFloat(last.w)*0.8/5)*5):'';
+  /* v5.22: this rounded to the nearest 5kg - a 10kg set "dropped" to 10kg and a 4kg set to a
+     HEAVIER 5kg. Now the app's own plate-aware rounding, always at least one step lighter, and
+     inverted for assist machines (a drop set there means MORE assist). */
+  const lw=parseFloat(last.w);
+  const assist=!!findExDef(getTrackName(dl,ei))?.assistWeight;
+  let dw='';
+  if(lw>0||assist){
+    const step=v=>v<20?1:2.5;
+    let v=assist?realisticWeightRound((lw||0)*1.25):realisticWeightRound(lw*0.8);
+    if(assist&&v<=(lw||0))v=(lw||0)+step(lw||0);
+    if(!assist&&v>=lw)v=Math.max(0,lw-step(lw));
+    dw=String(v);
+  }
   WS[dl].ex[ei].sets.push({w:dw,r:'',pw:dw,pr:'',done:false,isDrop:true,dropHint:dropHintText(getEffType(dl,ei))});
   saveDraft(dl);renderToday();
 }
@@ -1991,6 +2023,10 @@ const Coach={
        from the ratio here; the freshness numbers themselves (body diagram, prefill fatigue
        gate) are untouched — only this specific "are you overreaching" read now requires the
        fatigue to still be there at least a day later. */
+    /* v5.22, found by the month simulation: the day after the very first session this still
+       read 57% "fatigued" and suggested a deload - yesterday's muscles are naturally not fresh
+       yet. Overreaching is a multi-week pattern, so it needs ~2 weeks of sessions first. */
+    if(countRealSessions()<6)return{available:false,reason:'Needs about two weeks of training history before it can tell overreaching apart from normal post-workout fatigue.'};
     const fresh=this.getMuscleFreshness().filter(f=>f.daysSince>=1);
     if(fresh.length<4)return{available:false,reason:'Not enough muscles with recent training history (beyond today) yet to say anything real.'};
     const fatigued=fresh.filter(f=>f.freshness<0.3);
@@ -2030,6 +2066,18 @@ const Coach={
 function markDeloadTaken(){lsS('last_deload_date',todayKey());renderProgress();}
 
 function getSuggestion(orig,best,prKey){
+  /* v5.22: bodyweight sets logged with no added kg have a blank w, which used to fall straight
+     into the "no data" line below - Dips said "No data yet" after five logged sessions. Same
+     Max-reps wording as before; numeric-range bodyweight work (Dips, leg raises) now gets the
+     same RIR-driven "one more rep" call getPrefillSets uses, so text and prefill agree. */
+  if(best&&best.r&&orig.inputType==='bodyweight'){
+    const r=parseInt(best.r),bw=parseFloat(best.w)||0;
+    const pr=prKey?Data.pr.get(prKey):null;
+    if(pr&&r<parseInt(pr.r||0)&&!(bw>(parseFloat(pr.w)||0)))return 'Work back to PR: '+pr.r+' reps (got '+best.r+' today)';
+    if(orig.r==='Max reps')return 'Beat '+best.r+' reps \u2014 add 1 per week';
+    const rirN=(best.rir!==undefined&&best.rir!==null)?Number(best.rir):0;
+    return 'Last: '+r+' reps'+(bw>0?' (+'+best.w+'kg)':'')+' \u2014 '+(rirN>=2?'aim for '+(r+1)+' next time':'match '+r+' with cleaner reps');
+  }
   if(!best||!best.w)return orig.noweight?'Log to get targets':'No data yet \u2014 log this session';
   if(orig.inputType==='seconds'){
     const pr=prKey?Data.pr.get(prKey):null;
@@ -2422,7 +2470,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.21';
+const APP_VERSION='v5.22';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -2833,7 +2881,7 @@ function renderToday(){
          risk a future change could reintroduce. */
       const effType=getEffType(gd.label,ei);
       const effR=chosenOpt?chosenOpt.r:(subOverride?.r||orig.r);
-      const fmtBest=(b)=>!b?'':(effType==='seconds'?b.w+'s':effType==='reps_each'?b.w+' each side':b.w+'kg \u00d7 '+b.r);
+      const fmtBest=(b)=>!b?'':(effType==='seconds'?b.w+'s':effType==='reps_each'?b.w+' each side':effType==='bodyweight'?b.r+' reps'+(parseFloat(b.w)>0?' (+'+b.w+'kg)':''):b.w+'kg \u00d7 '+b.r);
       const histFall=(!lx?.best)?(getExHistory(trackName).slice(-1)[0]||null):null;
       const lstr=lx?.best?'Last: '+fmtBest(lx.best):histFall?'Last ('+histFall.date.slice(5)+'): '+fmtBest(histFall.best):'First time';
       const effOrigLike=chosenOpt?{...orig,...chosenOpt,noweight:true}:(subOverride?{...orig,...subOverride}:orig);
@@ -2864,7 +2912,7 @@ function renderToday(){
         <div class="exhd">
           <div style="flex:1">
             <div class="exn${allDone?' done':''}" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-weight:700">
-              <span style="flex:1;min-width:140px">${ex.name}${allDone?' &#x2713;':''}</span>
+              <span style="flex:1;min-width:140px">${chosenOpt?ex.chosenType:ex.name}${allDone?' &#x2713;':''}</span>
               <span style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0">
                 ${orig.priority?`<span class="pill ${orig.priority==='must'?'pr':'pd'}">${orig.priority==='must'?'MUST':'OPTIONAL'}</span>`:''}
                 <button class="infobtn" onclick="togInfo('${gd.label}',${ei})" title="Form tips">&#x24D8;</button>
@@ -4022,7 +4070,9 @@ function getExHistory(name){
     const sess=lsG(k);
     if(!sess||sess.skipped||!sess.exercises)continue;
     const ex=sess.exercises.find(e=>e.name===name);
-    if(!ex||!ex.best||!ex.best.w)continue;
+    /* v5.22: a bodyweight set logged with no added kg has a blank w but real reps - those used
+       to be dropped here, making Dips/Pull-ups/leg raises invisible to every coaching function. */
+    if(!ex||!ex.best||!(ex.best.w||ex.best.r))continue;
     results.push({date:sess.date,dl:sess.dl,best:ex.best,isPR:ex.isPR||false,suggestion:ex.suggestion||''});
   }
   return results.sort((a,b)=>a.date.localeCompare(b.date));
@@ -4053,9 +4103,16 @@ let _e1rmTrendCache={};
 function invalidateE1RMTrendCache(){_e1rmTrendCache={};}
 function getE1RMTrend(exerciseName){
   if(_e1rmTrendCache[exerciseName])return _e1rmTrendCache[exerciseName];
-  const hist=getExHistory(exerciseName);
+  /* v5.22: Amber sessions are deliberately light, so they're left out of the trend whenever
+     there are at least two normal sessions (the live hint read "near your max" on a normal
+     day right after an Amber one). Logged RIR counts toward reps, same evidence progression
+     now uses - a 70x6 with 2 in reserve is a 70x8 effort, not a 70x6 max. */
+  const allHist=getExHistory(exerciseName);
+  const normalHist=allHist.filter(h=>!wasAmberDay(h.date));
+  const hist=normalHist.length>=2?normalHist:allHist;
   const points=hist.map(h=>{
-    const est=estimate1RM(h.best.w,h.best.r);
+    const rirN=(h.best.rir!==undefined&&h.best.rir!==null)?Number(h.best.rir)||0:0;
+    const est=estimate1RM(h.best.w,(parseInt(h.best.r)||0)+rirN);
     return est?{date:h.date,e1rm:est.value,confidence:est.confidence}:null;
   }).filter(Boolean);
   if(points.length<2){
@@ -4228,11 +4285,14 @@ function getTopSetIdx(ex,effType){
      prescribed set actually carries the heaviest PLANNED weight (pw) - true regardless of
      ramp shape, and stable against the user editing what's currently typed in afterward since
      it reads the original plan, not the live value. */
-  let topIdx=-1,topW=-1;
+  /* v5.22: on an assist machine the hardest set is the LEAST assist - picking the heaviest pw
+     put the RIR picker on the easiest set. */
+  const assist=!!findExDef(ex.name)?.assistWeight;
+  let topIdx=-1,topW=assist?Infinity:-1;
   sets.forEach((s,i)=>{
     if(s.isDrop)return;
     const w=parseFloat(s.pw);
-    if(!isNaN(w)&&w>topW){topW=w;topIdx=i;}
+    if(!isNaN(w)&&(assist?w<topW:w>topW)){topW=w;topIdx=i;}
   });
   return topIdx;
 }
@@ -4283,23 +4343,19 @@ function getRampPrefill(topWeight,numSets,orig){
   const round=realisticWeightRound;
   const{low:topReps,high:dropReps}=parseTargetRepRange(orig&&orig.r);
   if(numSets<2)return[{w:String(round(topWeight)),r:String(topReps)}];
-  const hasDrop=numSets>=3;
-  const rampSteps=hasDrop?numSets-1:numSets;
-  /* v5.11 fix: this used to be topReps+6, a flat offset off the low end of the range regardless
-     of how wide that range actually was. For a narrow range (Bench press 6-8) or a fixed single
-     number (Seated cable row 12, low===high), that pushed the lightest ramp set well above the
-     exercise's own stated ceiling - Bench press's "warm-up" set came out to 12 reps against a
-     plan that explicitly never goes above 8, Seated cable row's came out to 18 against a plan
-     of 12. Anchoring off the range's own high end instead means the overshoot scales with how
-     wide the exercise's own range is, never exceeding it by more than this small buffer. */
-  const startReps=dropReps+2;
-  return Array.from({length:numSets},(_,i)=>{
-    if(hasDrop&&i===numSets-1)return{w:String(round(topWeight*0.55)),r:String(dropReps)};
-    if(i===rampSteps-1)return{w:String(round(topWeight)),r:String(topReps)};
-    const frac=rampSteps<=1?0:i/(rampSteps-1);
-    const pct=0.55+frac*0.35,reps=Math.round(startReps-frac*(startReps-topReps));
-    return{w:String(round(topWeight*pct)),r:String(Math.max(topReps,reps))};
-  });
+  /* Warm-up and backoff reps anchor off the range's own high end (v5.11), never more than 2
+     above it, so a narrow range like Bench 6-8 never gets a 12-rep set.
+     v5.22, Boss's choice after the month simulation: the old shape (55%x10, 72%x8, top x6,
+     55%x8) left 3 of 4 sets far from failure - the simulated Bench backoff was 37.5x8 with ~39
+     reps available - so real hard-set volume was about a third of what the weekly tally
+     counted. Now ONE ramp-up set, then the top set, then backoffs at 90%/85%/... with 2 more
+     reps each, all close to failure. The top set sits at index 1 (still the heaviest planned
+     set, which is what getTopSetIdx looks for). */
+  const out=[{w:String(round(topWeight*0.55)),r:String(dropReps+2)},{w:String(round(topWeight)),r:String(topReps)}];
+  for(let k=1;out.length<numSets;k++){
+    out.push({w:String(round(topWeight*(0.95-0.05*k))),r:String(Math.min(dropReps+2,topReps+2*k))});
+  }
+  return out;
 }
 /* Isolation work: still progressively loaded and still finishes with a burn/drop set, but
    deliberately never chases a 1-2 rep max \u2014 stays in a moderate-to-high rep, genuinely
@@ -4315,14 +4371,13 @@ function getRampPrefill(topWeight,numSets,orig){
 function getModeratePrefill(targetWeight,numSets,orig){
   const round=realisticWeightRound;
   const{low:lowReps,high:highReps}=parseTargetRepRange(orig&&orig.r);
-  const hasDrop=numSets>=3;
-  const workingSets=hasDrop?numSets-1:numSets;
-  return Array.from({length:numSets},(_,i)=>{
-    if(hasDrop&&i===numSets-1)return{w:String(round(targetWeight*0.65)),r:String(highReps)};
-    const frac=workingSets<=1?1:i/(workingSets-1);
-    const pct=0.8+frac*0.2,reps=Math.round(highReps-frac*(highReps-lowReps));
-    return{w:String(round(targetWeight*pct)),r:String(Math.max(lowReps,reps))};
-  });
+  if(numSets<2)return[{w:String(round(targetWeight)),r:String(lowReps)}];
+  /* v5.22: same change as getRampPrefill - one lighter feeler set (80% x top of range), then
+     real working sets at the target weight and slightly below (95%, 90%) as fatigue builds,
+     each prescribed at the low end of the range. The old 65% finisher was far from failure. */
+  const out=[{w:String(round(targetWeight*0.8)),r:String(highReps)},{w:String(round(targetWeight)),r:String(lowReps)}];
+  for(let k=1;out.length<numSets;k++)out.push({w:String(round(targetWeight*(1-0.05*k))),r:String(lowReps)});
+  return out;
 }
 /* v5.20, built with Boss after the assist-weight audit: an assist machine inverts "heavier =
    harder" (more assist = more help = easier), so the ramp above would be backwards if reused
@@ -4339,14 +4394,13 @@ function getModeratePrefill(targetWeight,numSets,orig){
 function getAssistModeratePrefill(targetWeight,numSets,orig){
   const round=realisticWeightRound;
   const{low:lowReps,high:highReps}=parseTargetRepRange(orig&&orig.r);
-  const hasDrop=numSets>=3;
-  const workingSets=hasDrop?numSets-1:numSets;
-  return Array.from({length:numSets},(_,i)=>{
-    if(hasDrop&&i===numSets-1)return{w:String(Math.max(0,round(targetWeight*1.35))),r:String(highReps)};
-    const frac=workingSets<=1?1:i/(workingSets-1);
-    const pct=1.2-frac*0.2,reps=Math.round(highReps-frac*(highReps-lowReps));
-    return{w:String(Math.max(0,round(targetWeight*pct))),r:String(Math.max(lowReps,reps))};
-  });
+  if(numSets<2)return[{w:String(Math.max(0,round(targetWeight))),r:String(lowReps)}];
+  /* v5.22: mirrors the new getModeratePrefill shape, inverted for assist - an easier feeler
+     with MORE assist (1.2x), the real target assist (hardest set), then backoffs that add a
+     little assist back (1.05x, 1.1x) as fatigue builds. */
+  const out=[{w:String(Math.max(0,round(targetWeight*1.2))),r:String(highReps)},{w:String(Math.max(0,round(targetWeight))),r:String(lowReps)}];
+  for(let k=1;out.length<numSets;k++)out.push({w:String(Math.max(0,round(targetWeight*(1+0.05*k)))),r:String(lowReps)});
+  return out;
 }
 /* v5.11: shared by getNextTargetWeight's fatigue modifier below. A muscle with no recent
    training history at all contributes a neutral 1 (fully fresh) rather than 0 - no data is
@@ -4368,7 +4422,16 @@ function getAvgMuscleFreshness(muscles){
 function getNextTargetWeight(orig,trackName,w,r,rir){
   const round=realisticWeightRound;
   const targetR=orig.r&&orig.r.includes&&orig.r.includes('\u2013')?Number(orig.r.split('\u2013')[1]):(parseInt(orig.r)||r);
-  const gotTop=r>=targetR;
+  /* v5.22, Boss's choice after the month simulation: the top set is prescribed at the BOTTOM
+     of the range, but this used to require the TOP of the range in actual reps, so doing
+     exactly what the app said never added weight (Bench 70x6 at RIR 2 -> "hold" forever). The
+     RIR tap he already logs says how many more reps were there: reps + RIR reaching the top of
+     the range is the same evidence as doing them. No RIR logged = reps alone, as before. */
+  const rirN=(rir!==undefined&&rir!==null&&!isNaN(rir))?Number(rir):0;
+  /* "3+" is the picker's ceiling, so on a range wider than 3 (8-12, 15-20) reps + RIR could
+     never reach the top; 3+ in reserve at the prescribed reps is itself the "too light" signal.
+     The e1RM cap below still stops the resulting jump from overshooting. */
+  const gotTop=r+rirN>=targetR||rirN>=3;
   const isCompound=orig.compound!==false;
   let recW=w;
   if(orig.assistWeight){
@@ -4394,7 +4457,10 @@ function getNextTargetWeight(orig,trackName,w,r,rir){
      Now gated on gotTop for every exercise type - isCompound only ever decided the bump SIZE
      (2.5kg vs 1.0kg), which was already correct and is unchanged. */
   if(gotTop){
-    const inc=isCompound?2.5:1.0;
+    /* v5.22: isolation's +1kg used to vanish in realisticWeightRound's 2.5kg grid above 20kg
+       (round(52.5+1)=52.5), so leg curl/extension, calf raises, pushdowns etc. could never
+       progress. The increment is now at least one real loadable step at that weight. */
+    const inc=isCompound?2.5:(w<20?1:2.5);
     const trend=getE1RMTrend(trackName);
     let bump=inc;
     if(trend.available&&!trend.lowConfidence&&trend.trending==='up'){
@@ -4432,6 +4498,23 @@ function getNextTargetWeight(orig,trackName,w,r,rir){
     }
     recW=round(w+bump);
   }
+  /* v5.22: the next weight is prescribed for the range's LOW end (the top set's rep target),
+     but w may have been lifted for a different number of reps - a 90kg single used to become
+     "90kg x 6" next time, and a +5kg dumbbell jump could ask for 12 reps the lifter's own e1RM
+     says are impossible. Translates through the same estimate1RM used everywhere: never
+     prescribe more than the last top set (reps + RIR) supports at the target rep count. A
+     weight INCREASE must be fully achievable at the target reps; a HOLD gets one rep of
+     tolerance, so a single-rep miss on an off day keeps the weight and only a miss of two or
+     more steps it down. (Simulated: strict-on-increase gave 14/26 exercises progressing, 0
+     going down, vs 11 and 1 with the tolerance on both paths.) */
+  const topReps=parseTargetRepRange(orig.r).low;
+  const e1=estimate1RM(w,r+rirN);
+  if(e1&&e1.value&&topReps>0){
+    const capReps=gotTop?topReps:Math.max(1,topReps-1);
+    const wCap=e1.value/estimate1RM(1,capReps).value;
+    const floorStep=v=>v<20?Math.floor(v):Math.floor(v/2.5)*2.5;
+    if(recW>wCap+1e-6)recW=Math.max(0,floorStep(wCap+1e-6));
+  }
   /* Real ceiling: small, individually-reasonable increments can still compound into numbers
      no real lifter would hit over many sessions \u2014 confirmed by simulation (83% growth in 20
      sessions with no cap). Caps growth to at most 10% over roughly a month's worth of
@@ -4461,29 +4544,47 @@ function getNextTargetWeight(orig,trackName,w,r,rir){
    existing visible Amber card already checks, not a third disagreeing definition of "when is
    Amber active". A one-tap override (setAmberOverride) lets him go full intensity that day if
    he genuinely feels fine despite a logged low-energy day — this reduces, it never blocks. */
-function isAmberActiveToday(){
-  if(lsG('amber_override:'+todayKey()))return false;
-  const sym=lsG('sym:'+todayKey())||{};
+/* v5.22: date-parameterised so getPrefillSets can tell a past session was an Amber day. */
+function wasAmberDay(dateKey){
+  if(lsG('amber_override:'+dateKey))return false;
+  const sym=lsG('sym:'+dateKey)||{};
   return!!(sym.energy&&sym.energy<=2);
 }
+function isAmberActiveToday(){return wasAmberDay(todayKey());}
 function setAmberOverride(off){lsS('amber_override:'+todayKey(),off);renderToday();}
 function getPrefillSets(orig,trackName,numSets){
   const hist=getExHistory(trackName);
-  const lastBest=hist.length?hist[hist.length-1].best:null;
-  if(!lastBest||!lastBest.w||orig.inputType==='seconds'||orig.inputType==='reps_each')return null;
+  /* v5.22: an Amber session's numbers are deliberately ~20% light. Using them as the baseline
+     for the next normal day made one bad day permanent (simulated Bench: 70 -> Amber 55 -> 55
+     on the next normal day, for good). The baseline is the most recent NON-Amber session; an
+     Amber session only counts when there's nothing else to go on. */
+  const normalHist=hist.filter(h=>!wasAmberDay(h.date));
+  const base=normalHist.length?normalHist[normalHist.length-1]:hist[hist.length-1];
+  const lastBest=base?base.best:null;
+  if(!lastBest||orig.inputType==='seconds'||orig.inputType==='reps_each')return null;
   const amber=isAmberActiveToday();
   /* Trims the LAST set rather than deleting the row outright - the row stays visible (and
      usable if he adds a number himself) but comes in blank rather than prescribed, reading as
      "not asked for today" without forcing anything. */
   const effSets=amber?Math.max(1,numSets-1):numSets;
   if(orig.inputType==='bodyweight'){
-    const curve=getFatigueCurve(orig),r=parseInt(lastBest.r);
-    const targetR=amber?Math.max(1,Math.round(r*0.8)):r;
+    /* v5.22: bodyweight sets are usually logged with no added kg, and this used to require
+       lastBest.w - Dips got no prefill at all for a whole simulated month. Reps are what
+       matter here; any added kg is carried forward as-is. One more rep is asked for once the
+       last top set had 2+ reps in reserve, the same RIR evidence weight exercises now use. */
+    const r=parseInt(lastBest.r);
+    if(!r)return null;
+    const rirN=(lastBest.rir!==undefined&&lastBest.rir!==null)?Number(lastBest.rir):0;
+    const nextR=rirN>=2?r+1:r;
+    const curve=getFatigueCurve(orig);
+    const targetR=amber?Math.max(1,Math.round(nextR*0.8)):nextR;
+    const addedKg=parseFloat(lastBest.w)>0?String(lastBest.w):'';
     return Array.from({length:effSets},(_,i)=>{
       const pct=curve[i]!==undefined?curve[i]:curve[curve.length-1];
-      return{w:'',r:String(Math.max(1,Math.round(targetR*pct)))};
+      return{w:addedKg,r:String(Math.max(1,Math.round(targetR*pct)))};
     });
   }
+  if(!lastBest.w)return null;
   const w=parseFloat(lastBest.w),r=parseInt(lastBest.r);
   const{recW,isCompound}=getNextTargetWeight(orig,trackName,w,r,lastBest.rir);
   /* v5.20: assist machines invert the Amber Protocol too — a normal exercise gets LESS weight
