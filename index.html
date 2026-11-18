@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.24</title>
+<title>Roshan Fitness v5.25</title>
 <style>
 /* v5.14 "Midnight Aurora" refresh: Roshan found the old warm-brown/single-amber theme flat
    (83 uses of one amber tone, 33 of one burnt-orange, against one dark-brown background - real
@@ -250,7 +250,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-11-17">v5.24</div>
+    <div class="vtag" title="build 2026-11-18">v5.25</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -1509,17 +1509,52 @@ function computeHistorySnapshot(){
 function allDaysAboveThreshold(coverage){
   return DAYS.every(d=>coverage[d.label]>=DAY_CREDIT_THRESHOLD);
 }
-function getNextIdx(coverage,historyCount){
+/* v5.25, Boss: "I did pendulum squat, leg extensions and captain's chair yesterday but I'm still
+   getting suggested legs and core." The picker only looked at the 7-day set count: quads count at
+   most 3 toward Legs (the per-muscle cap) and core never counts, so a quads-only legs session left
+   Legs "due" and it was suggested again the very next day, on fatigued quads. Recovery gate (his
+   choice): a day whose MUST-exercise muscles (core aside) got 3+ working sets yesterday or today is
+   "recovering" and is not suggested; the next due day is. If every day is recovering, the gate is
+   ignored rather than suggesting nothing. Returns Map(dayIdx -> [muscles]). */
+const RECOVERY_GATE_MIN_SETS=3;
+function getRecoveringDayIdxs(){
+  const recent={};
+  [0,1].forEach(o=>{
+    const s=Data.session.get(dateDaysAgo(o));
+    if(!s||s.skipped||!s.exercises)return;
+    s.exercises.forEach(e=>{
+      const def=findExDef(e.origName)||findExDef(e.name);if(!def)return;
+      const n=(e.sets||[]).filter(x=>x.done&&!x.isDrop).length;if(!n)return;
+      (def.primaryMuscles||[]).forEach(m=>{recent[m]=(recent[m]||0)+n;});
+    });
+  });
+  const out=new Map();
+  DAYS.forEach((d,i)=>{
+    const main=new Set();
+    d.ex.filter(e=>e.priority==='must').forEach(e=>(e.primaryMuscles||[]).forEach(m=>{if(!NON_CREDITING_CORE_MUSCLES.has(m))main.add(m);}));
+    const hit=[...main].filter(m=>(recent[m]||0)>=RECOVERY_GATE_MIN_SETS);
+    if(hit.length)out.set(i,hit);
+  });
+  return out;
+}
+function getNextIdx(coverage,historyCount,recovering){
   const l=lsG('last_seq_idx');
   const lastIdx=(l===null||l===undefined)?null:parseInt(l);
   if((historyCount===undefined?countRealSessions():historyCount)===0)return lastIdx===null?null:(lastIdx+1)%4;
   coverage=coverage||getDayCoverage();
+  recovering=recovering||getRecoveringDayIdxs();
+  const allowed=DAYS.map((d,i)=>i).filter(i=>!recovering.has(i));
+  const ok=i=>!allowed.length||allowed.includes(i);
   /* v5.8 fix: once every day has cleared DAY_CREDIT_THRESHOLD, ranking by raw magnitude
      just picks whichever healthy day happens to have the smallest number (e.g. 12 vs
      15/21/15) and calls it "due" - misleading when nothing is actually under-trained.
      Fall back to plain rotation in that case, same as the no-history branch above. */
-  if(allDaysAboveThreshold(coverage))return lastIdx===null?0:(lastIdx+1)%4;
-  const values=DAYS.map((d,i)=>({i,v:coverage[d.label]}));
+  if(allDaysAboveThreshold(coverage)){
+    const start=lastIdx===null?0:(lastIdx+1)%4;
+    for(let step=0;step<4;step++){const c=(start+step)%4;if(ok(c))return c;}
+    return start;
+  }
+  const values=DAYS.map((d,i)=>({i,v:coverage[d.label]})).filter(x=>ok(x.i));
   const minV=Math.min(...values.map(x=>x.v));
   const tied=values.filter(x=>x.v===minV).map(x=>x.i);
   if(tied.length===1||lastIdx===null)return tied[0];
@@ -1529,6 +1564,39 @@ function getNextIdx(coverage,historyCount){
   }
   return tied[0];
 }
+/* v5.25 finish-up (Boss's choice): when a day is still behind this week but part of it was already
+   done (e.g. quads on Tuesday), the exercises whose muscles already got their capped sets earlier
+   this week are "covered" - shown in their own section, no longer counted as must-dos - so the day
+   reads as "finish what's missing" instead of repeating leg extensions. Only sessions before today
+   count, so ticking sets today never moves cards around mid-workout. Core never counts as covered. */
+function getDayFinishUp(gd,coverage){
+  if(!gd)return null;
+  const di=DAYS.findIndex(d=>d.label===gd.label);if(di<0)return null;
+  coverage=coverage||getDayCoverage();
+  if((coverage[gd.label]||0)>=DAY_CREDIT_THRESHOLD)return null;
+  const today=todayKey(),cutoff=dateDaysAgo(DAY_COVERAGE_WINDOW_DAYS);
+  const sets={},last={};
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);if(!k||!k.startsWith('sess:'))continue;
+    const s=lsG(k);if(!s||s.skipped||!s.exercises||!s.date||s.date<cutoff||s.date>=today)continue;
+    s.exercises.forEach(e=>{
+      const def=findExDef(e.origName)||findExDef(e.name);if(!def)return;
+      const n=(e.sets||[]).filter(x=>x.done&&!x.isDrop).length;if(!n)return;
+      (def.primaryMuscles||[]).forEach(m=>{sets[m]=(sets[m]||0)+n;if(!last[m]||s.date>last[m])last[m]=s.date;});
+    });
+  }
+  const covered={};
+  DAYS[di].ex.forEach((e,i)=>{
+    const ms=(e.primaryMuscles||[]).filter(m=>!NON_CREDITING_CORE_MUSCLES.has(m));
+    if(ms.length&&ms.every(m=>(sets[m]||0)>=MUSCLE_CONTRIBUTION_CAP_PER_DAY))covered[i]=ms.map(m=>last[m]).sort().pop();
+  });
+  const idx=Object.keys(covered).map(Number);
+  if(!idx.length||idx.length===DAYS[di].ex.length)return null;
+  const coveredMuscles=[...new Set(idx.flatMap(i=>DAYS[di].ex[i].primaryMuscles||[]))].filter(m=>!NON_CREDITING_CORE_MUSCLES.has(m));
+  const missing=[...new Set(DAYS[di].ex.filter((e,i)=>!(i in covered)&&e.priority==='must').flatMap(e=>e.primaryMuscles||[]))];
+  return{covered,coveredMuscles,missing};
+}
+function finishUpDayName(dateStr){return new Date(dateStr+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short'});}
 function getSkipWarnings(historyCount,coverage10){
   /* Review fix: the pre-v5.7 version required at least 4 recent done sessions before judging
      balance, specifically so a brand-new user doesn't get warned about three day types they
@@ -2362,7 +2430,8 @@ function saveSession(dl,seqIdx,explicitDate){
      applies to them. */
   if(gd.label!=='Free session'){
     const isDone=e=>e.sets.filter(st=>!st.isDrop).every(st=>st.done)&&e.sets.filter(st=>!st.isDrop).length>0;
-    const incompleteMust=gd.ex.filter((e,i)=>e.priority==='must'&&s.ex[i]&&!isDone(s.ex[i])).map(e=>e.n);
+    const fin=explicitDate?null:getDayFinishUp(gd);
+    const incompleteMust=gd.ex.filter((e,i)=>e.priority==='must'&&!(fin&&fin.covered[i]!==undefined)&&s.ex[i]&&!isDone(s.ex[i])).map(e=>e.n);
     if(incompleteMust.length&&!confirm('Still not done: '+incompleteMust.join(', ')+'. Save and finish anyway?'))return;
   }
   const saveDate=explicitDate||todayKey();
@@ -2653,7 +2722,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.24';
+const APP_VERSION='v5.25';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -2806,14 +2875,18 @@ function showStickyBtn(show,dl,seqIdx){
 }
 /* ===== RENDER TODAY ===== */
 let _todayMoreOpen=false;
+let _finishUp=null;
 function toggleTodayMore(){_todayMoreOpen=!_todayMoreOpen;renderToday();}
 function renderToday(){
   const _hist=computeHistorySnapshot();
   const historyCount=_hist.historyCount;
   const dayCoverage=_hist.coverage7;
-  const nextIdx=getNextIdx(dayCoverage,historyCount);
+  const _recovering=getRecoveringDayIdxs();
+  const nextIdx=getNextIdx(dayCoverage,historyCount,_recovering);
+  const _ungatedIdx=getNextIdx(dayCoverage,historyCount,new Map());
   const gd=adHocDay||(nextIdx!==null?DAYS[nextIdx]:null);
   const existing=Data.session.get();
+  _finishUp=existing?null:getDayFinishUp(gd,dayCoverage);
   const sym=lsG('sym:'+todayKey())||{};
   const water=lsG('water:'+todayKey())||0;
   const symDone=sym.energy&&sym.seton&&sym.bowel;
@@ -2836,6 +2909,8 @@ function renderToday(){
      body day. */
   const planLine=existing?`${existing.dl||'Today'}\u2019s session is already saved \u2014 nice work.`
     :gd?`Planned: <span style="color:var(--cyan)">${gd.label}</span>${gd.focus?' \u2014 '+gd.focus:''}`
+      +(!adHocDay&&_ungatedIdx!==null&&_ungatedIdx!==nextIdx&&_recovering.has(_ungatedIdx)?`<br><span style="color:var(--mut);font-size:13px;font-weight:500;line-height:1.4;display:inline-block;margin-top:4px">${DAYS[_ungatedIdx].label} waits a day \u2014 ${_recovering.get(_ungatedIdx).join(', ').toLowerCase()} trained in the last 48h.</span>`:'')
+      +(_finishUp?`<br><span style="color:var(--mut);font-size:13px;font-weight:500;line-height:1.4;display:inline-block;margin-top:4px">Finishing ${gd.label}: ${_finishUp.coveredMuscles.join(', ').toLowerCase()} already done this week \u2014 today is ${_finishUp.missing.filter(m=>!NON_CREDITING_CORE_MUSCLES.has(m)).concat(_finishUp.missing.some(m=>NON_CREDITING_CORE_MUSCLES.has(m))?['core']:[]).join(', ').toLowerCase()||'the rest'}.</span>`:'')
     :'No session planned yet \u2014 pick one below.';
   const recovering=_freshList.filter(f=>f.freshness<0.4);
   const freshLine=recovering.length
@@ -2977,7 +3052,7 @@ function renderToday(){
       <div class="cs" style="margin-bottom:14px">${isFirstTime?'Push \u2192 Pull \u2192 Legs \u2192 Upper \u2192 repeat':'Override the sequence any time. App remembers what you pick.'}</div>
       ${DAYS.map((d,i)=>{
         const cov=dayCoverage[d.label];
-        const covText=isFirstTime?'':`${cov} set${cov===1?'':'s'} this week${nextIdx!==null&&i===nextIdx?(isRotationPick?', up next':', due'):''}`;
+        const covText=isFirstTime?'':`${cov} set${cov===1?'':'s'} this week${nextIdx!==null&&i===nextIdx?(isRotationPick?', up next':', due'):''}${_recovering.has(i)?` \u00b7 resting ${_recovering.get(i).join(', ').toLowerCase()}`:''}`;
         return`<div class="sess-option${nextIdx!==null&&i===nextIdx?' suggested':''}" onclick="startSession(${i})">
         <div>
           <div style="font-size:17px;font-weight:700;font-family:'Barlow',sans-serif">${d.label}${nextIdx!==null&&i===nextIdx?' <span style="font-size:11px;color:var(--cyan)">\u2190 suggested</span>':''}</div>
@@ -3111,7 +3186,7 @@ function renderToday(){
             <div class="exn${allDone?' done':''}" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-weight:700">
               <span style="flex:1;min-width:140px">${chosenOpt?ex.chosenType:ex.name}${allDone?' &#x2713;':''}</span>
               <span style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0">
-                ${orig.priority?`<span class="pill ${orig.priority==='must'?'pr':'pd'}">${orig.priority==='must'?'MUST':'OPTIONAL'}</span>`:''}
+                ${_finishUp&&_finishUp.covered[ei]!==undefined?`<span class="pill pd">DONE ${finishUpDayName(_finishUp.covered[ei]).toUpperCase()}</span>`:orig.priority?`<span class="pill ${orig.priority==='must'?'pr':'pd'}">${orig.priority==='must'?'MUST':'OPTIONAL'}</span>`:''}
                 <button class="infobtn" onclick="togInfo('${gd.label}',${ei})" title="Form tips">&#x24D8;</button>
               </span>
             </div>
@@ -3243,16 +3318,22 @@ function renderToday(){
       });
     }else{
       html+=`<div class="sect-div"><div class="sect-lbl must">Must do</div><div class="sect-line"></div></div>`;
-      gd.ex.forEach((e,ei)=>{if(e.priority==='must')html+=renderEx(ws.ex[ei],ei);});
-    const optExist=gd.ex.some(e=>e.priority!=='must');
+      const cov=ei=>!!(_finishUp&&_finishUp.covered[ei]!==undefined);
+      gd.ex.forEach((e,ei)=>{if(e.priority==='must'&&!cov(ei))html+=renderEx(ws.ex[ei],ei);});
+    const optExist=gd.ex.some((e,ei)=>e.priority!=='must'&&!cov(ei));
     if(optExist){
       html+=`<div class="sect-div"><div class="sect-lbl opt">If got time</div><div class="sect-line"></div></div>`;
-      gd.ex.forEach((e,ei)=>{if(e.priority!=='must')html+=`<div style="opacity:.85">${renderEx(ws.ex[ei],ei)}</div>`;});
+      gd.ex.forEach((e,ei)=>{if(e.priority!=='must'&&!cov(ei))html+=`<div style="opacity:.85">${renderEx(ws.ex[ei],ei)}</div>`;});
+    }
+    if(gd.ex.some((e,ei)=>cov(ei))){
+      html+=`<div class="sect-div"><div class="sect-lbl opt">Already covered this week</div><div class="sect-line"></div></div>`;
+      gd.ex.forEach((e,ei)=>{if(cov(ei))html+=`<div style="opacity:.6">${renderEx(ws.ex[ei],ei)}</div>`;});
     }
     }
 
-    const mustList=ws.ex.filter((e,i)=>gd.ex[i].priority==='must');
-    const optList=ws.ex.filter((e,i)=>gd.ex[i].priority!=='must');
+    const _cv=i=>!!(_finishUp&&_finishUp.covered[i]!==undefined);
+    const mustList=ws.ex.filter((e,i)=>gd.ex[i].priority==='must'&&!_cv(i));
+    const optList=ws.ex.filter((e,i)=>gd.ex[i].priority!=='must'||_cv(i));
     const isDone=e=>e.sets.filter(s=>!s.isDrop).every(s=>s.done)&&e.sets.filter(s=>!s.isDrop).length>0;
     const mustDone=mustList.filter(isDone).length;
     const optDone=optList.filter(isDone).length;
