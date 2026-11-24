@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.25</title>
+<title>Roshan Fitness v5.26</title>
 <style>
 /* v5.14 "Midnight Aurora" refresh: Roshan found the old warm-brown/single-amber theme flat
    (83 uses of one amber tone, 33 of one burnt-orange, against one dark-brown background - real
@@ -250,7 +250,7 @@ textarea.genin{resize:none}
 <div class="hdr">
   <div class="hdr-toprow">
     <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-11-18">v5.25</div>
+    <div class="vtag" title="build 2026-11-24">v5.26</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -2722,7 +2722,7 @@ function gastroExport(){
     navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
   }else{showTextModal('Gastro summary',text);}
 }
-const APP_VERSION='v5.25';
+const APP_VERSION='v5.26';
 function checkUpdate(){
   if(!navigator.onLine)return;
   fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
@@ -3507,6 +3507,7 @@ function startSuggestedSession(){
     });
   });
   adHocDay.focus='Chosen for you \u2014 fresh and due muscles, mixed freely';
+  if(WS['Free session'])WS['Free session'].focus=adHocDay.focus;
   saveDraft('Free session');
   renderToday();
 }
@@ -3552,6 +3553,14 @@ function filterFreeExList(q){
   document.querySelectorAll('.free-ex-row').forEach(row=>{
     row.style.display=row.dataset.name.includes(query)?'flex':'none';
   });
+}
+/* Rebuilds the Free/Suggested session's day from a saved draft when the app is reopened. See the
+   v5.26 note at the startup restore: same exercise list as addToFreeSession, saved name wins, no
+   priority. */
+function rebuildFreeSessionDay(state){
+  const list=getFreeSessionExerciseList();
+  return{label:'Free session',focus:state.focus||'Your combo today',time:'',
+    ex:(state.ex||[]).map(e=>({...(list.find(x=>x.n===e.origName)||findExDef(e.origName)||{}),n:e.origName,priority:undefined}))};
 }
 function removeFromFreeSession(ei){
   if(!adHocDay||adHocDay.label!=='Free session')return;
@@ -5700,7 +5709,15 @@ function discardStaleDraft(){
   }else if(!_todaySession&&d&&d.dl&&d.state){
     WS[d.dl]=d.state;
     if(d.dl==='Free session'){
-      adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:d.state.ex.map(e=>({n:e.origName,...(findExDef(e.origName)||{}),priority:'must'}))};
+      /* v5.26, Boss: "captain's chair - I exit the app and go back in, it changes to plank". The
+         rebuild used findExDef, which resolves a choice option (Captain's chair, Plank, Dead bug)
+         to its PARENT card "Plank or dead bug" - and the spread let that parent's n overwrite the
+         saved name, so on reopening the card turned into "Plank or dead bug" and initWS, no longer
+         finding a matching exercise, rebuilt it empty: the ticked sets were lost too. It also
+         re-tagged every Free-session card MUST. Now rebuilt from the same list addToFreeSession
+         uses (choice options are their own entries there), the saved name always wins, and no
+         priority, exactly as when the exercise was first added. */
+      adHocDay=rebuildFreeSessionDay(d.state);
       adHocSeqIdx=null;
     }else{
       const _idx=SEQ.indexOf(d.dl);
