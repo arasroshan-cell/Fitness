@@ -9,9 +9,9 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v5.26</title>
+<title>Fitness v5.27</title>
 <style>
-/* v5.14 "Midnight Aurora" refresh: Roshan found the old warm-brown/single-amber theme flat
+/* v5.14 "Midnight Aurora" refresh: Boss found the old warm-brown/single-amber theme flat
    (83 uses of one amber tone, 33 of one burnt-orange, against one dark-brown background - real
    monochrome, not just a feeling). Moved the whole surface stack to a cool deep navy/charcoal,
    made --cyan an actual vivid teal (it only ever used to be a second shade of amber despite the
@@ -148,7 +148,7 @@ textarea.genin{resize:none}
 .sticky-wrap{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);width:calc(min(480px,100vw) - 28px);z-index:100;display:none}
 .sticky-save{background:linear-gradient(135deg,var(--cyan),var(--amb));color:#000;border:none;border-radius:16px;font-size:17px;font-weight:900;font-family:"Barlow",sans-serif;cursor:pointer;width:100%;padding:18px;box-shadow:0 4px 28px rgba(45,212,191,.4)}
 .sticky-save:active{transform:scale(.97)}
-/* v5.10 FEATURE: floating rest timer bubble - Roshan reported having to scroll all the way
+/* v5.10 FEATURE: floating rest timer bubble - Boss reported having to scroll all the way
    back up mid-set to see the rest countdown, which lives inline at the top of the session
    card. Fixed-position, lives outside the tab panels so it persists regardless of scroll
    position or which tab is active, mirroring the existing sticky-save pattern. Sits above the
@@ -249,8 +249,8 @@ textarea.genin{resize:none}
 <div id="warn-banner" class="warn-banner">Private mode detected &#x2014; data will NOT be saved</div>
 <div class="hdr">
   <div class="hdr-toprow">
-    <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-11-24">v5.26</div>
+    <div class="ht">Fitness</div>
+    <div class="vtag" title="build 2026-11-25">v5.27</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
@@ -294,7 +294,7 @@ const DAYS=[
     {n:'Bench press',s:4,r:'6\u20138',nt:'Exhale on press \u2014 never hold breath',priority:'must',compound:true,inputType:'weight',wlabel:'Total kg incl. 20kg bar',primaryMuscles:['Chest'],secondaryMuscles:['Triceps','Front delts'],tip:'Shoulder blades pulled back and down before you unrack \u2014 that\u2019s your base, don\u2019t let it move.'},
     {n:'Incline DB press',s:3,r:'10\u201312',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Upper chest'],secondaryMuscles:['Front delts','Triceps'],tip:'Elbows at roughly 45 degrees, not flared to 90 \u2014 that angle is what shifts the work to upper chest.'},
     {n:'Machine chest fly',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Chest'],secondaryMuscles:[],tip:'Squeeze at the peak, don\u2019t let the stack slam on the way back \u2014 control both directions.'},
-    {n:'Seated DB shoulder press',s:3,r:'10\u201312',nt:'Seated \u2014 less pressure on seton sites',priority:'must',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Front delts'],secondaryMuscles:['Triceps','Side delts'],tip:'Press slightly forward, not straight overhead \u2014 that path is easier on the shoulder.'},
+    {n:'Seated DB shoulder press',s:3,r:'10\u201312',nt:'Seated \u2014 less pressure on sensitive areas',priority:'must',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Front delts'],secondaryMuscles:['Triceps','Side delts'],tip:'Press slightly forward, not straight overhead \u2014 that path is easier on the shoulder.'},
     {n:'Lateral raises',s:4,r:'15\u201320',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Side delts'],secondaryMuscles:[],tip:'Lead with your elbows, not your hands \u2014 stop at shoulder height, don\u2019t swing it up.'},
     {n:'Cable tricep pushdown',s:4,r:'12\u201315',nt:'Straight bar or rope, your call',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Triceps (lateral/medial)'],secondaryMuscles:[],tip:'Elbows stay pinned at your sides \u2014 if they drift forward you\u2019re using shoulders, not triceps.'},
     {n:'Overhead tricep extension',s:3,r:'12',nt:'Rope attachment \u2014 lets wrists rotate through the stretch',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Triceps (long head)'],secondaryMuscles:[],tip:'Elbows point forward, not flared out to the sides \u2014 that\u2019s what keeps tension on the long head.'}
@@ -311,7 +311,7 @@ const DAYS=[
     {n:'Dumbbell shrugs',s:3,r:'12\u201315',nt:'Straight up, no rolling the shoulders \u2014 that\u2019s where irritation comes from',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Traps'],secondaryMuscles:[],tip:'Straight up and down \u2014 rolling your shoulders doesn\u2019t add anything, just adds irritation risk.'}
   ]},
   {label:'Legs + core',focus:'No squats. No deadlifts.',time:'~6pm',ex:[
-    {n:'Leg press',s:4,r:'12\u201315',nt:'Safe \u2014 no spinal or perianal pressure \u00b7 exhale on push, never hold breath',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Quads'],secondaryMuscles:['Glutes','Hamstrings'],tip:'Don\u2019t let your knees cave inward, and don\u2019t lock out hard at the top \u2014 keep a soft knee.'},
+    {n:'Leg press',s:4,r:'12\u201315',nt:'Safe \u2014 no spinal loading \u00b7 exhale on push, never hold breath',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Quads'],secondaryMuscles:['Glutes','Hamstrings'],tip:'Don\u2019t let your knees cave inward, and don\u2019t lock out hard at the top \u2014 keep a soft knee.'},
     {n:'Leg extension (machine)',s:3,r:'15',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Quads'],secondaryMuscles:[],tip:'Controlled tempo, brief pause at the top \u2014 momentum here just skips the muscle doing the work.'},
     {n:'Seated leg curl',s:3,r:'15',nt:'Seated preferred',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Hamstrings'],secondaryMuscles:[],tip:'Full range, controlled tempo \u2014 don\u2019t bounce out of the stretch at the bottom.'},
     /* Real gap found via muscle-building program review (2026-10-28): with no squats or
@@ -371,7 +371,7 @@ const SUBS={
   'Cable tricep pushdown':['Rope pushdown','DB kickback','Machine tricep dip','Tricep superset','Machine tricep extension'],
   'Overhead tricep extension':['Cable overhead extension','Skull crushers','One-hand DB overhead extension','Skull crushers (EZ bar)','Skull crushers (Smith bar)'],
   'Pull-ups (unassisted)':['Assisted pull-ups (machine)','Lat pulldown','Band-assisted pull-ups'],
-  /* v5.11: Roshan confirmed Lat pulldown had zero grip variants (its only substitutes were a
+  /* v5.11: Boss confirmed Lat pulldown had zero grip variants (its only substitutes were a
      completely different movement, Pull-ups, and Straight arm pulldown) - adding the 3 grip
      options he confirmed. All three keep the base exercise's own primaryMuscles/secondaryMuscles
      (Lats/Biceps) - a grip change on the same pulling pattern doesn't warrant inventing a
@@ -399,7 +399,7 @@ const SUBS={
   /* v5.13: "Bird dog" and "Bird-dog" (differed only by a hyphen) were defined as two
      completely unrelated exercises - this one lived under Cable pull-through (Lower back/
      Glutes/Hamstrings, hip-hinge family), the hyphenated one under Dead bug (Core, reps_each).
-     Roshan confirmed they're the same real exercise and asked to merge them - moved here so
+     Boss confirmed they're the same real exercise and asked to merge them - moved here so
      both spellings share one real definition (Core/reps_each/Dead bug family) going forward. */
   'Dead bug':['Bird-dog','Pallof press','Bird dog'],
   /* 'Machine hip thrust' removed from here (2026-10-28) — it's now its own real, correctly-
@@ -417,7 +417,7 @@ const SUBS={
      named for the real distinction that matters (Arnold press is defined by its rotating grip,
      a fixed-grip machine press is the simpler substitute for that specifically). */
   'Arnold press':['DB shoulder press','Machine shoulder press (fixed grip)','Front dumbell raises'],
-  /* v5.13: split "Bicep curl (BB or DB)" per Roshan's confirmed decision - tracking a single
+  /* v5.13: split "Bicep curl (BB or DB)" per Boss's confirmed decision - tracking a single
      weight field under an ambiguous equipment name meant a barbell-total entry (realistically
      40-60kg) could silently corrupt a per-dumbbell progression, producing an impossible
      suggestion (55kg per hand, against his real 15-20kg working weight). Barbell already has
@@ -430,7 +430,7 @@ const SUBS={
   'Dumbbell curl (alternating)':['EZ bar curl','Cable curl','Machine curl','Barbell curl','Reverse EZ bar curl','Bicep curl (BB or DB)','Bench dumbbell curl','Bicep curl (DB)','Seated incline DB curl'],
   'Plank or dead bug':['Bear hold','Pallof press'],
   /* v5.9 OI9: real Free-session exercise names that never resolved via findExDef, found during
-     the v5.7 real-export analysis. Roshan confirmed the DB alias for the curl, and confirmed
+     the v5.7 real-export analysis. Boss confirmed the DB alias for the curl, and confirmed
      adding Cable woodchop as a real tracked exercise (see SUB_TYPE_OVERRIDE below). */
   'Side plank':['Cable woodchop'],
   /* v5.9 full-PR-audit follow-up (2026-10-14): 4 more real, fully-completed Free-session
@@ -485,7 +485,7 @@ const SUB_TYPE_OVERRIDE={
   'T-bar row (landmine)':{wlabel:'Total kg loaded (landmine attachment, one end anchored)'},
   'Pendulum squat machine (light weight only \u2014 stop on any pain)':{wlabel:'Total kg loaded (plates)',nt:'Light weight only \u2014 stop immediately on any pain, cleared for this specifically, not a blanket safe claim'},
   'Hack squat machine (light weight only \u2014 stop on any pain)':{wlabel:'Total kg loaded (plates)',nt:'Light weight only \u2014 stop immediately on any pain, cleared for this specifically, not a blanket safe claim'},
-  /* v5.9 OI9: Roshan confirmed "Bicep curl (BB or DB)" (a genuinely ambiguous free-text name
+  /* v5.9 OI9: Boss confirmed "Bicep curl (BB or DB)" (a genuinely ambiguous free-text name
      from his real history) should alias to Dumbbell curl (alternating). Without this override,
      inferSubWlabel's \bbb\b pattern would match the "BB" in the name and wrongly label it as a
      barbell (total-kg) exercise - the exact equipment-label mismatch class CLAUDE.md's audit
@@ -495,7 +495,7 @@ const SUB_TYPE_OVERRIDE={
      ambiguity) and a genuinely distinct incline variant. */
   'Bicep curl (DB)':{wlabel:'Per dumbbell (each hand)',nt:'Dumbbell only — use the separate Barbell curl entry if you did a barbell that day'},
   'Seated incline DB curl':{nt:'Incline bench, arms hanging behind the body plane — deeper stretch at the bottom than a flat seated curl, and removes even more cheating momentum'},
-  /* v5.9 OI9: Cable woodchop never had a definition at all - a real exercise Roshan logged
+  /* v5.9 OI9: Cable woodchop never had a definition at all - a real exercise Boss logged
      twice under Free session with no canonical match. Confirmed as a genuinely new tracked
      exercise (not an alias), aliased under Side plank for the exercise picker since both are
      Obliques-primary, cable version is dynamic/weighted rather than isometric. */
@@ -514,14 +514,14 @@ const SUB_TYPE_OVERRIDE={
   'Rope hammer curl':{wlabel:'Stack weight',nt:'Rope attachment, neutral grip — same as Cable hammer curl'},
   'Decline chest press':{inputType:'weight',wlabel:'Stack weight',compound:true,nt:'Decline angle for lower chest — exhale on press, never hold breath'},
   /* v5.9 follow-up (2026-10-14): the 6 genuinely ambiguous names from the same full-PR-audit,
-     resolved with Roshan's explicit confirmation on each (single-arm vs bilateral, pushdown vs
+     resolved with Boss's explicit confirmation on each (single-arm vs bilateral, pushdown vs
      overhead movement pattern, fly direction/slot, a brand-new exercise, grip variants). */
   'Bench dumbbell curl':{nt:'Seated or lying on a bench — same curl, no body momentum to help'},
   /* Front dumbell raises never had a definition at all - confirmed as a genuinely new tracked
      exercise, same treatment as Cable woodchop earlier. Front delts primary, matching Arnold
      press's own primary muscle, which it's aliased under. */
   'Front dumbell raises':{s:3,r:'12',inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Front delts'],secondaryMuscles:[],compound:false,nt:'Standing, slight bend in the elbow — raise to shoulder height, controlled on the way down'},
-  /* v5.11: Lat pulldown grip variants Roshan confirmed. Only the cue needs overriding -
+  /* v5.11: Lat pulldown grip variants Boss confirmed. Only the cue needs overriding -
      inferSubWlabel's existing "pulldown" pattern already labels all three Stack weight, and
      primaryMuscles/secondaryMuscles correctly fall through to Lat pulldown's own (Lats/Biceps). */
   'Wide grip lat pulldown':{nt:'Wide overhand grip, hands just outside shoulder width — the default lat pulldown setup'},
@@ -705,12 +705,12 @@ function getProfile(){
   return lsG('user_profile')||{targets:{protein:150,kcal:2100,carbs:230,fat:65},weight:85,goalWeight:82,goalBF:15,trainingDaysPerWeek:4,conditionPhase:'pre-biologic',biologicStartDate:null};
 }
 function saveProfile(p){lsS('user_profile',p);}
-/* Real gap found via review: conditionPhase/biologicStartDate have sat in the profile's
-   default object since this app's early days with nothing ever reading or writing them — a
-   half-built feature. Worse: the Flare tab's "pre-biologic" framing was hardcoded regardless
-   of that field, so it kept telling Boss he was "pre-biologic" even now that he's actually
-   mid-induction on a real biologic + immunosuppressant combo. Boss's explicit choice: record-keeping and
-   symptom-correlation only, nothing here ever touches training-suggestion logic. */
+/* Real gap found via review: the treatment-phase fields had sat in the profile's default object
+   since this app's early days with nothing ever reading or writing them - a half-built feature.
+   Worse: the Flare tab's "before treatment" framing was hardcoded regardless of that field, so it
+   kept showing even once Boss had started treatment. Boss's explicit choice: record-keeping and
+   symptom-correlation only, nothing here ever touches training-suggestion logic. (Stored field
+   names and values are kept as-is so existing data still loads.) */
 function getMeds(){return lsG('meds')||[];}
 function saveMeds(m){lsS('meds',m);}
 function addMed(name,startDate,isInfusion){
@@ -724,7 +724,7 @@ function addMed(name,startDate,isInfusion){
     p.conditionPhase='on-biologic';p.biologicStartDate=p.biologicStartDate||startDate;saveProfile(p);
   }
 }
-function logInfusionDate(name,date){
+function logDoseDate(name,date){
   const meds=getMeds();
   const m=meds.find(x=>x.name===name);
   if(m&&date&&!m.infusionDates.includes(date)){m.infusionDates.push(date);m.infusionDates.sort();}
@@ -1606,7 +1606,7 @@ function getSkipWarnings(historyCount,coverage10){
   const missing=DAYS.filter(d=>coverage[d.label]<DAY_CREDIT_THRESHOLD).map(d=>d.label);
   return missing.length?missing:null;
 }
-/* v5.10 FEATURE (OI5): weekly check-in summary. Content confirmed by Roshan 2026-10-14 - just
+/* v5.10 FEATURE (OI5): weekly check-in summary. Content confirmed by Boss 2026-10-14 - just
    these 4: sessions + day coverage, volume + PR trend, weight trend, nutrition adherence.
    Placement confirmed: Progress, not Today. The 7-day window is a default (not explicitly
    picked over a calendar Mon-Sun week) chosen to match DAY_COVERAGE_WINDOW_DAYS so "this week"
@@ -2196,7 +2196,7 @@ const Coach={
        RIR means reps left in the tank/easier. Implementing what the parenthetical explanation
        actually describes (consistently near-maximal effort), not the possibly-mislabeled term,
        since widening recovery windows because sessions felt EASY would be backwards. Worth
-       confirming with Roshan directly rather than silently picking a side. */
+       confirming with Boss directly rather than silently picking a side. */
     const recentSessions=[];
     for(let i=0;i<localStorage.length;i++){
       const k=localStorage.key(i);
@@ -2592,14 +2592,14 @@ function exportData(){
   const all=backupSnapshot();
   const blob=new Blob([JSON.stringify(all,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');
-  a.href=url;a.download='roshan-fitness-'+todayKey()+'.json';
+  a.href=url;a.download='fitness-backup-'+todayKey()+'.json';
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
   renderProgress();
 }
 function shareBackup(){
   lsS('last_export',todayKey());
   const data=backupSnapshot();
-  const file=new File([JSON.stringify(data)],'roshan-fitness-'+todayKey()+'.json',{type:'application/json'});
+  const file=new File([JSON.stringify(data)],'fitness-backup-'+todayKey()+'.json',{type:'application/json'});
   if(navigator.canShare&&navigator.canShare({files:[file]})){
     navigator.share({files:[file],title:'Fitness backup '+todayKey()}).then(()=>{renderProgress();}).catch(()=>{exportData();});
   }else{exportData();}
@@ -2669,7 +2669,7 @@ function showTextModal(title,text){
     else{alert('Select the text manually to copy.');}
   };
 }
-function gastroExport(){
+function healthSummaryExport(){
   const stats=(lsG('bstats')||[]).filter(s=>s.wt||s.bf);
   const first=stats[0],latest=stats[stats.length-1];
   const cutoff28=(()=>{const d=new Date();d.setDate(d.getDate()-28);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
@@ -2684,7 +2684,7 @@ function gastroExport(){
     const days=(new Date(withWt[withWt.length-1].date)-new Date(withWt[0].date))/86400000;
     if(days>0&&withWt.length>=2){
       const pctPerWeek=(((avgA-avgB)/avgA)*100)/(days/7);
-      rateLine=pctPerWeek.toFixed(2)+'% per week (smoothed)'+(Math.abs(pctPerWeek)>0.75?' \u2014 ABOVE 0.75% threshold, flag to gastro':'');
+      rateLine=pctPerWeek.toFixed(2)+'% per week (smoothed)'+(Math.abs(pctPerWeek)>0.75?' \u2014 ABOVE 0.75% threshold, flag to your care team':'');
     }
   }
   const entries=Object.entries(mergedMlog()).filter(([k])=>k>=cutoff28).map(e=>e[1]);
@@ -2698,10 +2698,12 @@ function gastroExport(){
     const s=lsG('sym:'+k);if(!s)continue;symN++;
     if(s.energy){energySum+=parseInt(s.energy);energyN++;}
     if(s.bowel==='normal')bowelNormal++;else if(s.bowel)bowelOff++;
-    if(s.seton==='concerning')setonConcern++;
+    /* v5.27: the tracker stores a 1-5 score, so comparing to the word 'concerning' never matched
+       and the summary always reported 0. Counts 4-5, the same threshold isSymptomDay uses. */
+    if((parseInt(s.seton)||0)>=4)setonConcern++;
   }
   const avgEnergy=energyN?(energySum/energyN).toFixed(1):'\u2014';
-  const text='ROSHAN ARASU \u2014 GASTRO SUMMARY ('+todayKey()+')\n\n'
+  const text='HEALTH SUMMARY ('+todayKey()+')\n\n'
     +'WEIGHT & BODY COMPOSITION\n'
     +'  Start on record: '+(first?first.wt+'kg / '+(first.bf||'\u2014')+'% BF ('+first.date+')':'No data')+'\n'
     +'  Current: '+(latest?latest.wt+'kg / '+(latest.bf||'\u2014')+'% BF ('+latest.date+')':'No data')+'\n'
@@ -2712,21 +2714,21 @@ function gastroExport(){
     +'SYMPTOMS (last 4 weeks, '+symN+' days logged)\n'
     +'  Average energy: '+avgEnergy+'/5\n'
     +'  Bowel: '+bowelNormal+' days normal, '+bowelOff+' days off\n'
-    +'  Seton \u2014 concerning drainage logged on '+setonConcern+' day(s)\n\n'
+    +'  Site discomfort \u2014 days scored 4-5/5: '+setonConcern+'\n\n'
     +'QUESTIONS FOR THIS APPOINTMENT\n'
-    +'  - B12: currently oral \u2014 is sublingual or IM better absorbed for terminal ileum disease?\n'
-    +'  - Vitamin D: Sheffield latitude + malabsorption risk \u2014 worth testing?\n'
-    +'  - My current medication combination: what\'s an actual safe alcohol limit for me, and how does that interact with the LFT monitoring schedule?\n'
-    +'  - Seton: does axial loading / bracing under load / deep hip flexion pose a specific risk here \u2014 does that include machine-guided squat variations (e.g. leverage/hack squat), not just free squats?\n';
+    +'  - B12: is my current form the best-absorbed option for me?\n'
+    +'  - Vitamin D: worth testing, given a northern latitude and my absorption risk?\n'
+    +'  - My current medication: what\'s an actual safe alcohol limit for me, and how does it fit my blood-test monitoring?\n'
+    +'  - Training: do axial loading, bracing under load or deep hip flexion pose a specific risk for me \u2014 including machine-guided squat variations (e.g. leverage/hack squat), not just free squats?\n';
   if(navigator.canShare&&navigator.canShare({text})){
-    navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
-  }else{showTextModal('Gastro summary',text);}
+    navigator.share({title:'Health summary '+todayKey(),text}).catch(()=>showTextModal('Health summary',text));
+  }else{showTextModal('Health summary',text);}
 }
-const APP_VERSION='v5.26';
+const APP_VERSION='v5.27';
 function checkUpdate(){
   if(!navigator.onLine)return;
-  fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
-    const m=txt.match(/Roshan Fitness (v[\d.]+[a-z]?)/);
+  fetch('./index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
+    const m=txt.match(/<title>[^<]*?(v[\d.]+[a-z]?)<\/title>/);
     if(m&&m[1]!==APP_VERSION){
       document.body.insertAdjacentHTML('afterbegin','<div style="position:relative;z-index:999;background:var(--abg);color:var(--amb);font-size:13px;font-weight:700;padding:9px 14px;text-align:center">'+m[1]+' is live but this device runs '+APP_VERSION+' \u2014 clear cached files (not site data) in browser settings, then reload.</div>');
     }
@@ -2835,31 +2837,49 @@ function stopTimerTick(){if(timerInterval){clearInterval(timerInterval);timerInt
 
 /* ===== WEATHER ===== */
 let _wxCache={temp:null,ts:0};
+/* v5.27 privacy: the weather location used to be hardcoded coordinates in this public file. It
+   now lives only in the profile on the phone, set once by city name (Open-Meteo's free geocoder,
+   no key). No location set = no weather line, just a one-tap prompt to set it. */
+function getWeatherLoc(){const w=getProfile().weatherLoc;return w&&isFinite(w.lat)&&isFinite(w.lon)?w:null;}
+async function setWeatherCity(){
+  const q=(prompt('Your town or city for the weather line:')||'').trim();if(!q)return;
+  try{
+    const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&name='+encodeURIComponent(q),{signal:AbortSignal.timeout(5000)});
+    const d=await r.json();const g=d&&d.results&&d.results[0];
+    if(!g){alert('Couldn\u2019t find "'+q+'". Try a nearby larger town.');return;}
+    const p=getProfile();p.weatherLoc={name:g.name,lat:g.latitude,lon:g.longitude};saveProfile(p);
+    _wxCache={temp:null,ts:0};renderToday();
+  }catch{alert('Couldn\u2019t reach the weather service. Try again when online.');}
+}
 async function fetchWeather(){
+  const loc=getWeatherLoc();if(!loc)return null;
   if(_wxCache.temp!==null&&Date.now()-_wxCache.ts<1800000)return _wxCache.temp;
   try{
-    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude=53.3811&longitude=-1.4701&current=temperature_2m&timezone=Europe%2FLondon&forecast_days=1',{signal:AbortSignal.timeout(3000)});
+    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+loc.lat+'&longitude='+loc.lon+'&current=temperature_2m&timezone=auto&forecast_days=1',{signal:AbortSignal.timeout(3000)});
     const d=await r.json();_wxCache={temp:Math.round(d.current.temperature_2m),ts:Date.now()};return _wxCache.temp;
   }catch{return _wxCache.temp;}
 }
 async function injectWeather(){
   const temp=await fetchWeather();
   const el=document.getElementById('wx-slot');if(!el)return;
+  const loc=getWeatherLoc();
+  if(!loc){el.outerHTML=`<div style="font-size:12px;margin-top:4px;text-align:right"><a href="javascript:void(0)" onclick="setWeatherCity()" style="color:var(--mut);text-decoration:none">&#x2601; Set your city for weather</a></div>`;return;}
   if(temp===null){el.remove();return;}
+  const city=escHtml(loc.name||'Now');
   let wx='';
   if(temp>=23){wx=`<div class="card cyan" style="margin-top:8px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div><div class="cl">Sheffield now</div><div style="font-size:20px;font-family:'Barlow',sans-serif;font-weight:900;color:var(--cyan)">${temp}&#x00B0;C Hot</div></div>
+      <div><div class="cl">${city} now</div><div style="font-size:20px;font-family:'Barlow',sans-serif;font-weight:900;color:var(--cyan)">${temp}&#x00B0;C Hot</div></div>
     </div>
-    <div style="font-size:13px;color:var(--mut);margin-bottom:10px">Higher dehydration risk with your condition in this heat. Tamil cooling foods today:</div>
+    <div style="font-size:13px;color:var(--mut);margin-bottom:10px">Higher dehydration risk with your condition in this heat. Cooling foods today:</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       ${['Neer moru','Coconut water','Cucumber (raw)','Watermelon'].map(f=>`<button class="qb" onclick="quickLog('${f}',allFoods().find(x=>x.name==='${f}')?.typ||200)">${f}</button>`).join('')}
     </div></div>`;}
   else if(temp<=5){wx=`<div class="card" style="border-color:var(--cyan);margin-top:8px">
-    <div class="cl">Sheffield now</div>
+    <div class="cl">${city} now</div>
     <div style="font-size:20px;font-family:'Barlow',sans-serif;font-weight:900;color:var(--cyan)">${temp}&#x00B0;C Cold</div>
     <div style="font-size:13px;color:var(--mut);margin-top:6px">Cold weather can tighten joints \u2014 extend warm-up by 5 min.</div></div>`;}
-  else{wx=`<div style="font-size:12px;color:var(--mut);margin-top:4px;text-align:right">Sheffield ${temp}&#x00B0;C</div>`;}
+  else{wx=`<div style="font-size:12px;color:var(--mut);margin-top:4px;text-align:right">${city} ${temp}&#x00B0;C</div>`;}
   el.outerHTML=wx;
 }
 
@@ -2951,7 +2971,7 @@ function renderToday(){
   </div>`;
 
   html+=`<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-    <button class="btn btn-ghost btn-sm" onclick="gastroExport()">&#x1F4CB; Gastro summary</button>
+    <button class="btn btn-ghost btn-sm" onclick="healthSummaryExport()">&#x1F4CB; Doctor summary</button>
   </div>`;
 
   /* -- Symptom check-in -- */
@@ -2963,7 +2983,7 @@ function renderToday(){
         <span style="font-size:11px;color:var(--mut);font-weight:700;letter-spacing:1px;text-transform:uppercase">Health &#x2713;</span>
         <div style="display:flex;gap:14px;font-size:14px;font-weight:700">
           <span>Energy <span style="color:${eCol}">${sym.energy}/5</span></span>
-          <span>Seton <span style="color:${sCol}">${sym.seton}/5</span></span>
+          <span>Site <span style="color:${sCol}">${sym.seton}/5</span></span>
           <span style="color:${sym.bowel==='normal'?'var(--grn)':'var(--red)'}">${sym.bowel==='normal'?'&#x2713; Normal':'&#x26A0; Off'}</span>
         </div>
       </div>
@@ -2977,7 +2997,7 @@ function renderToday(){
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:3px"><span>Exhausted</span><span>Full power</span></div>
       </div>
       <div style="margin-bottom:12px">
-        <div style="font-size:12px;color:var(--mut);margin-bottom:7px;font-weight:600;letter-spacing:1px;text-transform:uppercase">SETON DISCOMFORT</div>
+        <div style="font-size:12px;color:var(--mut);margin-bottom:7px;font-weight:600;letter-spacing:1px;text-transform:uppercase">SITE DISCOMFORT</div>
         <div style="display:flex;gap:5px">${[1,2,3,4,5].map(n=>{const s=sym.seton===n;const c=n<=2?'var(--grn)':n===3?'var(--amb)':'var(--red)';const bg=n<=2?'var(--gbg)':n===3?'var(--abg)':'var(--rbg)';return`<button class="sym-val-btn" onclick="logSym('seton',${n})" style="background:${s?bg:'var(--c2)'};color:${s?c:'var(--mut)'};border-color:${s?c:'var(--c3)'}">${n}</button>`;}).join('')}</div>
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:3px"><span>None</span><span>Painful</span></div>
       </div>
@@ -3706,7 +3726,7 @@ function renderProgress(){
   }else if(!adaptiveSugg.available){
     /* v5.9 OI3 fix: this card used to render NOTHING at all until 3+ weigh-ins existed across
        a 14+ day span - so it never explained itself, and with real logging as sparse as
-       Roshan's (OI10: 2 entries in 3 months) it looked like the feature didn't exist rather
+       Boss's (OI10: 2 entries in 3 months) it looked like the feature didn't exist rather
        than like it needed more data. Mirrors the existing wtForecast.reason convention above
        (Body Weight Trend card) - a quiet explanatory line instead of a dismissable action
        card, since there's nothing to act on yet. */
@@ -3841,7 +3861,7 @@ function foodOptsHtml(){
   const cats={};allFoods().forEach(f=>{if(!cats[f.cat])cats[f.cat]=[];cats[f.cat].push(f);});
   return Object.entries(cats).map(([cat,items])=>`<optgroup label="${cat}">${items.map(f=>`<option value="${f.name}">${f.name}${f.fibreRisk?' \u26A0':''}${f.lbl?' ('+f.lbl+')':''}</option>`).join('')}</optgroup>`).join('');
 }
-/* Plate dropdowns show only foods tagged for that role (base/curry/side) so Roshan
+/* Plate dropdowns show only foods tagged for that role (base/curry/side) so Boss
    can't accidentally pick a whole biryani as his "curry". Custom foods without a
    plateRole (pre-v5.2 saves, or left as 'none') simply won't appear here \u2014 still
    fully usable everywhere else via search. */
@@ -4148,7 +4168,7 @@ function renderFood(){
   <!-- COOK: portion calculator -->
   <div id="fs-c" style="display:none">
     <div class="card"><div class="cl">Plan what to cook</div><div class="ct" style="margin-bottom:4px">How much to buy + macros per plate</div>
-      <div class="cs" style="margin-bottom:12px">For you and your wife across multiple meals</div>
+      <div class="cs" style="margin-bottom:12px">For you and anyone you cook for, across multiple meals</div>
       <select class="foodsel" id="pg-food">${opts}</select>
       <div class="statrow"><div style="font-size:13px;color:var(--mut);font-weight:500">Number of meals</div>
         <select class="sinput" id="pg-meals" style="width:64px">${[1,2,3,4,5].map(n=>`<option${n===3?' selected':''}>${n}</option>`).join('')}</select>
@@ -4157,8 +4177,8 @@ function renderFood(){
         <input class="sinput" id="pg-you" type="number" inputmode="decimal" value="150" step="10" min="0" style="width:90px;text-align:center">
       </div>
       <div style="text-align:right;margin-top:-6px;margin-bottom:8px"><a href="javascript:void(0)" onclick="fillGramsToGap('pg-food','pg-you',null)" style="color:var(--cyan);font-size:11px;font-weight:600;text-decoration:none">Fill to close today's protein gap</a></div>
-      <div class="statrow"><div style="font-size:13px;color:var(--mut);font-weight:500">Second plate (wife, g &mdash; 0 for none)</div>
-        <input class="sinput" id="pg-wife" type="number" inputmode="decimal" value="90" step="10" min="0" style="width:90px;text-align:center">
+      <div class="statrow"><div style="font-size:13px;color:var(--mut);font-weight:500">Second plate (g &mdash; 0 for none)</div>
+        <input class="sinput" id="pg-second" type="number" inputmode="decimal" value="90" step="10" min="0" style="width:90px;text-align:center">
       </div>
       <button class="btn btn-amb" onclick="calcPortions()">Calculate</button>
       <div id="pg-result"></div>
@@ -4424,7 +4444,7 @@ function fibreWarnHTML(names){
   const risky=(Array.isArray(names)?names:[names]).filter(n=>{const f=allFoods().find(x=>x.name===n);return f&&f.fibreRisk;});
   if(!risky.length)return'';
   const symToday=isSymptomDay();
-  return`<div class="nt ${symToday?'nr':'na'}" style="margin-top:6px">&#x26A0; ${risky.join(', ')}: high-fibre legume \u2014 obstruction risk with strictures.${symToday?' Symptoms logged today \u2014 consider a lower-fibre swap (poriyal, curd rice).':' Fine on green days; go easy during flares.'}</div>`;
+  return`<div class="nt ${symToday?'nr':'na'}" style="margin-top:6px">&#x26A0; ${risky.join(', ')}: high-fibre legume \u2014 can raise blockage risk with some gut conditions.${symToday?' Symptoms logged today \u2014 consider a lower-fibre swap (poriyal, curd rice).':' Fine on green days; go easy during flares.'}</div>`;
 }
 function addPlateToLog(){
   const r=computePlate();
@@ -4529,8 +4549,8 @@ function calcPortions(){
   const food=allFoods().find(f=>f.name===fname);if(!food)return;
   const meals=parseInt(document.getElementById('pg-meals').value);
   const myG=parseInt(document.getElementById('pg-you').value);
-  const wifeG=parseInt(document.getElementById('pg-wife').value);
-  const total=myG*meals+(wifeG>0?wifeG*meals:0);
+  const secondG=parseInt(document.getElementById('pg-second').value);
+  const total=myG*meals+(secondG>0?secondG*meals:0);
   const raw=food.rr?Math.ceil(total/food.rr/50)*50:null;
   const myK=food.per100.k*myG/100,myP=food.per100.p*myG/100;
   document.getElementById('pg-result').innerHTML=`<div class="presult">
@@ -4541,9 +4561,9 @@ function calcPortions(){
     <div class="macrow"><span>Portion</span><span class="macval">${myG}g</span></div>
     <div class="macrow"><span>Calories</span><span class="macval">${Math.round(myK)} kcal</span></div>
     <div class="macrow"><span>Protein</span><span class="macval">${myP.toFixed(1)}g</span></div>
-    ${wifeG>0?`<div style="font-size:11px;color:var(--dim);margin:10px 0 5px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Second plate per meal</div>
-    <div class="macrow"><span>Portion</span><span class="macval">${wifeG}g</span></div>
-    <div class="macrow"><span>Calories</span><span class="macval">${Math.round(food.per100.k*wifeG/100)} kcal</span></div>`:''}
+    ${secondG>0?`<div style="font-size:11px;color:var(--dim);margin:10px 0 5px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Second plate per meal</div>
+    <div class="macrow"><span>Portion</span><span class="macval">${secondG}g</span></div>
+    <div class="macrow"><span>Calories</span><span class="macval">${Math.round(food.per100.k*secondG/100)} kcal</span></div>`:''}
   </div>
   <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="quickLog('${food.name.replace(/'/g,"\\'")}',${myG})">+ Log my portion to today</button>`;
 }
@@ -5329,11 +5349,11 @@ function renderHistory(){
 
   const symH=[];for(let d=0;d<7;d++){const dt=new Date(now);dt.setDate(dt.getDate()-d);const s=lsG('sym:'+dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'));if(s&&s.energy)symH.push(s);}
   if(symH.length){
-    html+=`<div class="card"><div class="cl">Health log &mdash; 7 days</div><div class="ct" style="margin-bottom:10px">Show to your gastroenterologist</div>
+    html+=`<div class="card"><div class="cl">Health log &mdash; 7 days</div><div class="ct" style="margin-bottom:10px">Show to your specialist</div>
       ${symH.map(s=>`<div class="hitem"><div style="display:flex;justify-content:space-between;align-items:center">
         <div style="font-size:13px;color:var(--mut);font-weight:500">${s.date}</div>
         <div style="display:flex;gap:14px;font-size:13px;font-weight:700">
-          <span>Energy ${s.energy||'&mdash;'}/5</span><span>Seton ${s.seton||'&mdash;'}/5</span>
+          <span>Energy ${s.energy||'&mdash;'}/5</span><span>Site ${s.seton||'&mdash;'}/5</span>
           <span style="color:${s.bowel==='normal'?'var(--grn)':s.bowel?'var(--red)':'var(--dim)'}">${s.bowel==='normal'?'&#x2713;':'off'}</span>
         </div>
       </div></div>`).join('')}
@@ -5420,22 +5440,22 @@ function renderHistory(){
     if(wstPts.length>=2)html+=`<div class="card"><div class="cl">Waist trend (cm)</div><div class="chart-wrap">${buildSVG(wstPts,'var(--grn)','cm')}</div></div>`;
   }
 
-  // 6. BIOLOGIC DATE — collapsed, set once
+  // 6. TREATMENT MILESTONE DATE — collapsed, set once
   html+=`<div class="card" style="margin-bottom:12px">
-    <div class="cl">Biologic milestone</div>
+    <div class="cl">Treatment milestone</div>
     <div class="cs" style="margin-bottom:10px">Set once. Appears as a marker on all charts.</div>
     <div style="display:flex;gap:8px;align-items:center">
-      <input type="date" id="biol-date" value="${biol}" class="sinput" style="flex:1" onchange="saveBiol()">
+      <input type="date" id="treat-date" value="${biol}" class="sinput" style="flex:1" onchange="saveTreatmentDate()">
       ${biol?`<span style="font-size:12px;color:var(--grn);font-weight:700">&#x2713; Set</span>`:''}
     </div>
-    ${biol?`<div class="nt ni" style="margin-top:8px">Biologics start: ${biol}</div>`:''}
+    ${biol?`<div class="nt ni" style="margin-top:8px">Treatment start: ${biol}</div>`:''}
   </div>`;
 
   document.getElementById('p3').innerHTML=html;
 }
 
-function saveBiol(){
-  const val=document.getElementById('biol-date').value;
+function saveTreatmentDate(){
+  const val=document.getElementById('treat-date').value;
   if(val)lsS('biologic_date',val);
   renderHistory();
 }
@@ -5589,10 +5609,10 @@ function renderMedsCard(){
   const meds=getMeds();
   const rows=meds.map(m=>{
     const{days,weeks}=daysWeeksSince(m.startDate);
-    const infusionList=m.isInfusion?`<div style="font-size:12px;color:var(--mut);margin-top:4px">${m.infusionDates.length} dose${m.infusionDates.length===1?'':'s'} logged: ${m.infusionDates.join(', ')}</div>
+    const doseList=m.isInfusion?`<div style="font-size:12px;color:var(--mut);margin-top:4px">${m.infusionDates.length} dose${m.infusionDates.length===1?'':'s'} logged: ${m.infusionDates.join(', ')}</div>
       <div style="display:flex;gap:6px;margin-top:6px">
-        <input class="genin" type="date" id="inf-date-${m.name.replace(/[^a-zA-Z0-9]/g,'')}" style="flex:1" value="${todayKey()}">
-        <button class="btn btn-ghost btn-sm" onclick="logInfusionDate('${m.name.replace(/'/g,"\\'")}',document.getElementById('inf-date-${m.name.replace(/[^a-zA-Z0-9]/g,'')}').value);renderFlare()">+ Log dose</button>
+        <input class="genin" type="date" id="dose-date-${m.name.replace(/[^a-zA-Z0-9]/g,'')}" style="flex:1" value="${todayKey()}">
+        <button class="btn btn-ghost btn-sm" onclick="logDoseDate('${m.name.replace(/'/g,"\\'")}',document.getElementById('dose-date-${m.name.replace(/[^a-zA-Z0-9]/g,'')}').value);renderFlare()">+ Log dose</button>
       </div>`:'';
     return `<div style="padding:10px 0;border-bottom:1px solid var(--c3)">
       <div style="display:flex;justify-content:space-between;align-items:center">
@@ -5600,7 +5620,7 @@ function renderMedsCard(){
         <button style="font-size:11px;color:var(--dim);background:none;border:none;cursor:pointer" onclick="if(confirm('Remove ${m.name.replace(/'/g,"\\'")} from your medication log?'))removeMed('${m.name.replace(/'/g,"\\'")}');renderFlare()">Remove</button>
       </div>
       <div style="font-size:12px;color:var(--mut);margin-top:2px">Since ${m.startDate} \u2014 ${weeks>0?weeks+' week'+(weeks===1?'':'s'):days+' day'+(days===1?'':'s')}</div>
-      ${infusionList}
+      ${doseList}
     </div>`;
   }).join('');
   return `<div class="card" style="margin-bottom:12px">
@@ -5611,33 +5631,32 @@ function renderMedsCard(){
       <input class="genin" type="text" id="med-name" placeholder="Medication name" style="margin-bottom:6px">
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
         <input class="genin" type="date" id="med-date" style="flex:1" value="${todayKey()}">
-        <label style="font-size:12px;color:var(--mut);display:flex;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" id="med-infusion" checked> Periodic infusion</label>
+        <label style="font-size:12px;color:var(--mut);display:flex;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" id="med-periodic" checked> Periodic dose</label>
       </div>
-      <button class="btn btn-grn btn-sm" style="width:100%" onclick="addMed(document.getElementById('med-name').value,document.getElementById('med-date').value,document.getElementById('med-infusion').checked);document.getElementById('med-name').value='';renderFlare()">+ Add medication</button>
+      <button class="btn btn-grn btn-sm" style="width:100%" onclick="addMed(document.getElementById('med-name').value,document.getElementById('med-date').value,document.getElementById('med-periodic').checked);document.getElementById('med-name').value='';renderFlare()">+ Add medication</button>
     </div>
   </div>`;
 }
 function renderFlare(){
   const t=[
-    {col:'var(--grn)',bg:'ng',label:'Green \u2014 train as planned',signs:['Normal energy','No pain beyond baseline','Normal bowel habits','No fever or chills','Seton: normal drainage'],action:'Full session. Stick to the plan.'},
-    {col:'var(--amb)',bg:'na',label:'Amber \u2014 modified session',signs:['More tired than usual','Mild bloating or cramps','Energy 60\u201370% of normal','Seton slightly more uncomfortable','Bowel habits slightly off'],action:'Drop weight 20%, cut 1 set per exercise, rest 2\u20133 min. Leave before exhaustion.'},
-    {col:'var(--red)',bg:'nr',label:'Red \u2014 rest today. No gym.',signs:['Cannot imagine exercising','Abdominal pain or cramping','Fever even 37.5\u00b0C+','Increased seton discharge or pain','More frequent or loose stools','Joint aches flaring'],action:'Rest, hydrate, eat gentle. One red day does not break progress.'}
+    {col:'var(--grn)',bg:'ng',label:'Green \u2014 train as planned',signs:['Normal energy','No pain beyond baseline','Normal bowel habits','No fever or chills','Site: normal'],action:'Full session. Stick to the plan.'},
+    {col:'var(--amb)',bg:'na',label:'Amber \u2014 modified session',signs:['More tired than usual','Mild bloating or cramps','Energy 60\u201370% of normal','Site slightly more uncomfortable','Bowel habits slightly off'],action:'Drop weight 20%, cut 1 set per exercise, rest 2\u20133 min. Leave before exhaustion.'},
+    {col:'var(--red)',bg:'nr',label:'Red \u2014 rest today. No gym.',signs:['Cannot imagine exercising','Abdominal pain or cramping','Fever even 37.5\u00b0C+','Increased site discharge or pain','More frequent or loose stools','Joint aches flaring'],action:'Rest, hydrate, eat gentle. One red day does not break progress.'}
   ];
   const p=getProfile();
-  const onBiologic=p.conditionPhase==='on-biologic'&&p.biologicStartDate;
-  /* Real bug found via review: this used to hardcode "pre-biologic" regardless of the actual
-     conditionPhase field, so it kept saying "Non-negotiable while pre-biologic" and showing the
-     "Pre-biologic reality" card even once Boss was actually mid-induction on a real biologic. Now
-     reads the real phase, set automatically by addMed() the first time an infusion-type
-     medication is logged. */
-  const phaseLine=onBiologic
-    ?(()=>{const{days,weeks}=daysWeeksSince(p.biologicStartDate);return `On biologic treatment since ${p.biologicStartDate} (${weeks>0?weeks+' week'+(weeks===1?'':'s'):days+' day'+(days===1?'':'s')}). Check this before every session. 30 seconds. Non-negotiable regardless of treatment phase.`;})()
-    :'Check this before every session. 30 seconds. Non-negotiable while pre-biologic.';
-  const realityCard=onBiologic
-    ?`<div class="card warm"><div style="font-size:14px;font-weight:700;font-family:'Barlow',sans-serif;margin-bottom:8px">On-biologic reality</div>
-      <div style="font-size:14px;color:var(--mut);line-height:1.7">Energy and recovery can take time to improve as the medication takes effect \u2014 6\u201314 weeks post first infusion is the usual range, but individual timelines vary, this isn\u2019t a fixed countdown. Keep using the traffic light above exactly as before \u2014 "on biologic" doesn\u2019t mean "no longer flares."</div></div>`
-    :`<div class="card warm"><div style="font-size:14px;font-weight:700;font-family:'Barlow',sans-serif;margin-bottom:8px">Pre-biologic reality</div>
-      <div style="font-size:14px;color:var(--mut);line-height:1.7">Active inflammation means your body is spending energy on disease \u2014 not weakness. Once your biologic medication starts working (6\u201314 weeks post first infusion), energy and recovery improve significantly. Train smart until then.</div></div>`;
+  const onTreatment=p.conditionPhase==='on-biologic'&&p.biologicStartDate;
+  /* Real bug found via review: this used to hardcode the before-treatment wording regardless of
+     the actual phase field, so it kept showing the before-treatment card even once Boss had
+     started treatment. Now reads the real phase, set automatically by addMed() the first time a
+     periodic-dose medication is logged. */
+  const phaseLine=onTreatment
+    ?(()=>{const{days,weeks}=daysWeeksSince(p.biologicStartDate);return `On treatment since ${p.biologicStartDate} (${weeks>0?weeks+' week'+(weeks===1?'':'s'):days+' day'+(days===1?'':'s')}). Check this before every session. 30 seconds. Non-negotiable regardless of treatment phase.`;})()
+    :'Check this before every session. 30 seconds. Non-negotiable, whatever your treatment phase.';
+  const realityCard=onTreatment
+    ?`<div class="card warm"><div style="font-size:14px;font-weight:700;font-family:'Barlow',sans-serif;margin-bottom:8px">On-treatment reality</div>
+      <div style="font-size:14px;color:var(--mut);line-height:1.7">Energy and recovery can take time to improve as the medication takes effect \u2014 6\u201314 weeks after the first dose is a common range, but individual timelines vary, this isn\u2019t a fixed countdown. Keep using the traffic light above exactly as before \u2014 "on treatment" doesn\u2019t mean "no longer flares."</div></div>`
+    :`<div class="card warm"><div style="font-size:14px;font-weight:700;font-family:'Barlow',sans-serif;margin-bottom:8px">Before-treatment reality</div>
+      <div style="font-size:14px;color:var(--mut);line-height:1.7">Active inflammation means your body is spending energy on disease \u2014 not weakness. Once treatment starts working (often 6\u201314 weeks after the first dose), energy and recovery improve significantly. Train smart until then.</div></div>`;
   document.getElementById('p4').innerHTML=
     `<p style="font-size:14px;color:var(--mut);line-height:1.6;margin-bottom:14px">${phaseLine}</p>`+
     t.map(x=>`<div class="card" style="border-color:${x.col};margin-bottom:12px">
